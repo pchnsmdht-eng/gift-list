@@ -2,48 +2,101 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { background-color: transparent; color: #FFFFFF; font-family: "Meiryo", sans-serif; overflow: hidden; margin: 0; padding: 0; }
-        .container { width: 450px; height: 100vh; position: relative; }
         
-        /* スライド（アニメーション）の設定 */
-        .scroll-container {
+        .window { 
+            width: 450px; 
+            height: 300px; 
+            position: relative; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .window::-webkit-scrollbar { display: none; }
+
+        .scroll-box {
             display: flex;
             flex-direction: column;
-            animation: scrollUp 20s linear infinite; /* 20秒で一周。速度はここで調整 */
+            padding-bottom: 50px;
+            transition: transform 0.1s ease-out;
         }
 
         .list-item { 
-            display: flex; 
-            align-items: center; 
-            height: 80px; 
-            margin-bottom: 10px; 
+            display: flex; align-items: center; height: 80px; margin-bottom: 20px; 
             text-shadow: 2px 2px 4px #000; 
+            cursor: grab;
+            user-select: none;
         }
+        .list-item:active { cursor: grabbing; }
 
-        .icon-img { width: 70px; height: 70px; object-fit: contain; margin-right: 20px; }
-        .text { font-size: 35px; font-weight: bold; }
+        .icon-img { width: 70px; height: 70px; object-fit: contain; margin-right: 20px; pointer-events: none; }
+        .text { font-size: 30px; font-weight: bold; pointer-events: none; }
         .gift-name { color: #FF69B4; }
-
-        /* 下から上へ流れる動きの定義 */
-        @keyframes scrollUp {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-50%); } /* リストを2倍書いて半分まで送ることでループさせる */
-        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="scroll-container">
-            <!-- 100個のギフトリスト（ここをお友達やexeで更新する） -->
+    <div class="window" id="scrollWindow">
+        <div class="scroll-box" id="listContent">
+            <!-- ギフトリスト（ここをお友達が更新） -->
             <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">001</span></span></div>
             <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">002</span></span></div>
-            <!-- ... (ここに必要な数だけ並べる) ... -->
-            
-            <!-- ループを滑らかにするために同じ内容を下にコピーして配置 -->
-            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">001</span></span></div>
-            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">002</span></span></div>
+            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">003</span></span></div>
+            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">004</span></span></div>
+            <!-- ...お友達に増やしてもらう... -->
         </div>
     </div>
+
+    <script>
+        const scrollWindow = document.getElementById('scrollWindow');
+        let autoScrollSpeed = 1; // スクロール速度
+        let scrollInterval;
+        let resumeTimer;
+
+        // 自動スクロールを開始する関数
+        function startAutoScroll() {
+            stopAutoScroll();
+            scrollInterval = setInterval(() => {
+                scrollWindow.scrollTop += autoScrollSpeed;
+                // 最後まで行ったら最初に戻る（無限ループ感）
+                if (scrollWindow.scrollTop >= (scrollWindow.scrollHeight - scrollWindow.clientHeight)) {
+                    scrollWindow.scrollTop = 0;
+                }
+            }, 50); // 50ミリ秒ごとに動く
+        }
+
+        // 自動スクロールを停止する関数
+        function stopAutoScroll() {
+            clearInterval(scrollInterval);
+        }
+
+        // ユーザーが触った時の処理
+        scrollWindow.addEventListener('mousedown', () => {
+            stopAutoScroll();
+            clearTimeout(resumeTimer);
+        });
+
+        scrollWindow.addEventListener('touchstart', () => {
+            stopAutoScroll();
+            clearTimeout(resumeTimer);
+        });
+
+        // ユーザーが手を離した時の処理（5秒後に再開）
+        function handleRelease() {
+            clearTimeout(resumeTimer);
+            resumeTimer = setTimeout(() => {
+                startAutoScroll();
+            }, 5000); // 5000 = 5秒
+        }
+
+        scrollWindow.addEventListener('mouseup', handleRelease);
+        scrollWindow.addEventListener('touchend', handleRelease);
+        scrollWindow.addEventListener('mouseleave', handleRelease);
+
+        // 最初に自動スクロールを開始
+        startAutoScroll();
+    </script>
 </body>
 </html>
