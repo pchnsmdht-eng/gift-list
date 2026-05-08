@@ -12,7 +12,7 @@
     </style>
 </head>
 <body>
-    <div class="container" id="gift-list-container">読み込み中...</div>
+    <div class="container" id="gift-list-container">Loading...</div>
     <script>
         const WIDGET_ID = "69fdeb1847acbc197268808a"; 
         async function updateList() {
@@ -27,7 +27,9 @@
                 });
                 html += '</marquee>';
                 document.getElementById('gift-list-container').innerHTML = html;
-            } catch (e) { document.getElementById('gift-list-container').innerHTML = "データ取得エラー"; }
+            } catch (e) {
+                document.getElementById('gift-list-container').innerHTML = "Error loading data";
+            }
         }
         updateList();
         setInterval(updateList, 60000);
