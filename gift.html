@@ -1,21 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { background-color: transparent; color: #FFFFFF; font-family: "Meiryo", sans-serif; overflow: hidden; margin: 0; padding: 0; }
+        .container { width: 450px; height: 100vh; position: relative; }
+        
+        /* スライド（アニメーション）の設定 */
+        .scroll-container {
+            display: flex;
+            flex-direction: column;
+            animation: scrollUp 20s linear infinite; /* 20秒で一周。速度はここで調整 */
+        }
 
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { background: rgba(0,0,0,0.6); color: white; font-family: 'Segoe UI', sans-serif; padding: 10px; margin: 0; overflow: hidden; }
-            .header { color: #00ffcc; font-size: 20px; font-weight: bold; border-bottom: 2px solid #ff0055; margin-bottom: 10px; text-align: center; }
-            .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-            .item { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); padding: 4px; font-size: 11px; text-align: center; border-radius: 3px; white-space: nowrap; }
-            .active { border-left: 3px solid #ff0055; background: rgba(255,0,85,0.1); font-weight: bold; }
-        </style>
-    </head>
-    <body>
-        <div class="header">GTA5 LIVE TRIGGERS (MAX 100)</div>
-        <div class="grid">
-            <div class="item active">殺人猿</div><div class="item active">スペースレンジャー</div><div class="item active">特殊ルーレット</div><div class="item active">ジャンプ</div><div class="item active">体力回復</div><div class="item active">変なNPC</div><div class="item active">爆破ゾンビ</div><div class="item active">武器ルーレット</div><div class="item active">乗り物交換</div><div class="item active">車パンク</div><div class="item active">無敵</div><div class="item active">車削除</div><div class="item active">車分解</div><div class="item active">地震</div><div class="item active">空爆</div><div class="item active">天国テレポート</div><div class="item active">空港テレポート</div><div class="item active">厄災ルーレット</div><div class="item active">ブラックホール</div><div class="item active">手配度MAX</div><div class="item active">スローモーション</div><div class="item active">重力反転</div><div class="item active">巨大化</div><div class="item active">極小化</div><div class="item active">スーパーパンチ</div><div class="item active">火炎弾</div><div class="item active">透明人間</div><div class="item active">酔っ払いモード</div><div class="item active">高速走行</div><div class="item active">高速水泳</div><div class="item active">パラシュート付与</div><div class="item active">雷雨</div><div class="item active">雪</div><div class="item active">ランダム車両出現</div><div class="item active">タンク出現</div><div class="item active">戦闘機出現</div><div class="item active">全市民敵対</div><div class="item active">市民武装化</div><div class="item active">弾薬無限</div><div class="item active">死の雨</div><div class="item active">UFO襲来</div><div class="item active">ビッグフット</div><div class="item active">核爆発</div><div class="item ">GIFT 044</div><div class="item ">GIFT 045</div><div class="item ">GIFT 046</div><div class="item ">GIFT 047</div><div class="item ">GIFT 048</div><div class="item ">GIFT 049</div><div class="item ">GIFT 050</div><div class="item ">GIFT 051</div><div class="item ">GIFT 052</div><div class="item ">GIFT 053</div><div class="item ">GIFT 054</div><div class="item ">GIFT 055</div><div class="item ">GIFT 056</div><div class="item ">GIFT 057</div><div class="item ">GIFT 058</div><div class="item ">GIFT 059</div><div class="item ">GIFT 060</div><div class="item ">GIFT 061</div><div class="item ">GIFT 062</div><div class="item ">GIFT 063</div><div class="item ">GIFT 064</div><div class="item ">GIFT 065</div><div class="item ">GIFT 066</div><div class="item ">GIFT 067</div><div class="item ">GIFT 068</div><div class="item ">GIFT 069</div><div class="item ">GIFT 070</div><div class="item ">GIFT 071</div><div class="item ">GIFT 072</div><div class="item ">GIFT 073</div><div class="item ">GIFT 074</div><div class="item ">GIFT 075</div><div class="item ">GIFT 076</div><div class="item ">GIFT 077</div><div class="item ">GIFT 078</div><div class="item ">GIFT 079</div><div class="item ">GIFT 080</div><div class="item ">GIFT 081</div><div class="item ">GIFT 082</div><div class="item ">GIFT 083</div><div class="item ">GIFT 084</div><div class="item ">GIFT 085</div><div class="item ">GIFT 086</div><div class="item ">GIFT 087</div><div class="item ">GIFT 088</div><div class="item ">GIFT 089</div><div class="item ">GIFT 090</div><div class="item ">GIFT 091</div><div class="item ">GIFT 092</div><div class="item ">GIFT 093</div><div class="item ">GIFT 094</div><div class="item ">GIFT 095</div><div class="item ">GIFT 096</div><div class="item ">GIFT 097</div><div class="item ">GIFT 098</div><div class="item ">GIFT 099</div><div class="item ">GIFT 100</div>
+        .list-item { 
+            display: flex; 
+            align-items: center; 
+            height: 80px; 
+            margin-bottom: 10px; 
+            text-shadow: 2px 2px 4px #000; 
+        }
+
+        .icon-img { width: 70px; height: 70px; object-fit: contain; margin-right: 20px; }
+        .text { font-size: 35px; font-weight: bold; }
+        .gift-name { color: #FF69B4; }
+
+        /* 下から上へ流れる動きの定義 */
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); } /* リストを2倍書いて半分まで送ることでループさせる */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="scroll-container">
+            <!-- 100個のギフトリスト（ここをお友達やexeで更新する） -->
+            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">001</span></span></div>
+            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">002</span></span></div>
+            <!-- ... (ここに必要な数だけ並べる) ... -->
+            
+            <!-- ループを滑らかにするために同じ内容を下にコピーして配置 -->
+            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">001</span></span></div>
+            <div class="list-item"><img src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" class="icon-img"><span class="text">GIFT <span class="gift-name">002</span></span></div>
         </div>
-    </body>
-    </html>
-    
+    </div>
+</body>
+</html>
