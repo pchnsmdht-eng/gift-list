@@ -40,16 +40,18 @@
             overflow: hidden;
             position: relative;
             border: none !important;
+            background: transparent;
         }
 
         .content-frame {
             position: absolute;
             width: 500px;
-            height: 10000px; /* 十分な長さを確保 */
+            height: 10000px;
             border: none;
             pointer-events: none;
             left: 50%;
-            transform: translateX(-50%) scale(1.1);
+            /* 縮尺を少し下げて、画像全体が枠に収まるように調整 */
+            transform: translateX(-50%) scale(0.95);
             transform-origin: top;
         }
     </style>
@@ -69,15 +71,18 @@
     const container = document.getElementById('scroll-container');
     const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
-    // 縦6段 × 横5列 = 合計30枚を、重複なく切り出す
     function build(target) {
         let frag = document.createDocumentFragment();
-        let totalImageCount = 0; // 通し番号
+        // 最初の画像の開始位置を少し下げて、ヘッダー等のズレを吸収
+        const startOffset = -10; 
+        // 1枚あたりの移動距離（ここを微調整するとズレが直ります）
+        const stepY = -158; 
 
-        for (let i = 0; i < 5; i++) { // 5列
+        let count = 0;
+        for (let i = 0; i < 5; i++) {
             let col = document.createElement('div');
             col.className = 'column-unit';
-            for (let j = 0; j < 6; j++) { // 6段
+            for (let j = 0; j < 6; j++) {
                 let item = document.createElement('div');
                 item.className = 'gift-item';
                 
@@ -85,13 +90,12 @@
                 frame.src = url;
                 frame.className = 'content-frame';
                 
-                // 【重要】totalImageCountを使って、上から順番に違う画像を切り出す
-                // 150pxは画像1つ分の高さの目安です
-                frame.style.top = `${totalImageCount * -150}px`;
+                // 計算式：開始位置 + (通し番号 * 1枚の高さ)
+                frame.style.top = `${startOffset + (count * stepY)}px`;
                 
                 item.appendChild(frame);
                 col.appendChild(item);
-                totalImageCount++; // 次の画像へ
+                count++;
             }
             frag.appendChild(col);
         }
