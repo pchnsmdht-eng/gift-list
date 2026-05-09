@@ -10,7 +10,6 @@
             overflow: hidden; 
             background: transparent; 
             user-select: none;
-            color: #ffffff !important;
         }
         #viewport {
             width: 100vw;
@@ -25,7 +24,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
             padding: 10px;
             box-sizing: border-box;
             cursor: grab;
@@ -34,29 +33,27 @@
         .gift-item {
             aspect-ratio: 1 / 1;
             width: 90%;
-            max-width: 150px;
+            max-width: 140px;
             overflow: hidden;
-            /* 四角い枠を消し、左右の縦線（サイド線）だけにしました */
-            border-left: 3px solid #ff0055;
-            border-right: 3px solid #ff0055;
-            border-top: none;
-            border-bottom: none;
-            background: rgba(0,0,0,0.4); /* 背景を少し薄くして見やすく */
-            border-radius: 0; /* サイド線のみにするため角丸を解除 */
+            /* 赤いサイドの縦線だけにする */
+            border-left: 4px solid #ff0055;
+            border-right: 4px solid #ff0055;
+            background: rgba(0,0,0,0.6); 
             position: relative;
             flex-shrink: 0;
             pointer-events: none;
         }
         iframe {
-            width: 500px;
+            width: 450px; /* サイトを広めに読み込む */
             height: 5000px;
             border: none;
             position: absolute;
             left: 50%;
-            transform: translateX(-50%) scale(0.8);
+            /* 拡大率を上げて画像をしっかり中央に持ってくる */
+            transform: translateX(-50%) scale(0.9);
             transform-origin: top;
-            /* 文字を白く見せるための色反転 */
-            filter: brightness(0) invert(1);
+            /* 画像を隠さない程度に明るさを調整（反転をやめました） */
+            filter: brightness(1.2); 
         }
     </style>
 </head>
@@ -64,15 +61,16 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- topの値で表示位置を調整 -->
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
+        <!-- 
+           画像のズレを直すため、topの数値を調整しました。
+           もし画像が半分しか映らない場合は、この -160px などの数字を微調整してください。
+        -->
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -10px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -170px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -330px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -490px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -650px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -810px;"></iframe></div>
     </div>
 </div>
 
@@ -84,7 +82,7 @@
 
     function step() {
         if (!isPaused) {
-            pos -= 1;
+            pos -= 1.2; // 気持ち速めにスライド
             if (Math.abs(pos) > container.scrollHeight) pos = window.innerHeight;
             container.style.top = pos + 'px';
         }
