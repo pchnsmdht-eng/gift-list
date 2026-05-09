@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { 
-            margin: 0; 
-            padding: 0; 
+            margin: 0; padding: 0; 
             overflow: hidden; 
             background: transparent; 
             user-select: none;
@@ -17,19 +16,20 @@
             overflow: hidden;
             position: relative;
         }
-        /* 移動するコンテナ：中身を2倍にしてループの隙間を埋める */
+        /* スライドするメインコンテナ */
         #scroll-container {
             position: absolute;
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            display: flex; 
-            flex-direction: row; 
+            display: flex;
+            flex-direction: row;
             gap: 20px;
             padding: 20px;
             cursor: grab;
             touch-action: pan-x;
-            white-space: nowrap;
+            /* 2セット分並べるため十分な幅を確保 */
+            will-change: transform;
         }
         .column-unit {
             display: flex;
@@ -47,12 +47,12 @@
             pointer-events: none;
         }
         iframe {
-            width: 500px;
-            height: 8000px;
+            width: 450px;
+            height: 5000px;
             border: none;
             position: absolute;
             left: 50%;
-            transform: translateX(-50%) scale(1.1);
+            transform: translateX(-50%) scale(1.0);
             transform-origin: top;
         }
     </style>
@@ -60,52 +60,64 @@
 <body>
 
 <div id="viewport">
-    <div id="scroll-container" shadow-root="open">
-        <!-- JavaScriptで画像を生成します -->
+    <div id="scroll-container">
+        <!-- 
+          同じ内容（5列セット）を2つ物理的に並べることで、
+          ループの継ぎ目での「消失」を物理的に防ぎます。
+        -->
+        <div id="content-a" style="display: flex; gap: 20px;">
+            <!-- ここに5列分（30枚）が配置されます（JSで1回だけ生成） -->
+        </div>
+        <div id="content-b" style="display: flex; gap: 20px;">
+            <!-- content-aのコピーがここに入ります -->
+        </div>
     </div>
 </div>
 
 <script>
     const container = document.getElementById('scroll-container');
+    const contentA = document.getElementById('content-a');
+    const contentB = document.getElementById('content-b');
     const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
-    // 縦6段×横5列を「2セット」作ることで、ループの継ぎ目を消す
-    function createGifts() {
-        for (let loop = 0; loop < 2; loop++) { // 2セット生成
-            let giftIndex = 0;
-            for (let i = 0; i < 5; i++) {
-                let col = document.createElement('div');
-                col.className = 'column-unit';
-                for (let j = 0; j < 6; j++) {
-                    let item = document.createElement('div');
-                    item.className = 'gift-item';
-                    item.innerHTML = `<iframe src="${url}" style="top: ${giftIndex * -155}px;"></iframe>`;
-                    col.appendChild(item);
-                    giftIndex++;
-                }
-                container.appendChild(col);
+    // 縦6段×横5列を生成
+    function buildUnits(target) {
+        let giftIdx = 0;
+        for (let i = 0; i < 5; i++) {
+            let col = document.createElement('div');
+            col.className = 'column-unit';
+            for (let j = 0; j < 6; j++) {
+                let item = document.createElement('div');
+                item.className = 'gift-item';
+                item.innerHTML = `<iframe src="${url}" style="top: ${giftIdx * -155}px;"></iframe>`;
+                col.appendChild(item);
+                giftIdx++;
             }
+            target.appendChild(col);
         }
     }
-    createGifts();
+
+    buildUnits(contentA);
+    buildUnits(contentB);
 
     let pos = 0;
     let isPaused = false;
     let resumeTimer, startX, initialPos;
 
-    function step() {
+    function move() {
         if (!isPaused) {
-            pos -= 1.0; 
-            // 半分（1セット分）進んだら、瞬時に位置を0に戻す（これで無限に見える）
-            const halfWidth = container.scrollWidth / 2;
+            pos -= 0.8;
+            // Aセット分（半分）進んだら、見た目を変えずに0へワープ（これで画像が消えない）
+            const halfWidth = contentA.offsetWidth + 20; // 20はgap分
             if (Math.abs(pos) >= halfWidth) {
                 pos = 0;
             }
             container.style.transform = `translate3d(${pos}px, -50%, 0)`;
         }
-        requestAnimationFrame(step);
+        requestAnimationFrame(move);
     }
 
+    // 手動UIスライド
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -116,11 +128,12 @@
     }
 
     function onMove(e) {
+        if (!isPaused) return;
         const currentX = e.touches ? e.touches[0].pageX : e.pageX;
         pos = initialPos + (currentX - startX);
         
-        // 手動操作時もループの範囲を超えないよう調整
-        const halfWidth = container.scrollWidth / 2;
+        // 手動スライド中もループ範囲を維持
+        const halfWidth = contentA.offsetWidth + 20;
         if (pos > 0) pos = -halfWidth;
         if (Math.abs(pos) >= halfWidth) pos = 0;
 
@@ -136,7 +149,9 @@
 
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
-    requestAnimationFrame(step);
+
+    // 起動
+    setTimeout(move, 1000); // 読み込み待ちで1秒遅延
 </script>
 </body>
 </html>
