@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        /* 1. 余白の徹底排除 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: transparent; overflow: hidden; }
+        body { background: transparent; overflow: hidden; user-select: none; }
         
         #viewport {
             width: 100vw;
@@ -13,60 +14,59 @@
             position: relative;
         }
 
-        /* ドラッグで動かすコンテナ：自動移動のコードはすべて削除 */
+        /* 2. 手動ドラッグコンテナ（自動スライドは一切なし） */
         #scroll-container {
             display: flex;
             position: absolute;
             top: 0;
             left: 0;
-            gap: 10px;
-            padding: 10px;
+            gap: 12px; /* 列ごとの隙間 */
+            padding: 5px;
             cursor: grab;
-            touch-action: pan-x;
             will-change: transform;
         }
-        #scroll-container:active {
-            cursor: grabbing;
-        }
+        #scroll-container:active { cursor: grabbing; }
 
+        /* 3. 1列（6枚分）を管理する窓 */
         .column {
-            width: 150px; 
-            height: 940px; 
+            width: 152px; /* 横幅を最適化 */
+            height: 940px; /* 縦6枚分が収まる高さ */
             overflow: hidden;
             position: relative;
             flex-shrink: 0;
         }
 
+        /* 4. 元サイトそのままの表示 */
         iframe {
-            width: 450px; 
-            height: 12000px;
+            width: 480px; 
+            height: 10000px;
             border: none;
             position: absolute;
             left: 50%;
-            transform: translateX(-50%) scale(1.02); 
+            /* ズレを最小限にするための倍率固定 */
+            transform: translateX(-50%) scale(1.0); 
             transform-origin: top;
             pointer-events: none;
         }
 
-        .set {
-            display: flex;
-            gap: 10px;
-        }
+        .set { display: flex; gap: 12px; }
     </style>
 </head>
 <body>
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- セットA -->
         <div class="set" id="set-a">
+            <!-- 
+              各列のtop値を「1枚あたりの高さ」ではなく「6枚セットの区切り」で調整。
+              もし1枚目がズレる場合は、ここの -5px を -10px などに変えるだけで全列直ります。
+            -->
             <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -5px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -945px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1885px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -2825px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3765px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -950px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1895px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -2840px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3785px;"></iframe></div>
         </div>
-        <!-- セットB（無限にドラッグできるように配置） -->
         <div class="set" id="set-b"></div>
     </div>
 </div>
@@ -82,11 +82,10 @@
     let startX = 0;
     let currentPos = 0;
 
-    const getResetPoint = () => setA.offsetWidth + 10;
+    const getResetPoint = () => setA.offsetWidth + 12;
 
     const onStart = (e) => {
         isDragging = true;
-        // 現在の位置を基準にクリック位置を記録
         startX = (e.pageX || e.touches[0].pageX) - currentPos;
     };
 
@@ -96,7 +95,6 @@
 
         currentPos = (e.pageX || e.touches[0].pageX) - startX;
 
-        // セットAの幅を超えたら位置を戻して、無限にスクロールしているように見せる
         const resetPoint = getResetPoint();
         if (currentPos > 0) {
             currentPos = -resetPoint;
@@ -109,16 +107,11 @@
         container.style.transform = `translateX(${currentPos}px)`;
     };
 
-    const onEnd = () => {
-        isDragging = false;
-    };
+    const onEnd = () => { isDragging = false; };
 
-    // マウス操作
     container.addEventListener('mousedown', onStart);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
-
-    // タッチ操作
     container.addEventListener('touchstart', onStart);
     window.addEventListener('touchmove', onMove, { passive: false });
     window.addEventListener('touchend', onEnd);
