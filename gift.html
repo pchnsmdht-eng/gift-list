@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        /* 1. 余白の徹底排除 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: transparent; overflow: hidden; user-select: none; }
         
@@ -14,42 +13,36 @@
             position: relative;
         }
 
-        /* 2. 手動ドラッグコンテナ（自動スライドは一切なし） */
         #scroll-container {
             display: flex;
             position: absolute;
             top: 0;
             left: 0;
-            gap: 12px; /* 列ごとの隙間 */
-            padding: 5px;
+            gap: 15px;
+            padding: 10px;
             cursor: grab;
-            will-change: transform;
+            touch-action: pan-x;
         }
-        #scroll-container:active { cursor: grabbing; }
 
-        /* 3. 1列（6枚分）を管理する窓 */
         .column {
-            width: 152px; /* 横幅を最適化 */
-            height: 940px; /* 縦6枚分が収まる高さ */
+            width: 160px; 
+            height: 940px; 
             overflow: hidden;
             position: relative;
             flex-shrink: 0;
         }
 
-        /* 4. 元サイトそのままの表示 */
         iframe {
-            width: 480px; 
-            height: 10000px;
+            width: 450px; 
+            height: 8000px;
             border: none;
             position: absolute;
             left: 50%;
-            /* ズレを最小限にするための倍率固定 */
-            transform: translateX(-50%) scale(1.0); 
-            transform-origin: top;
+            transform: translateX(-50%);
             pointer-events: none;
         }
 
-        .set { display: flex; gap: 12px; }
+        .set { display: flex; gap: 15px; }
     </style>
 </head>
 <body>
@@ -57,10 +50,6 @@
 <div id="viewport">
     <div id="scroll-container">
         <div class="set" id="set-a">
-            <!-- 
-              各列のtop値を「1枚あたりの高さ」ではなく「6枚セットの区切り」で調整。
-              もし1枚目がズレる場合は、ここの -5px を -10px などに変えるだけで全列直ります。
-            -->
             <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -5px;"></iframe></div>
             <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -950px;"></iframe></div>
             <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1895px;"></iframe></div>
@@ -75,14 +64,11 @@
     const container = document.getElementById('scroll-container');
     const setA = document.getElementById('set-a');
     const setB = document.getElementById('set-b');
-
     setB.innerHTML = setA.innerHTML;
 
     let isDragging = false;
     let startX = 0;
     let currentPos = 0;
-
-    const getResetPoint = () => setA.offsetWidth + 12;
 
     const onStart = (e) => {
         isDragging = true;
@@ -91,19 +77,10 @@
 
     const onMove = (e) => {
         if (!isDragging) return;
-        if (e.cancelable) e.preventDefault();
-
         currentPos = (e.pageX || e.touches[0].pageX) - startX;
-
-        const resetPoint = getResetPoint();
-        if (currentPos > 0) {
-            currentPos = -resetPoint;
-            startX = (e.pageX || e.touches[0].pageX) - currentPos;
-        } else if (Math.abs(currentPos) >= resetPoint) {
-            currentPos = 0;
-            startX = (e.pageX || e.touches[0].pageX) - currentPos;
-        }
-
+        const resetPoint = setA.offsetWidth + 15;
+        if (currentPos > 0) currentPos = -resetPoint;
+        if (Math.abs(currentPos) >= resetPoint) currentPos = 0;
         container.style.transform = `translateX(${currentPos}px)`;
     };
 
@@ -113,7 +90,7 @@
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
     container.addEventListener('touchstart', onStart);
-    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchmove', onMove);
     window.addEventListener('touchend', onEnd);
 </script>
 </body>
