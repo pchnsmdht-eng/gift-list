@@ -1,54 +1,21 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { background: transparent; color: white; font-family: sans-serif; margin: 0; overflow: hidden; }
-        /* スライドする中身の設定 */
-        #scroll-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-            padding: 10px;
-        }
-        .item { background: rgba(0,0,0,0.7); border: 1px solid #555; padding: 10px; text-align: center; border-radius: 5px; }
-        .active { border: 2px solid #ff0055; box-shadow: 0 0 10px #ff0055; }
-        img { width: 40px; height: 40px; object-fit: contain; }
-    </style>
-</head>
-<body>
-    <div id="scroll-content">
-        <!-- ここにギフトが並びます -->
-        <div class="item active"><img src="gift.png"><div>殺人猿</div></div>
-        <div class="item active"><img src="gift.png"><div>スペースレンジャー</div></div>
-        <!-- 100個分並ぶ想定 -->
+<html style="margin:0; padding:0; overflow:hidden; background:transparent;">
+<body style="margin:0; padding:0; background:transparent;">
+    <!-- StreamtoearnのURLを直接ここに埋め込みます -->
+    <div id="scroll-wrapper" style="position:absolute; top:0; width:100%;">
+        <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" 
+                style="width:100vw; height:5000px; border:none; background:transparent;"></iframe>
     </div>
 
     <script>
-        const content = document.getElementById('scroll-content');
         let pos = 0;
-        let moving = true;
-
-        function step() {
-            if (moving) {
-                pos -= 1; // 上にずらしていく速度
-                // 全体が見えなくなったら最初に戻す
-                if (Math.abs(pos) > content.offsetHeight) {
-                    pos = window.innerHeight;
-                }
-                content.style.top = pos + 'px';
-            }
-            window.requestAnimationFrame(step);
-        }
-
-        // 画面をどこでもクリック（タップ）すると動きが止まり、もう一度押すと動く
-        window.addEventListener('mousedown', () => { moving = !moving; });
-        
-        window.requestAnimationFrame(step);
+        const wrapper = document.getElementById('scroll-wrapper');
+        // 勝手に動き、一番下まで行ったら勝手に戻る
+        setInterval(() => {
+            pos -= 1; 
+            wrapper.style.top = pos + 'px';
+            if (pos < -3000) pos = 600; 
+        }, 25);
     </script>
 </body>
 </html>
