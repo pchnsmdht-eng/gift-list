@@ -1,21 +1,81 @@
 <!DOCTYPE html>
-<html style="margin:0; padding:0; overflow:hidden; background:transparent;">
-<body style="margin:0; padding:0; background:transparent;">
-    <!-- StreamtoearnのURLを直接ここに埋め込みます -->
-    <div id="scroll-wrapper" style="position:absolute; top:0; width:100%;">
-        <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" 
-                style="width:100vw; height:5000px; border:none; background:transparent;"></iframe>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background: transparent; 
+        }
+        /* リサイズしても画像が綺麗に並ぶ設定 */
+        #scroll-container {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            display: grid;
+            /* 枠の幅に合わせて、一個100pxの画像を並べる設定 */
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        /* 外部サイトの画像一個分を切り出す設定 */
+        .gift-frame {
+            width: 100%;
+            height: 120px; /* 画像一個分の高さに合わせて調整 */
+            overflow: hidden;
+            border: 2px solid #ff0055;
+            background: rgba(0,0,0,0.7);
+            border-radius: 8px;
+            position: relative;
+        }
+        iframe {
+            width: 100%;
+            height: 5000px; /* 中身のサイト全体 */
+            border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="scroll-container">
+        <!-- 画像一個一個を独立した枠として表示（必要数分並びます） -->
+        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
+        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -120px;"></iframe></div>
+        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -240px;"></iframe></div>
+        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -360px;"></iframe></div>
+        <!-- 以降、表示したい数だけ増やせます -->
     </div>
 
     <script>
         let pos = 0;
-        const wrapper = document.getElementById('scroll-wrapper');
-        // 勝手に動き、一番下まで行ったら勝手に戻る
-        setInterval(() => {
-            pos -= 1; 
-            wrapper.style.top = pos + 'px';
-            if (pos < -3000) pos = 600; 
-        }, 25);
+        let isPaused = false;
+        const container = document.getElementById('scroll-container');
+
+        function autoScroll() {
+            if (!isPaused) {
+                pos -= 1;
+                container.style.top = pos + 'px';
+                // 全部流れたら最初に戻る
+                if (Math.abs(pos) > container.offsetHeight) {
+                    pos = window.innerHeight;
+                }
+            }
+            requestAnimationFrame(autoScroll);
+        }
+
+        // 触れたら停止、離して3秒で再開
+        window.addEventListener('mousedown', () => { isPaused = true; });
+        window.addEventListener('mouseup', () => { setTimeout(() => { isPaused = false; }, 3000); });
+        window.addEventListener('touchstart', () => { isPaused = true; });
+        window.addEventListener('touchend', () => { setTimeout(() => { isPaused = false; }, 3000); });
+
+        autoScroll();
     </script>
 </body>
 </html>
