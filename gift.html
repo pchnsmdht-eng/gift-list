@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* 1. 全ての余白をゼロにする */
+        /* 1. すべての余白を強制排除 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             overflow: hidden; 
-            background: transparent; 
+            background: transparent !important; 
             user-select: none;
         }
         #viewport {
@@ -17,15 +17,14 @@
             overflow: hidden;
             position: relative;
         }
-        /* 2. 画像コンテナ：隙間（gap）を 0 に設定 */
+        /* 2. 画像コンテナ（隙間なし） */
         #scroll-container {
             position: absolute;
             left: 0;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 0;
             display: flex;
             flex-direction: row;
-            gap: 0; /* 完全に密着させる */
+            gap: 0; /* 横の隙間なし */
             cursor: grab;
             touch-action: pan-x;
             will-change: transform;
@@ -33,26 +32,26 @@
         .column-unit {
             display: flex;
             flex-direction: column;
-            gap: 0; /* 縦方向も隙間をゼロに */
+            gap: 0; /* 縦の隙間なし */
             flex-shrink: 0;
         }
-        /* 3. 画像窓：枠線を完全に消去 */
+        /* 3. 画像切り出し窓（フレームなし） */
         .gift-item {
-            width: 145px; 
-            height: 145px; 
+            width: 148px; /* 画像の切り出し幅 */
+            height: 148px; /* 画像の切り出し高さ */
             overflow: hidden;
             background: transparent;
-            border: none; 
+            border: none !important; /* 枠線を完全に消去 */
             position: relative;
             pointer-events: none;
         }
         iframe {
-            width: 450px;
+            width: 500px; /* 内部の解像度 */
             height: 8000px;
             border: none;
             position: absolute;
             left: 50%;
-            /* 1.1倍にズームして画像を窓いっぱいに広げる */
+            /* 縮尺調整：窓に画像が収まるようズーム */
             transform: translateX(-50%) scale(1.1);
             transform-origin: top;
         }
@@ -62,9 +61,9 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- セットA（5列×6段） -->
+        <!-- セットA（30枚） -->
         <div id="content-a" style="display: flex; gap: 0;"></div>
-        <!-- セットB（継ぎ目なしループ用） -->
+        <!-- セットB（ループ用コピー） -->
         <div id="content-b" style="display: flex; gap: 0;"></div>
     </div>
 </div>
@@ -75,7 +74,7 @@
     const container = document.getElementById('scroll-container');
     const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
-    // 縦6段×横5列を生成。数値は画像の切り出し位置に最適化
+    // 縦6段×横5列の生成
     function buildUnits(target) {
         let giftIdx = 0;
         for (let i = 0; i < 5; i++) {
@@ -84,7 +83,7 @@
             for (let j = 0; j < 6; j++) {
                 let item = document.createElement('div');
                 item.className = 'gift-item';
-                // 150px刻みで隙間なくキャプチャ
+                // 150px刻みで隙間（白線）が出ないように調整
                 item.innerHTML = `<iframe src="${url}" style="top: ${giftIdx * -150}px;"></iframe>`;
                 col.appendChild(item);
                 giftIdx++;
@@ -100,20 +99,21 @@
     let isPaused = false;
     let resumeTimer, startX, initialPos;
 
-    // 自動横移動（白線が出ないようピクセル単位で管理）
+    // 自動スクロール処理
     function move() {
         if (!isPaused) {
             pos -= 1.0; 
             const halfWidth = contentA.offsetWidth;
+            // 継ぎ目を感じさせずにワープ
             if (Math.abs(pos) >= halfWidth) {
                 pos = 0;
             }
-            container.style.transform = `translate3d(${pos}px, -50%, 0)`;
+            container.style.transform = `translate3d(${pos}px, 0, 0)`;
         }
         requestAnimationFrame(move);
     }
 
-    // 手動スライドUI
+    // 手動スライドUI（横方向）
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -132,7 +132,7 @@
         if (pos > 0) pos = -halfWidth;
         if (Math.abs(pos) >= halfWidth) pos = 0;
 
-        container.style.transform = `translate3d(${pos}px, -50%, 0)`;
+        container.style.transform = `translate3d(${pos}px, 0, 0)`;
         if(e.cancelable) e.preventDefault();
     }
 
@@ -145,8 +145,7 @@
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
 
-    // 読み込み完了後に開始
-    window.onload = () => { setTimeout(move, 1500); };
+    window.onload = () => { setTimeout(move, 1000); };
 </script>
 </body>
 </html>
