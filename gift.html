@@ -17,40 +17,44 @@
             overflow: hidden;
             position: relative;
         }
-        /* 横にスライドするコンテナ */
+        /* 横方向に並べるためのコンテナ */
         #scroll-container {
             position: absolute;
             left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            display: grid;
-            /* 横に3列、縦に自動で並べる設定 */
-            grid-template-columns: repeat(3, 150px); 
-            grid-auto-flow: column; /* 要素を右へ右へ並べる */
-            gap: 15px;
-            padding: 20px;
+            top: 0;
+            height: 100%;
+            display: flex; /* 横並びにする */
+            flex-direction: row; 
+            gap: 15px; /* 横の隙間 */
+            padding: 10px;
             cursor: grab;
-            touch-action: pan-x; /* 横方向のタッチを許可 */
+            touch-action: pan-x; /* 横方向のタッチ操作を優先 */
+        }
+        /* 縦に3つ画像を並べる列ユニット */
+        .column-unit {
+            display: flex;
+            flex-direction: column; /* ユニット内は縦に3つ */
+            gap: 10px; /* 縦の隙間 */
+            flex-shrink: 0;
         }
         /* 画像1個ずつの窓（枠なし） */
         .gift-item {
-            width: 150px;
-            height: 150px;
+            width: 140px; /* 画像の幅 */
+            height: 140px; /* 画像の高さ */
             overflow: hidden;
             background: transparent;
             border: none;
             position: relative;
-            flex-shrink: 0;
             pointer-events: none;
         }
         /* 中身のサイトを拡大して画像を狙い撃ち */
         iframe {
-            width: 600px;
+            width: 500px;
             height: 5000px;
             border: none;
             position: absolute;
             left: 50%;
-            transform: translateX(-50%) scale(1.2);
+            transform: translateX(-50%) scale(1.1);
             transform-origin: top;
             filter: none;
         }
@@ -60,24 +64,24 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- 
-           画像を横に3列ずつ、縦の位置(top)を変えて配置。
-           左から右へ「ずらずら」と並んでいきます。
-        -->
-        <!-- 1列目（3つ） -->
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -10px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -160px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -310px;"></iframe></div>
-        
-        <!-- 2列目（3つ） -->
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -460px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -610px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -760px;"></iframe></div>
-        
-        <!-- 3列目（3つ） -->
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -910px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1060px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1210px;"></iframe></div>
+        <!-- 1列目（縦に3つ） -->
+        <div class="column-unit">
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
+        </div>
+        <!-- 2列目（縦に3つ） -->
+        <div class="column-unit">
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
+        </div>
+        <!-- 3列目（縦に3つ） -->
+        <div class="column-unit">
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1200px;"></iframe></div>
+        </div>
     </div>
 </div>
 
@@ -87,11 +91,11 @@
     let isPaused = false;
     let resumeTimer, startX, initialPos;
 
-    // 自動スライド（横移動）
+    // 自動スライド（横方向: leftを動かす）
     function step() {
         if (!isPaused) {
-            pos -= 0.8; // 速度
-            // 右端まで行ったら左から戻るループ
+            pos -= 1.0; // 横移動の速度
+            // 全て右へ流れきったら左端に戻すループ
             if (Math.abs(pos) > container.scrollWidth) {
                 pos = window.innerWidth;
             }
@@ -100,7 +104,7 @@
         requestAnimationFrame(step);
     }
 
-    // 手動スライドUI（横方向）
+    // 横方向の手動スライドUI
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -111,6 +115,7 @@
     }
 
     function onMove(e) {
+        if (!isPaused) return;
         const currentX = e.touches ? e.touches[0].pageX : e.pageX;
         pos = initialPos + (currentX - startX);
         container.style.left = pos + 'px';
@@ -120,11 +125,13 @@
     function onEnd() {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
+        // 3秒後に自動横スライドを再開
         resumeTimer = setTimeout(() => { isPaused = false; }, 3000);
     }
 
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
+
     requestAnimationFrame(step);
 </script>
 </body>
