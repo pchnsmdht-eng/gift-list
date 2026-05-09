@@ -17,40 +17,41 @@
             height: 600px;
             overflow: hidden;
             position: relative;
-            background: transparent;
         }
-        /* スライドする中身のコンテナ */
+        /* スライドする中身のコンテナ（2列グリッド） */
         #scroll-container {
             position: absolute;
             top: 0;
             width: 155px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2列に整列 */
+            gap: 5px;
+            padding: 5px;
+            box-sizing: border-box;
             cursor: grab;
             touch-action: pan-y;
         }
-        /* 画像1枚分を切り出す枠 */
+        /* 画像1枚分を切り出す枠（2列用にサイズ調整） */
         .gift-item {
-            width: 135px;
-            height: 135px;
+            width: 70px; 
+            height: 70px;
             overflow: hidden;
-            border: 2px solid #ff0055;
+            border: 1px solid #ff0055;
             background: rgba(0,0,0,0.8);
-            border-radius: 12px;
+            border-radius: 6px;
             position: relative;
-            flex-shrink: 0;
-            pointer-events: none; /* 下のiframeを触らせず、親のスライドを優先 */
+            pointer-events: none;
         }
         /* 埋め込む外部サイト */
         iframe {
-            width: 450px;
+            width: 400px;
             height: 5000px;
             border: none;
             position: absolute;
-            left: -155px; /* 画像が中央に来るよう調整 */
+            /* 画像の中央が見えるように調整 */
+            left: -165px; 
+            transform: scale(0.6); /* 2列用に少し縮小 */
+            transform-origin: top left;
         }
     </style>
 </head>
@@ -58,15 +59,17 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- topの値をずらして、外部サイト内の各画像を順番に表示 -->
+        <!-- topの値を調整して、表示したい画像を並べる -->
         <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -100px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -200px;"></iframe></div>
         <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -400px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -500px;"></iframe></div>
         <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -700px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -800px;"></iframe></div>
         <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
     </div>
 </div>
 
@@ -77,20 +80,20 @@
     let resumeTimer;
     let startY, initialPos;
 
-    // 自動スライド処理
+    // 自動スライド
     function step() {
         if (!isPaused) {
-            pos -= 1; // 速度
-            // 最後尾が表示されたら無限ループ
+            pos -= 1;
+            // 全て流れきったらループ
             if (Math.abs(pos) > container.scrollHeight) {
-                pos = 600; // 上端に戻す
+                pos = 600; 
             }
             container.style.top = pos + 'px';
         }
         requestAnimationFrame(step);
     }
 
-    // リスナーによるスライド操作
+    // スライド操作
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -110,7 +113,6 @@
     function onEnd() {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
-        // 3秒後に自動スライド再開
         resumeTimer = setTimeout(() => { isPaused = false; }, 3000);
     }
 
