@@ -17,7 +17,7 @@
             overflow: hidden;
             position: relative;
         }
-        /* 縦1列コンテナ */
+        /* 縦1列に画像を強制整列 */
         #scroll-container {
             position: absolute;
             top: 0;
@@ -25,34 +25,33 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px; /* 画像同士の間隔 */
+            gap: 10px; /* 画像ごとの隙間 */
             padding: 0;
-            box-sizing: border-box;
             cursor: grab;
             touch-action: pan-y;
         }
-        /* 枠取りなしの透明なコンテナ */
+        /* 1個の画像を表示する「窓」のサイズ */
         .gift-item {
-            width: 100%; /* 横幅いっぱい（リサイズに連動） */
-            height: 150px; /* 画像1つ分の高さ */
+            width: 130px; /* ここの幅を調整すると画像の切り出し幅が変わる */
+            height: 130px; /* ここの高さを調整すると画像の切り出し高さが変わる */
             overflow: hidden;
-            background: transparent; /* 背景も透明 */
-            border: none; /* 枠線を完全に削除 */
+            background: transparent;
+            border: none;
             position: relative;
             flex-shrink: 0;
             pointer-events: none;
         }
-        /* 画像の表示位置を強制的に合わせる */
+        /* 中身のサイトを拡大して、画像だけが窓に収まるように位置調整 */
         iframe {
             width: 500px;
             height: 5000px;
             border: none;
             position: absolute;
             left: 50%;
-            /* フィルターを一切かけない（これで画像が100%見えます） */
-            filter: none;
-            transform: translateX(-50%) scale(1.0);
+            /* transformで中心を合わせ、画像が一番綺麗に見える倍率に固定 */
+            transform: translateX(-50%) scale(1.1);
             transform-origin: top;
+            filter: none;
         }
     </style>
 </head>
@@ -60,15 +59,18 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- topの位置を150px刻みで調整しています -->
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
+        <!-- 
+           画像の縦位置（top）を「画像1枚＋隙間」の分だけ正確にずらしていきます。
+           もし画像が上下にズレていたら、-145px, -290px... の数値を10ずつ増減させてください。
+        -->
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -5px;"></iframe></div>
         <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -295px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -440px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -585px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -730px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -875px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1020px;"></iframe></div>
     </div>
 </div>
 
@@ -80,8 +82,11 @@
 
     function step() {
         if (!isPaused) {
-            pos -= 1.0; // スピード
-            if (Math.abs(pos) > container.scrollHeight) pos = window.innerHeight;
+            pos -= 1.0;
+            // リストの末尾まで行ったらループ
+            if (Math.abs(pos) > container.scrollHeight) {
+                pos = window.innerHeight; 
+            }
             container.style.top = pos + 'px';
         }
         requestAnimationFrame(step);
