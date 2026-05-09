@@ -11,48 +11,40 @@
             background: transparent; 
             user-select: none; 
         }
-        /* TikTok Studio側でリサイズされても、常に画面全体を使い切る設定 */
+        /* TikTok Studioの枠に合わせて自動で広がる */
         #viewport {
             width: 100vw;
             height: 100vh;
             overflow: hidden;
             position: relative;
         }
-        /* 2列整列コンテナ：枠の幅に合わせて自動で伸縮します */
+        /* 重複（ミラー）を消し、1枚のシートとして2列に並べる */
         #scroll-container {
             position: absolute;
             top: 0;
             width: 100%;
-            display: grid;
-            /* 常に2列を維持し、隙間を自動調整 */
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 8px;
-            padding: 8px;
-            box-sizing: border-box;
+            /* 外部サイトの元のレイアウトを活かしつつ2列に強制 */
+            display: block; 
             cursor: grab;
             touch-action: pan-y;
         }
-        /* 画像1枚分の枠：親の幅(50%)に合わせてレスポンシブに変化 */
-        .gift-item {
-            aspect-ratio: 1 / 1; /* 常に正方形を維持 */
+        /* 外部サイトをそのまま1枚の「長い窓」として読み込む */
+        #iframe-wrapper {
             width: 100%;
-            overflow: hidden;
-            border: 2px solid #ff0055;
-            background: rgba(0,0,0,0.8);
-            border-radius: 8px;
+            height: 5000px; /* リスト全体の長さ */
             position: relative;
-            pointer-events: none;
         }
-        /* 外部サイトの埋め込み：枠のサイズに合わせて自動スケール */
         iframe {
-            width: 400px;
-            height: 4000px;
+            width: 200%; /* 2倍の幅で読み込んで、2列に見えるようにスケール調整 */
+            height: 100%;
             border: none;
             position: absolute;
-            left: 50%;
+            left: 0;
             top: 0;
-            transform: translateX(-50%) scale(0.7); /* 中央寄せ＆縮小 */
-            transform-origin: top;
+            /* 2列に見えるように倍率と位置を調整 */
+            transform: scale(0.5); 
+            transform-origin: top left;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -60,15 +52,9 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- topの位置で表示する画像をずらします -->
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -140px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -280px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -420px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -560px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -700px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -840px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -980px;"></iframe></div>
+        <div id="iframe-wrapper">
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+        </div>
     </div>
 </div>
 
@@ -79,18 +65,20 @@
     let resumeTimer;
     let startY, initialPos;
 
+    // 自動スライド
     function step() {
         if (!isPaused) {
-            pos -= 1;
-            // コンテナの高さに合わせて自動ループ
-            if (Math.abs(pos) > container.scrollHeight) {
-                pos = window.innerHeight; 
+            pos -= 1; // 速度
+            // 最後まで行ったらループ
+            if (Math.abs(pos) > 2000) { // リストの長さに合わせて調整
+                pos = window.innerHeight;
             }
             container.style.top = pos + 'px';
         }
         requestAnimationFrame(step);
     }
 
+    // スライド操作
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -101,7 +89,6 @@
     }
 
     function onMove(e) {
-        if (!isPaused) return;
         const currentY = e.touches ? e.touches[0].pageY : e.pageY;
         pos = initialPos + (currentY - startY);
         container.style.top = pos + 'px';
