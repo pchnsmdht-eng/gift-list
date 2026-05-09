@@ -13,7 +13,7 @@
             position: relative;
         }
 
-        /* ドラッグで動かすコンテナ */
+        /* ドラッグで動かすコンテナ：自動移動のコードはすべて削除 */
         #scroll-container {
             display: flex;
             position: absolute;
@@ -21,12 +21,12 @@
             left: 0;
             gap: 10px;
             padding: 10px;
-            cursor: grab; /* 掴めるアイコン */
-            touch-action: pan-x; /* スマホでの横スワイプを有効化 */
+            cursor: grab;
+            touch-action: pan-x;
             will-change: transform;
         }
         #scroll-container:active {
-            cursor: grabbing; /* 掴んでいる時のアイコン */
+            cursor: grabbing;
         }
 
         .column {
@@ -45,7 +45,7 @@
             left: 50%;
             transform: translateX(-50%) scale(1.02); 
             transform-origin: top;
-            pointer-events: none; /* iframeがドラッグを邪魔しないように設定 */
+            pointer-events: none;
         }
 
         .set {
@@ -66,7 +66,7 @@
             <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -2825px;"></iframe></div>
             <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3765px;"></iframe></div>
         </div>
-        <!-- セットB（ループの継ぎ目を埋める用） -->
+        <!-- セットB（無限にドラッグできるように配置） -->
         <div class="set" id="set-b"></div>
     </div>
 </div>
@@ -76,20 +76,17 @@
     const setA = document.getElementById('set-a');
     const setB = document.getElementById('set-b');
 
-    // 無限にスクロールできるようセットAを複製
     setB.innerHTML = setA.innerHTML;
 
     let isDragging = false;
     let startX = 0;
     let currentPos = 0;
 
-    // セットAの横幅（リセット基準値）
     const getResetPoint = () => setA.offsetWidth + 10;
-
-    // --- 操作イベント ---
 
     const onStart = (e) => {
         isDragging = true;
+        // 現在の位置を基準にクリック位置を記録
         startX = (e.pageX || e.touches[0].pageX) - currentPos;
     };
 
@@ -99,7 +96,7 @@
 
         currentPos = (e.pageX || e.touches[0].pageX) - startX;
 
-        // 無限ループの計算
+        // セットAの幅を超えたら位置を戻して、無限にスクロールしているように見せる
         const resetPoint = getResetPoint();
         if (currentPos > 0) {
             currentPos = -resetPoint;
@@ -121,11 +118,10 @@
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
 
-    // タッチ操作（スマホ・タブレット）
+    // タッチ操作
     container.addEventListener('touchstart', onStart);
     window.addEventListener('touchmove', onMove, { passive: false });
     window.addEventListener('touchend', onEnd);
-
 </script>
 </body>
 </html>
