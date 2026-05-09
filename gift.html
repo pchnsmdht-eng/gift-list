@@ -17,6 +17,7 @@
             overflow: hidden;
             position: relative;
         }
+        /* 縦1列コンテナ */
         #scroll-container {
             position: absolute;
             top: 0;
@@ -24,36 +25,34 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
-            padding: 10px;
+            gap: 10px; /* 画像同士の間隔 */
+            padding: 0;
             box-sizing: border-box;
             cursor: grab;
             touch-action: pan-y;
         }
+        /* 枠取りなしの透明なコンテナ */
         .gift-item {
-            aspect-ratio: 1 / 1;
-            width: 90%;
-            max-width: 140px;
+            width: 100%; /* 横幅いっぱい（リサイズに連動） */
+            height: 150px; /* 画像1つ分の高さ */
             overflow: hidden;
-            /* 赤いサイドの縦線だけにする */
-            border-left: 4px solid #ff0055;
-            border-right: 4px solid #ff0055;
-            background: rgba(0,0,0,0.6); 
+            background: transparent; /* 背景も透明 */
+            border: none; /* 枠線を完全に削除 */
             position: relative;
             flex-shrink: 0;
             pointer-events: none;
         }
+        /* 画像の表示位置を強制的に合わせる */
         iframe {
-            width: 450px; /* サイトを広めに読み込む */
+            width: 500px;
             height: 5000px;
             border: none;
             position: absolute;
             left: 50%;
-            /* 拡大率を上げて画像をしっかり中央に持ってくる */
-            transform: translateX(-50%) scale(0.9);
+            /* フィルターを一切かけない（これで画像が100%見えます） */
+            filter: none;
+            transform: translateX(-50%) scale(1.0);
             transform-origin: top;
-            /* 画像を隠さない程度に明るさを調整（反転をやめました） */
-            filter: brightness(1.2); 
         }
     </style>
 </head>
@@ -61,16 +60,15 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- 
-           画像のズレを直すため、topの数値を調整しました。
-           もし画像が半分しか映らない場合は、この -160px などの数字を微調整してください。
-        -->
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -10px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -170px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -330px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -490px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -650px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -810px;"></iframe></div>
+        <!-- topの位置を150px刻みで調整しています -->
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
     </div>
 </div>
 
@@ -82,7 +80,7 @@
 
     function step() {
         if (!isPaused) {
-            pos -= 1.2; // 気持ち速めにスライド
+            pos -= 1.0; // スピード
             if (Math.abs(pos) > container.scrollHeight) pos = window.innerHeight;
             container.style.top = pos + 'px';
         }
