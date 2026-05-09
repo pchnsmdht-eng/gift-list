@@ -11,35 +11,32 @@
             background: transparent; 
             user-select: none;
         }
-        /* 1. 枠は固定（画像より一回り大きく設定） */
         #viewport {
             width: 100vw;
             height: 100vh;
             overflow: hidden;
             position: relative;
-            background: transparent;
         }
-        /* 2. 画像だけが移動するコンテナ */
+        /* 移動するコンテナ：中身を2倍にしてループの隙間を埋める */
         #scroll-container {
             position: absolute;
             left: 0;
             top: 50%;
-            transform: translateY(-50%); /* 画面中央に配置 */
+            transform: translateY(-50%);
             display: flex; 
             flex-direction: row; 
-            gap: 20px; /* 横のゆとり */
-            padding: 40px; /* 枠の中で画像が動くためのマージン */
+            gap: 20px;
+            padding: 20px;
             cursor: grab;
             touch-action: pan-x;
+            white-space: nowrap;
         }
-        /* 縦6段のユニット */
         .column-unit {
             display: flex;
             flex-direction: column;
-            gap: 15px; /* 縦のゆとり */
+            gap: 15px;
             flex-shrink: 0;
         }
-        /* 各画像の表示窓（枠なし） */
         .gift-item {
             width: 140px; 
             height: 140px; 
@@ -47,7 +44,7 @@
             background: transparent;
             border: none;
             position: relative;
-            pointer-events: none; /* リスナーのタッチを親コンテナで拾う */
+            pointer-events: none;
         }
         iframe {
             width: 500px;
@@ -63,83 +60,82 @@
 <body>
 
 <div id="viewport">
-    <!-- リスナーはこのコンテナを掴んで中の画像だけを動かします -->
-    <div id="scroll-container">
-        <!-- 1~5列（合計30枚）を生成 -->
-        <script>
-            const container = document.getElementById('scroll-container');
-            const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-            let giftCount = 0;
+    <div id="scroll-container" shadow-root="open">
+        <!-- JavaScriptで画像を生成します -->
+    </div>
+</div>
 
+<script>
+    const container = document.getElementById('scroll-container');
+    const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+
+    // 縦6段×横5列を「2セット」作ることで、ループの継ぎ目を消す
+    function createGifts() {
+        for (let loop = 0; loop < 2; loop++) { // 2セット生成
+            let giftIndex = 0;
             for (let i = 0; i < 5; i++) {
                 let col = document.createElement('div');
                 col.className = 'column-unit';
                 for (let j = 0; j < 6; j++) {
                     let item = document.createElement('div');
                     item.className = 'gift-item';
-                    // 155px刻みでサイト内の画像を抽出
-                    let topOffset = giftCount * -155;
-                    item.innerHTML = `<iframe src="${url}" style="top: ${topOffset}px;"></iframe>`;
+                    item.innerHTML = `<iframe src="${url}" style="top: ${giftIndex * -155}px;"></iframe>`;
                     col.appendChild(item);
-                    giftCount++;
+                    giftIndex++;
                 }
                 container.appendChild(col);
             }
-        </script>
-    </div>
-</div>
+        }
+    }
+    createGifts();
 
-<script>
-    const scrollContainer = document.getElementById('scroll-container');
     let pos = 0;
     let isPaused = false;
     let resumeTimer, startX, initialPos;
 
-    // 自動横ループ
     function step() {
         if (!isPaused) {
-            pos -= 0.8; 
-            // すべて左に流れきったら右から再登場（無限ループ）
-            if (Math.abs(pos) > scrollContainer.scrollWidth) {
-                pos = window.innerWidth;
+            pos -= 1.0; 
+            // 半分（1セット分）進んだら、瞬時に位置を0に戻す（これで無限に見える）
+            const halfWidth = container.scrollWidth / 2;
+            if (Math.abs(pos) >= halfWidth) {
+                pos = 0;
             }
-            scrollContainer.style.left = pos + 'px';
+            container.style.transform = `translate3d(${pos}px, -50%, 0)`;
         }
         requestAnimationFrame(step);
     }
 
-    // リスナーが画像を掴んでスライドするUI
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
-        // 開始位置を記録
         startX = e.touches ? e.touches[0].pageX : e.pageX;
         initialPos = pos;
-        
         window.addEventListener(e.touches ? 'touchmove' : 'mousemove', onMove, {passive: false});
         window.addEventListener(e.touches ? 'touchend' : 'mouseup', onEnd);
     }
 
     function onMove(e) {
-        if (!isPaused) return;
         const currentX = e.touches ? e.touches[0].pageX : e.pageX;
-        const walk = currentX - startX;
-        pos = initialPos + walk;
-        scrollContainer.style.left = pos + 'px';
+        pos = initialPos + (currentX - startX);
+        
+        // 手動操作時もループの範囲を超えないよう調整
+        const halfWidth = container.scrollWidth / 2;
+        if (pos > 0) pos = -halfWidth;
+        if (Math.abs(pos) >= halfWidth) pos = 0;
+
+        container.style.transform = `translate3d(${pos}px, -50%, 0)`;
         if(e.cancelable) e.preventDefault();
     }
 
     function onEnd() {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
-        // 手を離してから3秒後に自動スライドをその位置から再開
         resumeTimer = setTimeout(() => { isPaused = false; }, 3000);
     }
 
-    // 掴む操作の登録
-    scrollContainer.addEventListener('mousedown', onStart);
-    scrollContainer.addEventListener('touchstart', onStart, {passive: false});
-
+    container.addEventListener('mousedown', onStart);
+    container.addEventListener('touchstart', onStart, {passive: false});
     requestAnimationFrame(step);
 </script>
 </body>
