@@ -13,58 +13,79 @@
             position: relative;
         }
 
-        /* 手動ドラッグ専用コンテナ：自動スライドは一切なし */
+        /* 手動ドラッグ専用コンテナ */
         #scroll-container {
             display: flex;
             position: absolute;
             top: 0;
             left: 0;
-            gap: 15px; /* 列ごとの隙間 */
-            padding: 10px;
+            gap: 10px;
+            padding: 5px;
             cursor: grab;
             touch-action: pan-x;
             will-change: transform;
         }
         #scroll-container:active { cursor: grabbing; }
 
-        /* 
-           各列を iframe そのものの幅（400px程度）で表示します。
-           変に削ったりずらしたりしないので、画像が消えることはありません。
-        */
+        /* 1列分の窓 */
         .column {
-            width: 400px; 
-            height: 100vh; 
+            width: 155px; /* アイテムの横幅に最適化 */
+            height: 950px; /* 縦に5〜6枚並ぶ高さ */
             overflow: hidden;
             position: relative;
             flex-shrink: 0;
         }
 
+        /* 
+           各列で読み込むiframe。
+           topの値を「アイテム5枚分の高さ（155px × 5 = 775px）」を基準に
+           1px単位で精密にずらします。
+        */
         iframe {
-            width: 100%; 
-            height: 10000px; /* 全アイテムが表示される十分な高さ */
+            width: 450px; 
+            height: 15000px;
             border: none;
-            pointer-events: none; /* ドラッグ操作を優先 */
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
         }
+
+        .set { display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- 
-           中身をそのまま5列並べます。
-           自動で動くことは一切なく、あなたが手で動かした通りにだけ移動します。
-        -->
-        <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-        <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-        <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-        <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-        <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
+        <div class="set" id="set-a">
+            <!-- 
+               1列目：1番目のアイテムから表示
+               2列目：6番目から（155px * 5枚分 = 775pxずらす）
+               3列目：11番目から（155px * 10枚分 = 1550pxずらす）
+               という規則で、50枚以上すべてを網羅します。
+            -->
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -5px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -780px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1555px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -2330px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3105px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3880px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -4655px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -5430px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -6205px;"></iframe></div>
+            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -6980px;"></iframe></div>
+        </div>
+        <div class="set" id="set-b"></div>
     </div>
 </div>
 
 <script>
     const container = document.getElementById('scroll-container');
+    const setA = document.getElementById('set-a');
+    const setB = document.getElementById('set-b');
+    setB.innerHTML = setA.innerHTML;
+
     let isDragging = false;
     let startX = 0;
     let currentPos = 0;
@@ -77,21 +98,19 @@
     const onMove = (e) => {
         if (!isDragging) return;
         currentPos = (e.pageX || e.touches[0].pageX) - startX;
+        const resetPoint = setA.offsetWidth + 10;
+        if (currentPos > 0) currentPos = -resetPoint;
+        if (Math.abs(currentPos) >= resetPoint) currentPos = 0;
         container.style.transform = `translateX(${currentPos}px)`;
     };
 
-    const onEnd = () => {
-        isDragging = false;
-    };
+    const onEnd = () => { isDragging = false; };
 
-    // マウス操作
     container.addEventListener('mousedown', onStart);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
-
-    // タッチ操作
     container.addEventListener('touchstart', onStart);
-    window.addEventListener('touchmove', onMove);
+    window.addEventListener('touchmove', onMove, { passive: false });
     window.addEventListener('touchend', onEnd);
 </script>
 </body>
