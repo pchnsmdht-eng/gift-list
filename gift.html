@@ -4,66 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* 1. すべての余白を強制排除 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            overflow: hidden; 
-            background: transparent !important; 
-            user-select: none;
-        }
+        body { overflow: hidden; background: transparent !important; user-select: none; }
+        
         #viewport {
             width: 100vw;
             height: 100vh;
             overflow: hidden;
             position: relative;
         }
-        /* 2. 画像コンテナ（隙間なし） */
+
+        /* 横スライドコンテナ */
         #scroll-container {
             position: absolute;
             left: 0;
             top: 0;
             display: flex;
             flex-direction: row;
-            gap: 0; /* 横の隙間なし */
+            gap: 0;
             cursor: grab;
             touch-action: pan-x;
             will-change: transform;
         }
+
         .column-unit {
             display: flex;
             flex-direction: column;
-            gap: 0; /* 縦の隙間なし */
+            gap: 0;
             flex-shrink: 0;
         }
-        /* 3. 画像切り出し窓（フレームなし） */
+
+        /* 画像窓（フレームなし） */
         .gift-item {
-            width: 148px; /* 画像の切り出し幅 */
-            height: 148px; /* 画像の切り出し高さ */
+            width: 148px; 
+            height: 148px; 
             overflow: hidden;
-            background: transparent;
-            border: none !important; /* 枠線を完全に消去 */
             position: relative;
+            /* 枠を完全に消去 */
+            border: none !important;
+            background: transparent;
+        }
+
+        /* 鏡の役割を果たす要素 */
+        .mirror-content {
+            position: absolute;
+            width: 500px; /* 元サイトの幅 */
+            height: 8000px;
+            transform-origin: top left;
+            transform: scale(1.0); /* 縮尺調整 */
             pointer-events: none;
         }
-        iframe {
-            width: 500px; /* 内部の解像度 */
-            height: 8000px;
-            border: none;
+
+        /* 【重要】元の重いサイトは1回だけ読み込む（非表示） */
+        #master-source {
             position: absolute;
-            left: 50%;
-            /* 縮尺調整：窓に画像が収まるようズーム */
-            transform: translateX(-50%) scale(1.1);
-            transform-origin: top;
+            width: 500px;
+            height: 8000px;
+            visibility: hidden; /* 表示はさせない */
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
+<!-- 元データを1回だけ読み込むマスター -->
+<iframe id="master-source" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+
 <div id="viewport">
     <div id="scroll-container">
         <!-- セットA（30枚） -->
         <div id="content-a" style="display: flex; gap: 0;"></div>
-        <!-- セットB（ループ用コピー） -->
+        <!-- セットB（ループ用） -->
         <div id="content-b" style="display: flex; gap: 0;"></div>
     </div>
 </div>
@@ -72,26 +83,35 @@
     const contentA = document.getElementById('content-a');
     const contentB = document.getElementById('content-b');
     const container = document.getElementById('scroll-container');
-    const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const master = document.getElementById('master-source');
 
-    // 縦6段×横5列の生成
+    // 画像ユニットの生成
     function buildUnits(target) {
-        let giftIdx = 0;
         for (let i = 0; i < 5; i++) {
             let col = document.createElement('div');
             col.className = 'column-unit';
             for (let j = 0; j < 6; j++) {
                 let item = document.createElement('div');
                 item.className = 'gift-item';
-                // 150px刻みで隙間（白線）が出ないように調整
-                item.innerHTML = `<iframe src="${url}" style="top: ${giftIdx * -150}px;"></iframe>`;
+                
+                // マスターiframeをクローン（複製）して配置
+                // 通信は発生せず、既に読み込まれたデータを表示するだけなので高速
+                let mirror = master.cloneNode(true);
+                mirror.id = ""; 
+                mirror.className = "mirror-content";
+                mirror.style.visibility = "visible";
+                mirror.style.top = `${(i * 6 + j) * -150}px`; // 位置を計算
+                mirror.style.left = "50%";
+                mirror.style.transform = "translateX(-50%) scale(1.1)";
+                
+                item.appendChild(mirror);
                 col.appendChild(item);
-                giftIdx++;
             }
             target.appendChild(col);
         }
     }
 
+    // 初期化実行
     buildUnits(contentA);
     buildUnits(contentB);
 
@@ -99,21 +119,16 @@
     let isPaused = false;
     let resumeTimer, startX, initialPos;
 
-    // 自動スクロール処理
     function move() {
         if (!isPaused) {
-            pos -= 1.0; 
+            pos -= 1.2; 
             const halfWidth = contentA.offsetWidth;
-            // 継ぎ目を感じさせずにワープ
-            if (Math.abs(pos) >= halfWidth) {
-                pos = 0;
-            }
+            if (Math.abs(pos) >= halfWidth) pos = 0;
             container.style.transform = `translate3d(${pos}px, 0, 0)`;
         }
         requestAnimationFrame(move);
     }
 
-    // 手動スライドUI（横方向）
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -127,11 +142,9 @@
         if (!isPaused) return;
         const currentX = e.touches ? e.touches[0].pageX : e.pageX;
         pos = initialPos + (currentX - startX);
-        
         const halfWidth = contentA.offsetWidth;
         if (pos > 0) pos = -halfWidth;
         if (Math.abs(pos) >= halfWidth) pos = 0;
-
         container.style.transform = `translate3d(${pos}px, 0, 0)`;
         if(e.cancelable) e.preventDefault();
     }
@@ -145,7 +158,8 @@
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
 
-    window.onload = () => { setTimeout(move, 1000); };
+    // 読み込み完了後に動き出す
+    master.onload = () => { move(); };
 </script>
 </body>
 </html>
