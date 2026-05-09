@@ -14,7 +14,7 @@
             position: relative;
         }
 
-        /* 横スライドコンテナ */
+        /* 横スライドさせる巨大な壁 */
         #scroll-container {
             position: absolute;
             left: 0;
@@ -24,58 +24,49 @@
             gap: 0;
             cursor: grab;
             touch-action: pan-x;
-            will-change: transform;
+            will-change: transform; /* 描画をGPUに任せる */
         }
 
+        /* 縦6枚を1つの「画像」として扱うユニット */
         .column-unit {
             display: flex;
             flex-direction: column;
             gap: 0;
             flex-shrink: 0;
+            width: 148px; /* 1枚の横幅 */
         }
 
-        /* 画像窓（フレームなし） */
         .gift-item {
             width: 148px; 
             height: 148px; 
             overflow: hidden;
             position: relative;
-            /* 枠を完全に消去 */
             border: none !important;
             background: transparent;
         }
 
-        /* 鏡の役割を果たす要素 */
-        .mirror-content {
-            position: absolute;
-            width: 500px; /* 元サイトの幅 */
-            height: 8000px;
-            transform-origin: top left;
-            transform: scale(1.0); /* 縮尺調整 */
-            pointer-events: none;
-        }
-
-        /* 【重要】元の重いサイトは1回だけ読み込む（非表示） */
-        #master-source {
+        /* 中身を1つのiframeで共通化 */
+        .content-frame {
             position: absolute;
             width: 500px;
             height: 8000px;
-            visibility: hidden; /* 表示はさせない */
+            border: none;
             pointer-events: none;
+            /* 拡大率と中央寄せを固定 */
+            left: 50%;
+            transform: translateX(-50%) scale(1.1);
+            transform-origin: top;
         }
     </style>
 </head>
 <body>
 
-<!-- 元データを1回だけ読み込むマスター -->
-<iframe id="master-source" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-
 <div id="viewport">
     <div id="scroll-container">
-        <!-- セットA（30枚） -->
-        <div id="content-a" style="display: flex; gap: 0;"></div>
+        <!-- セットA（5列×6段） -->
+        <div id="content-a" style="display: flex;"></div>
         <!-- セットB（ループ用） -->
-        <div id="content-b" style="display: flex; gap: 0;"></div>
+        <div id="content-b" style="display: flex;"></div>
     </div>
 </div>
 
@@ -83,10 +74,10 @@
     const contentA = document.getElementById('content-a');
     const contentB = document.getElementById('content-b');
     const container = document.getElementById('scroll-container');
-    const master = document.getElementById('master-source');
+    const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
-    // 画像ユニットの生成
-    function buildUnits(target) {
+    function build(target) {
+        let frag = document.createDocumentFragment();
         for (let i = 0; i < 5; i++) {
             let col = document.createElement('div');
             col.className = 'column-unit';
@@ -94,26 +85,25 @@
                 let item = document.createElement('div');
                 item.className = 'gift-item';
                 
-                // マスターiframeをクローン（複製）して配置
-                // 通信は発生せず、既に読み込まれたデータを表示するだけなので高速
-                let mirror = master.cloneNode(true);
-                mirror.id = ""; 
-                mirror.className = "mirror-content";
-                mirror.style.visibility = "visible";
-                mirror.style.top = `${(i * 6 + j) * -150}px`; // 位置を計算
-                mirror.style.left = "50%";
-                mirror.style.transform = "translateX(-50%) scale(1.1)";
+                let frame = document.createElement('iframe');
+                frame.src = url;
+                frame.className = 'content-frame';
+                // 表示位置の計算（-150px刻み）
+                frame.style.top = `${(i * 6 + j) * -150}px`;
+                // 【超重要】読み込み済みのリソースを再利用させる設定
+                frame.loading = "eager"; 
                 
-                item.appendChild(mirror);
+                item.appendChild(frame);
                 col.appendChild(item);
             }
-            target.appendChild(col);
+            frag.appendChild(col);
         }
+        target.appendChild(frag);
     }
 
-    // 初期化実行
-    buildUnits(contentA);
-    buildUnits(contentB);
+    // 構築
+    build(contentA);
+    build(contentB);
 
     let pos = 0;
     let isPaused = false;
@@ -121,14 +111,16 @@
 
     function move() {
         if (!isPaused) {
-            pos -= 1.2; 
+            pos -= 1.5; // 少しスピードアップ
             const halfWidth = contentA.offsetWidth;
             if (Math.abs(pos) >= halfWidth) pos = 0;
+            // leftではなくtranslate3dで動かすのが最速
             container.style.transform = `translate3d(${pos}px, 0, 0)`;
         }
         requestAnimationFrame(move);
     }
 
+    // 手動操作
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -139,7 +131,6 @@
     }
 
     function onMove(e) {
-        if (!isPaused) return;
         const currentX = e.touches ? e.touches[0].pageX : e.pageX;
         pos = initialPos + (currentX - startX);
         const halfWidth = contentA.offsetWidth;
@@ -158,8 +149,8 @@
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
 
-    // 読み込み完了後に動き出す
-    master.onload = () => { move(); };
+    // 実行開始
+    requestAnimationFrame(move);
 </script>
 </body>
 </html>
