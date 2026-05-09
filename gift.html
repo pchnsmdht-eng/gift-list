@@ -5,129 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { overflow: hidden; background: transparent !important; user-select: none; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: transparent !important; 
+        }
         
+        /* コンテナのサイズを中身に合わせて自動調整 */
         #viewport {
             width: 100vw;
             height: 100vh;
-            overflow: hidden;
-            position: relative;
+            overflow-y: auto; /* 縦に長く表示されるためスクロール可能に設定 */
         }
 
-        #scroll-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            display: flex;
-            flex-direction: row;
-            gap: 15px; /* 列ごとの隙間 */
-            padding: 10px;
-            cursor: grab;
-            touch-action: pan-x;
-            will-change: transform;
-        }
-
-        /* 1列分の「窓」 */
-        .column-unit {
-            width: 160px; 
-            height: 900px; 
-            overflow: hidden;
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        /* 中身のiframe */
-        .content-frame {
-            position: absolute;
-            width: 400px; 
-            height: 10000px;
+        /* 指定URLをそのまま表示する枠 */
+        .full-content {
+            width: 100%;
+            /* 50個以上のアイテムが表示されるよう、十分な高さを指定 */
+            height: 15000px; 
             border: none;
-            pointer-events: none;
-            left: 50%;
-            transform: translateX(-50%) scale(1.0);
-            transform-origin: top;
         }
     </style>
 </head>
 <body>
 
 <div id="viewport">
-    <div id="scroll-container">
-        <!-- セットA（5列） -->
-        <div id="content-a" style="display: flex; gap: 15px;"></div>
-        <!-- セットB（ループ用） -->
-        <div id="content-b" style="display: flex; gap: 15px;"></div>
-    </div>
+    <!-- 余計なスクリプトによる分割をせず、このまま表示させます -->
+    <iframe class="full-content" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
 </div>
 
-<script>
-    const contentA = document.getElementById('content-a');
-    const contentB = document.getElementById('content-b');
-    const container = document.getElementById('scroll-container');
-    const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-
-    function build(target) {
-        for (let i = 0; i < 5; i++) {
-            let col = document.createElement('div');
-            col.className = 'column-unit';
-            
-            let frame = document.createElement('iframe');
-            frame.src = url;
-            frame.className = 'content-frame';
-            
-            // 列ごとに開始位置をオフセット
-            frame.style.top = `${i * -915}px`; 
-            
-            col.appendChild(frame);
-            target.appendChild(col);
-        }
-    }
-
-    build(contentA);
-    build(build(contentB)); // ※contentBも同様に構築
-
-    let pos = 0;
-    let isPaused = false;
-    let resumeTimer, startX, initialPos;
-
-    function move() {
-        if (!isPaused) {
-            pos -= 1.0;
-            const halfWidth = contentA.offsetWidth + 15;
-            if (Math.abs(pos) >= halfWidth) pos = 0;
-            container.style.transform = `translate3d(${pos}px, 0, 0)`;
-        }
-        requestAnimationFrame(move);
-    }
-
-    function onStart(e) {
-        isPaused = true;
-        clearTimeout(resumeTimer);
-        startX = e.touches ? e.touches[0].pageX : e.pageX;
-        initialPos = pos;
-        window.addEventListener(e.touches ? 'touchmove' : 'mousemove', onMove, {passive: false});
-        window.addEventListener(e.touches ? 'touchend' : 'mouseup', onEnd);
-    }
-
-    function onMove(e) {
-        const currentX = e.touches ? e.touches[0].pageX : e.pageX;
-        pos = initialPos + (currentX - startX);
-        const halfWidth = contentA.offsetWidth + 15;
-        if (pos > 0) pos = -halfWidth;
-        if (Math.abs(pos) >= halfWidth) pos = 0;
-        container.style.transform = `translate3d(${pos}px, 0, 0)`;
-        if(e.cancelable) e.preventDefault();
-    }
-
-    function onEnd() {
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('touchmove', onMove);
-        resumeTimer = setTimeout(() => { isPaused = false; }, 3000);
-    }
-
-    container.addEventListener('mousedown', onStart);
-    container.addEventListener('touchstart', onStart, {passive: false});
-    requestAnimationFrame(move);
-</script>
 </body>
 </html>
