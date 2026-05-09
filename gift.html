@@ -2,84 +2,122 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { 
             margin: 0; 
             padding: 0; 
             overflow: hidden; 
             background: transparent; 
+            user-select: none; 
         }
-        /* 全体のサイズをW155 H600に固定して整列 */
+        /* 指定サイズ W155 H600 の表示エリア */
+        #viewport {
+            width: 155px;
+            height: 600px;
+            overflow: hidden;
+            position: relative;
+            background: transparent;
+        }
+        /* スライドする中身のコンテナ */
         #scroll-container {
             position: absolute;
             top: 0;
-            width: 155px; /* 指定の横幅 */
+            width: 155px;
             display: flex;
-            flex-direction: column; /* 縦一列に並べる */
+            flex-direction: column;
             align-items: center;
-            gap: 8px;
-            padding: 5px;
-            box-sizing: border-box;
+            gap: 12px;
+            padding: 10px 0;
+            cursor: grab;
+            touch-action: pan-y;
         }
-        /* 画像1個分の枠 */
-        .gift-frame {
-            width: 140px; /* 155pxの中で余裕を持たせた幅 */
-            height: 140px; /* 縦横比を整える */
+        /* 画像1枚分を切り出す枠 */
+        .gift-item {
+            width: 135px;
+            height: 135px;
             overflow: hidden;
             border: 2px solid #ff0055;
             background: rgba(0,0,0,0.8);
-            border-radius: 10px;
+            border-radius: 12px;
             position: relative;
-            flex-shrink: 0; /* サイズを縮ませない */
+            flex-shrink: 0;
+            pointer-events: none; /* 下のiframeを触らせず、親のスライドを優先 */
         }
-        /* 外部サイトの中身を枠内に収める */
+        /* 埋め込む外部サイト */
         iframe {
-            width: 400px; /* 元サイトが広いため、少し大きめに読み込んで中央を出す */
+            width: 450px;
             height: 5000px;
             border: none;
             position: absolute;
-            left: -130px; /* 画像が中央に来るように調整 */
-            pointer-events: none;
+            left: -155px; /* 画像が中央に来るよう調整 */
         }
     </style>
 </head>
 <body>
+
+<div id="viewport">
     <div id="scroll-container">
-        <!-- 画像を10個分セット（必要に応じてiframeのtop位置を調整） -->
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
-        <div class="gift-frame"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
+        <!-- topの値をずらして、外部サイト内の各画像を順番に表示 -->
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
     </div>
+</div>
 
-    <script>
-        let pos = 0;
-        let isPaused = false;
-        const container = document.getElementById('scroll-container');
+<script>
+    const container = document.getElementById('scroll-container');
+    let pos = 0;
+    let isPaused = false;
+    let resumeTimer;
+    let startY, initialPos;
 
-        function autoScroll() {
-            if (!isPaused) {
-                pos -= 1; // スライド速度
-                container.style.top = pos + 'px';
-                // 全て流れきったらループ（600px以上流れたら戻る）
-                if (Math.abs(pos) > container.scrollHeight) {
-                    pos = 600; 
-                }
+    // 自動スライド処理
+    function step() {
+        if (!isPaused) {
+            pos -= 1; // 速度
+            // 最後尾が表示されたら無限ループ
+            if (Math.abs(pos) > container.scrollHeight) {
+                pos = 600; // 上端に戻す
             }
-            requestAnimationFrame(autoScroll);
+            container.style.top = pos + 'px';
         }
+        requestAnimationFrame(step);
+    }
 
-        // 触れたら止まる、離して3秒で再開
-        window.addEventListener('mousedown', () => { isPaused = true; });
-        window.addEventListener('mouseup', () => { setTimeout(() => { isPaused = false; }, 3000); });
-        window.addEventListener('touchstart', () => { isPaused = true; });
-        window.addEventListener('touchend', () => { setTimeout(() => { isPaused = false; }, 3000); });
+    // リスナーによるスライド操作
+    function onStart(e) {
+        isPaused = true;
+        clearTimeout(resumeTimer);
+        startY = e.touches ? e.touches[0].pageY : e.pageY;
+        initialPos = pos;
+        window.addEventListener(e.touches ? 'touchmove' : 'mousemove', onMove, {passive: false});
+        window.addEventListener(e.touches ? 'touchend' : 'mouseup', onEnd);
+    }
 
-        autoScroll();
-    </script>
+    function onMove(e) {
+        const currentY = e.touches ? e.touches[0].pageY : e.pageY;
+        pos = initialPos + (currentY - startY);
+        container.style.top = pos + 'px';
+        if(e.cancelable) e.preventDefault();
+    }
+
+    function onEnd() {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('touchmove', onMove);
+        // 3秒後に自動スライド再開
+        resumeTimer = setTimeout(() => { isPaused = false; }, 3000);
+    }
+
+    container.addEventListener('mousedown', onStart);
+    container.addEventListener('touchstart', onStart, {passive: false});
+
+    requestAnimationFrame(step);
+</script>
 </body>
 </html>
