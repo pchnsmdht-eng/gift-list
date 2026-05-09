@@ -13,17 +13,22 @@
             position: relative;
         }
 
-        /* スライドするコンテナ */
+        /* ドラッグで動かすコンテナ */
         #scroll-container {
             display: flex;
             position: absolute;
             top: 0;
             left: 0;
-            gap: 10px; /* 列ごとの間隔 */
+            gap: 10px;
+            padding: 10px;
+            cursor: grab; /* 掴めるアイコン */
+            touch-action: pan-x; /* スマホでの横スワイプを有効化 */
             will-change: transform;
         }
+        #scroll-container:active {
+            cursor: grabbing; /* 掴んでいる時のアイコン */
+        }
 
-        /* 1列（6枚分）の窓 */
         .column {
             width: 150px; 
             height: 940px; 
@@ -40,10 +45,9 @@
             left: 50%;
             transform: translateX(-50%) scale(1.02); 
             transform-origin: top;
-            pointer-events: none;
+            pointer-events: none; /* iframeがドラッグを邪魔しないように設定 */
         }
 
-        /* AセットとBセットの区切りをなくすためのラップ */
         .set {
             display: flex;
             gap: 10px;
@@ -63,9 +67,7 @@
             <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3765px;"></iframe></div>
         </div>
         <!-- セットB（ループの継ぎ目を埋める用） -->
-        <div class="set" id="set-b">
-            <!-- セットAと同じ内容を配置 -->
-        </div>
+        <div class="set" id="set-b"></div>
     </div>
 </div>
 
@@ -74,31 +76,56 @@
     const setA = document.getElementById('set-a');
     const setB = document.getElementById('set-b');
 
-    // セットAをセットBにコピーして無限ループを物理的に作る
+    // 無限にスクロールできるようセットAを複製
     setB.innerHTML = setA.innerHTML;
 
-    let pos = 0;
-    const speed = 0.8; // スピード調整
+    let isDragging = false;
+    let startX = 0;
+    let currentPos = 0;
 
-    function move() {
-        pos -= speed;
-        
-        // セットAの横幅分（列幅+間隔の合計）移動したら位置をリセット
-        // これにより、見た目の変化なしに無限にループし続けます
-        const resetPoint = setA.offsetWidth + 10; 
-        
-        if (Math.abs(pos) >= resetPoint) {
-            pos = 0;
-        }
-        
-        container.style.transform = `translateX(${pos}px)`;
-        requestAnimationFrame(move);
-    }
+    // セットAの横幅（リセット基準値）
+    const getResetPoint = () => setA.offsetWidth + 10;
 
-    // ページ読み込み完了後にスライドを開始
-    window.onload = () => {
-        setTimeout(move, 2000);
+    // --- 操作イベント ---
+
+    const onStart = (e) => {
+        isDragging = true;
+        startX = (e.pageX || e.touches[0].pageX) - currentPos;
     };
+
+    const onMove = (e) => {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+
+        currentPos = (e.pageX || e.touches[0].pageX) - startX;
+
+        // 無限ループの計算
+        const resetPoint = getResetPoint();
+        if (currentPos > 0) {
+            currentPos = -resetPoint;
+            startX = (e.pageX || e.touches[0].pageX) - currentPos;
+        } else if (Math.abs(currentPos) >= resetPoint) {
+            currentPos = 0;
+            startX = (e.pageX || e.touches[0].pageX) - currentPos;
+        }
+
+        container.style.transform = `translateX(${currentPos}px)`;
+    };
+
+    const onEnd = () => {
+        isDragging = false;
+    };
+
+    // マウス操作
+    container.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+
+    // タッチ操作（スマホ・タブレット）
+    container.addEventListener('touchstart', onStart);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+
 </script>
 </body>
 </html>
