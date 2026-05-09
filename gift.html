@@ -20,7 +20,7 @@
             top: 0;
             display: flex;
             flex-direction: row;
-            gap: 15px; /* 列ごとの隙間（お好みで） */
+            gap: 15px; /* 列ごとの隙間 */
             padding: 10px;
             cursor: grab;
             touch-action: pan-x;
@@ -29,17 +29,17 @@
 
         /* 1列分の「窓」 */
         .column-unit {
-            width: 160px; /* 横幅を少し広めに確保 */
-            height: 900px; /* 縦6枚分が収まる十分な高さ */
+            width: 160px; 
+            height: 900px; 
             overflow: hidden;
             position: relative;
             flex-shrink: 0;
         }
 
-        /* 中身のiframe：1列につき1つのiframeを読み込み、位置だけをずらす */
+        /* 中身のiframe */
         .content-frame {
             position: absolute;
-            width: 400px; /* 元サイトの幅 */
+            width: 400px; 
             height: 10000px;
             border: none;
             pointer-events: none;
@@ -67,8 +67,6 @@
     const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
     function build(target) {
-        // 1列ごとに iframe を配置し、その iframe の表示開始位置をずらす
-        // これにより、画像同士が被ることは物理的にあり得なくなります。
         for (let i = 0; i < 5; i++) {
             let col = document.createElement('div');
             col.className = 'column-unit';
@@ -77,8 +75,7 @@
             frame.src = url;
             frame.className = 'content-frame';
             
-            // 1列目 = 0px〜, 2列目 = 900px〜（6枚分）という風に「列ごと」にガッツリずらす
-            // 910px などの数値は、元サイトで6枚並んだ時の「だいたいの高さ」です。
+            // 列ごとに開始位置をオフセット
             frame.style.top = `${i * -915}px`; 
             
             col.appendChild(frame);
@@ -87,7 +84,7 @@
     }
 
     build(contentA);
-    build(contentB);
+    build(build(contentB)); // ※contentBも同様に構築
 
     let pos = 0;
     let isPaused = false;
