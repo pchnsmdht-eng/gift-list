@@ -14,45 +14,40 @@
             position: relative;
         }
 
-        /* 横スライドさせる巨大な壁 */
         #scroll-container {
             position: absolute;
             left: 0;
-            top: 0;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
             flex-direction: row;
             gap: 0;
             cursor: grab;
             touch-action: pan-x;
-            will-change: transform; /* 描画をGPUに任せる */
+            will-change: transform;
         }
 
-        /* 縦6枚を1つの「画像」として扱うユニット */
         .column-unit {
             display: flex;
             flex-direction: column;
             gap: 0;
             flex-shrink: 0;
-            width: 148px; /* 1枚の横幅 */
         }
 
         .gift-item {
-            width: 148px; 
-            height: 148px; 
+            width: 150px; 
+            height: 150px; 
             overflow: hidden;
             position: relative;
             border: none !important;
-            background: transparent;
         }
 
-        /* 中身を1つのiframeで共通化 */
         .content-frame {
             position: absolute;
             width: 500px;
-            height: 8000px;
+            height: 10000px; /* 十分な長さを確保 */
             border: none;
             pointer-events: none;
-            /* 拡大率と中央寄せを固定 */
             left: 50%;
             transform: translateX(-50%) scale(1.1);
             transform-origin: top;
@@ -63,9 +58,7 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- セットA（5列×6段） -->
         <div id="content-a" style="display: flex;"></div>
-        <!-- セットB（ループ用） -->
         <div id="content-b" style="display: flex;"></div>
     </div>
 </div>
@@ -76,32 +69,35 @@
     const container = document.getElementById('scroll-container');
     const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
+    // 縦6段 × 横5列 = 合計30枚を、重複なく切り出す
     function build(target) {
         let frag = document.createDocumentFragment();
-        for (let i = 0; i < 5; i++) {
+        let totalImageCount = 0; // 通し番号
+
+        for (let i = 0; i < 5; i++) { // 5列
             let col = document.createElement('div');
             col.className = 'column-unit';
-            for (let j = 0; j < 6; j++) {
+            for (let j = 0; j < 6; j++) { // 6段
                 let item = document.createElement('div');
                 item.className = 'gift-item';
                 
                 let frame = document.createElement('iframe');
                 frame.src = url;
                 frame.className = 'content-frame';
-                // 表示位置の計算（-150px刻み）
-                frame.style.top = `${(i * 6 + j) * -150}px`;
-                // 【超重要】読み込み済みのリソースを再利用させる設定
-                frame.loading = "eager"; 
+                
+                // 【重要】totalImageCountを使って、上から順番に違う画像を切り出す
+                // 150pxは画像1つ分の高さの目安です
+                frame.style.top = `${totalImageCount * -150}px`;
                 
                 item.appendChild(frame);
                 col.appendChild(item);
+                totalImageCount++; // 次の画像へ
             }
             frag.appendChild(col);
         }
         target.appendChild(frag);
     }
 
-    // 構築
     build(contentA);
     build(contentB);
 
@@ -111,16 +107,14 @@
 
     function move() {
         if (!isPaused) {
-            pos -= 1.5; // 少しスピードアップ
+            pos -= 1.2;
             const halfWidth = contentA.offsetWidth;
             if (Math.abs(pos) >= halfWidth) pos = 0;
-            // leftではなくtranslate3dで動かすのが最速
-            container.style.transform = `translate3d(${pos}px, 0, 0)`;
+            container.style.transform = `translate3d(${pos}px, -50%, 0)`;
         }
         requestAnimationFrame(move);
     }
 
-    // 手動操作
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -136,7 +130,7 @@
         const halfWidth = contentA.offsetWidth;
         if (pos > 0) pos = -halfWidth;
         if (Math.abs(pos) >= halfWidth) pos = 0;
-        container.style.transform = `translate3d(${pos}px, 0, 0)`;
+        container.style.transform = `translate3d(${pos}px, -50%, 0)`;
         if(e.cancelable) e.preventDefault();
     }
 
@@ -148,8 +142,6 @@
 
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
-
-    // 実行開始
     requestAnimationFrame(move);
 </script>
 </body>
