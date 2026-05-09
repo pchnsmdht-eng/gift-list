@@ -11,48 +11,50 @@
             background: transparent; 
             user-select: none; 
         }
-        /* TikTok Studioの枠全体を使い切る */
+        /* TikTok Studioの枠全体を使い切る設定 */
         #viewport {
             width: 100vw;
             height: 100vh;
             overflow: hidden;
             position: relative;
         }
-        /* 画像を2列に並べるコンテナ。全体の幅に合わせて自動リサイズ */
+        /* 縦1列に並べるコンテナ */
         #scroll-container {
             position: absolute;
             top: 0;
             width: 100%;
-            display: grid;
-            /* 2列に固定。リサイズに合わせて各枠の幅も自動で変わる */
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 10px;
+            display: flex;
+            flex-direction: column; /* 縦並び */
+            align-items: center;
+            gap: 15px; /* 画像同士の隙間 */
             padding: 10px;
             box-sizing: border-box;
             cursor: grab;
             touch-action: pan-y;
         }
-        /* 各画像の枠。枠の幅に合わせて正方形を維持 */
+        /* 各画像の枠：リサイズ（横幅）に合わせて大きさが変わる */
         .gift-item {
-            aspect-ratio: 1 / 1; 
-            width: 100%;
+            aspect-ratio: 1 / 1; /* 正方形を維持 */
+            width: 90%; /* 枠の横幅いっぱい近くまで広げる */
+            max-width: 150px; /* あまりに大きくなりすぎないよう制限（適宜調整） */
             overflow: hidden;
             border: 2px solid #ff0055;
             background: rgba(0,0,0,0.8);
-            border-radius: 12px;
+            border-radius: 15px;
             position: relative;
+            flex-shrink: 0;
             pointer-events: none;
         }
-        /* 外部サイトの画像部分を拡大して各枠に収める */
+        /* 外部サイトの読み込み調整 */
         iframe {
-            width: 500%; /* 中身のサイトを大きく読み込んで画像を抽出 */
+            width: 500px; /* サイト全体を広めに読み込む */
             height: 5000px;
             border: none;
             position: absolute;
-            left: -195%; /* 1列目と2列目で微調整が必要な場合はここ */
-            top: 0;
-            transform: scale(0.6); /* 枠内に収まるよう縮小 */
-            transform-origin: top left;
+            /* 画像が中央に来るように位置を固定 */
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            transform-origin: top;
         }
     </style>
 </head>
@@ -60,18 +62,18 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- topの値を画像一個分（この場合は約160pxずつ）ずらして配置 -->
+        <!-- 
+            topの値をずらして、外部サイト内の各画像を順番に表示。
+            縦1列なので、すべて同じ横位置(中央)を狙います。
+        -->
         <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px; left: -340%;"></iframe></div>
-        
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -160px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -160px; left: -340%;"></iframe></div>
-        
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -320px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -320px; left: -340%;"></iframe></div>
-        
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -480px;"></iframe></div>
-        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -480px; left: -340%;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -150px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -300px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -450px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -600px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -750px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -900px;"></iframe></div>
+        <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1050px;"></iframe></div>
     </div>
 </div>
 
@@ -79,20 +81,22 @@
     const container = document.getElementById('scroll-container');
     let pos = 0;
     let isPaused = false;
-    let resumeTimer;
-    let startY, initialPos;
+    let resumeTimer, startY, initialPos;
 
+    // 自動スライド
     function step() {
         if (!isPaused) {
             pos -= 1;
+            // リストが流れきったらループ
             if (Math.abs(pos) > container.scrollHeight) {
-                pos = window.innerHeight;
+                pos = window.innerHeight; 
             }
             container.style.top = pos + 'px';
         }
         requestAnimationFrame(step);
     }
 
+    // リスナー操作（スライド）
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -112,6 +116,7 @@
     function onEnd() {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
+        // 離して3秒後に自動再開
         resumeTimer = setTimeout(() => { isPaused = false; }, 3000);
     }
 
