@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        /* 1. 全ての余白をゼロにする */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            margin: 0; padding: 0; 
             overflow: hidden; 
             background: transparent; 
             user-select: none;
@@ -16,7 +17,7 @@
             overflow: hidden;
             position: relative;
         }
-        /* スライドするメインコンテナ */
+        /* 2. 画像コンテナ：隙間（gap）を 0 に設定 */
         #scroll-container {
             position: absolute;
             left: 0;
@@ -24,35 +25,35 @@
             transform: translateY(-50%);
             display: flex;
             flex-direction: row;
-            gap: 20px;
-            padding: 20px;
+            gap: 0; /* 完全に密着させる */
             cursor: grab;
             touch-action: pan-x;
-            /* 2セット分並べるため十分な幅を確保 */
             will-change: transform;
         }
         .column-unit {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 0; /* 縦方向も隙間をゼロに */
             flex-shrink: 0;
         }
+        /* 3. 画像窓：枠線を完全に消去 */
         .gift-item {
-            width: 140px; 
-            height: 140px; 
+            width: 145px; 
+            height: 145px; 
             overflow: hidden;
             background: transparent;
-            border: none;
+            border: none; 
             position: relative;
             pointer-events: none;
         }
         iframe {
             width: 450px;
-            height: 5000px;
+            height: 8000px;
             border: none;
             position: absolute;
             left: 50%;
-            transform: translateX(-50%) scale(1.0);
+            /* 1.1倍にズームして画像を窓いっぱいに広げる */
+            transform: translateX(-50%) scale(1.1);
             transform-origin: top;
         }
     </style>
@@ -61,26 +62,20 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- 
-          同じ内容（5列セット）を2つ物理的に並べることで、
-          ループの継ぎ目での「消失」を物理的に防ぎます。
-        -->
-        <div id="content-a" style="display: flex; gap: 20px;">
-            <!-- ここに5列分（30枚）が配置されます（JSで1回だけ生成） -->
-        </div>
-        <div id="content-b" style="display: flex; gap: 20px;">
-            <!-- content-aのコピーがここに入ります -->
-        </div>
+        <!-- セットA（5列×6段） -->
+        <div id="content-a" style="display: flex; gap: 0;"></div>
+        <!-- セットB（継ぎ目なしループ用） -->
+        <div id="content-b" style="display: flex; gap: 0;"></div>
     </div>
 </div>
 
 <script>
-    const container = document.getElementById('scroll-container');
     const contentA = document.getElementById('content-a');
     const contentB = document.getElementById('content-b');
+    const container = document.getElementById('scroll-container');
     const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
-    // 縦6段×横5列を生成
+    // 縦6段×横5列を生成。数値は画像の切り出し位置に最適化
     function buildUnits(target) {
         let giftIdx = 0;
         for (let i = 0; i < 5; i++) {
@@ -89,7 +84,8 @@
             for (let j = 0; j < 6; j++) {
                 let item = document.createElement('div');
                 item.className = 'gift-item';
-                item.innerHTML = `<iframe src="${url}" style="top: ${giftIdx * -155}px;"></iframe>`;
+                // 150px刻みで隙間なくキャプチャ
+                item.innerHTML = `<iframe src="${url}" style="top: ${giftIdx * -150}px;"></iframe>`;
                 col.appendChild(item);
                 giftIdx++;
             }
@@ -104,11 +100,11 @@
     let isPaused = false;
     let resumeTimer, startX, initialPos;
 
+    // 自動横移動（白線が出ないようピクセル単位で管理）
     function move() {
         if (!isPaused) {
-            pos -= 0.8;
-            // Aセット分（半分）進んだら、見た目を変えずに0へワープ（これで画像が消えない）
-            const halfWidth = contentA.offsetWidth + 20; // 20はgap分
+            pos -= 1.0; 
+            const halfWidth = contentA.offsetWidth;
             if (Math.abs(pos) >= halfWidth) {
                 pos = 0;
             }
@@ -117,7 +113,7 @@
         requestAnimationFrame(move);
     }
 
-    // 手動UIスライド
+    // 手動スライドUI
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -132,8 +128,7 @@
         const currentX = e.touches ? e.touches[0].pageX : e.pageX;
         pos = initialPos + (currentX - startX);
         
-        // 手動スライド中もループ範囲を維持
-        const halfWidth = contentA.offsetWidth + 20;
+        const halfWidth = contentA.offsetWidth;
         if (pos > 0) pos = -halfWidth;
         if (Math.abs(pos) >= halfWidth) pos = 0;
 
@@ -150,8 +145,8 @@
     container.addEventListener('mousedown', onStart);
     container.addEventListener('touchstart', onStart, {passive: false});
 
-    // 起動
-    setTimeout(move, 1000); // 読み込み待ちで1秒遅延
+    // 読み込み完了後に開始
+    window.onload = () => { setTimeout(move, 1500); };
 </script>
 </body>
 </html>
