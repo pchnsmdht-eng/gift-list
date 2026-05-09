@@ -11,22 +11,24 @@
             background: transparent; 
             user-select: none;
         }
+        /* TikTok Studioの枠に合わせて表示 */
         #viewport {
             width: 100vw;
             height: 100vh;
             overflow: hidden;
             position: relative;
         }
-        /* 横方向に並べるコンテナ */
+        /* 横方向に並べるためのメインコンテナ */
         #scroll-container {
             position: absolute;
             left: 0;
             top: 0;
-            height: 100%;
-            display: flex;
+            /* 縦の表示範囲を約600px付近に調整 */
+            height: 600px;
+            display: flex; 
             flex-direction: row; 
-            gap: 10px; /* 横の隙間 */
-            padding: 5px;
+            gap: 15px; /* 横の隙間 */
+            padding: 10px;
             cursor: grab;
             touch-action: pan-x;
         }
@@ -34,27 +36,30 @@
         .column-unit {
             display: flex;
             flex-direction: column;
-            gap: 5px; /* 縦の隙間 */
+            gap: 8px; /* 縦の隙間 */
             flex-shrink: 0;
         }
-        /* 画像1個ずつの窓（枠なし） */
+        /* 画像1枚分の窓（枠なし） */
         .gift-item {
-            width: 120px; /* 6段並べるため少しサイズを調整 */
-            height: 120px; 
+            width: 140px; 
+            height: 140px; 
             overflow: hidden;
             background: transparent;
             border: none;
             position: relative;
             pointer-events: none;
         }
+        /* 画像の縮尺と解像度の調整 (200幅ベースで読み込み) */
         iframe {
-            width: 450px;
-            height: 5000px;
+            width: 500px; /* 内部解像度を高めに確保 */
+            height: 6000px;
             border: none;
             position: absolute;
             left: 50%;
-            transform: translateX(-50%) scale(0.9);
+            /* scaleを調整して、窓の中に画像を大きく表示 */
+            transform: translateX(-50%) scale(1.1);
             transform-origin: top;
+            filter: none;
         }
     </style>
 </head>
@@ -62,25 +67,24 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- 1列目（縦に1〜6枚目） -->
+        <!-- 第1カラム（1〜6枚目） -->
         <div class="column-unit">
             <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: 0px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -135px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -270px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -405px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -540px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -675px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -155px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -310px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -465px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -620px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -775px;"></iframe></div>
         </div>
-        <!-- 2列目（縦に7〜12枚目） -->
+        <!-- 第2カラム（7〜12枚目） -->
         <div class="column-unit">
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -810px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -945px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1080px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1215px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1350px;"></iframe></div>
-            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1485px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -930px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1085px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1240px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1395px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1550px;"></iframe></div>
+            <div class="gift-item"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1705px;"></iframe></div>
         </div>
-        <!-- 必要に応じて「3列目」以降も同様に追加可能です -->
     </div>
 </div>
 
@@ -90,9 +94,11 @@
     let isPaused = false;
     let resumeTimer, startX, initialPos;
 
+    // 自動横スライド
     function step() {
         if (!isPaused) {
-            pos -= 0.8; // 横移動の速度
+            pos -= 1.0; 
+            // コンテナの末端まで行ったらループ
             if (Math.abs(pos) > container.scrollWidth) {
                 pos = window.innerWidth;
             }
@@ -101,6 +107,7 @@
         requestAnimationFrame(step);
     }
 
+    // 手動スライドUI
     function onStart(e) {
         isPaused = true;
         clearTimeout(resumeTimer);
@@ -121,6 +128,7 @@
     function onEnd() {
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
+        // 操作終了3秒後に再開
         resumeTimer = setTimeout(() => { isPaused = false; }, 3000);
     }
 
