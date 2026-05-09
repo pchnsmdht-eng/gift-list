@@ -13,95 +13,63 @@
             position: relative;
         }
 
-        /* 手動ドラッグ専用コンテナ */
+        /* 手動ドラッグ専用コンテナ：自動スライドの命令は一切ありません */
         #scroll-container {
-            display: flex;
             position: absolute;
             top: 0;
             left: 0;
-            gap: 10px;
-            padding: 5px;
             cursor: grab;
             touch-action: pan-x;
             will-change: transform;
         }
         #scroll-container:active { cursor: grabbing; }
 
-        /* 1列分の窓 */
-        .column {
-            width: 155px; /* アイテムの横幅に最適化 */
-            height: 950px; /* 縦に5〜6枚並ぶ高さ */
-            overflow: hidden;
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        /* 
-           各列で読み込むiframe。
-           topの値を「アイテム5枚分の高さ（155px × 5 = 775px）」を基準に
-           1px単位で精密にずらします。
-        */
+        /* 元サイトをそのままのサイズで読み込み */
         iframe {
-            width: 450px; 
-            height: 15000px;
+            width: 100vw;
+            height: 15000px; /* 全アイテムを出し切るための高さ */
             border: none;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            pointer-events: none;
+            pointer-events: none; /* ドラッグ操作を優先 */
         }
-
-        .set { display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
 <div id="viewport">
     <div id="scroll-container">
-        <div class="set" id="set-a">
-            <!-- 
-               1列目：1番目のアイテムから表示
-               2列目：6番目から（155px * 5枚分 = 775pxずらす）
-               3列目：11番目から（155px * 10枚分 = 1550pxずらす）
-               という規則で、50枚以上すべてを網羅します。
-            -->
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -5px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -780px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -1555px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -2330px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3105px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -3880px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -4655px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -5430px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -6205px;"></iframe></div>
-            <div class="column"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa" style="top: -6980px;"></iframe></div>
-        </div>
-        <div class="set" id="set-b"></div>
+        <!-- 余計な分割はせず、iframeを1枚だけそのまま読み込みます -->
+        <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
     </div>
 </div>
 
 <script>
     const container = document.getElementById('scroll-container');
-    const setA = document.getElementById('set-a');
-    const setB = document.getElementById('set-b');
-    setB.innerHTML = setA.innerHTML;
-
     let isDragging = false;
     let startX = 0;
-    let currentPos = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
 
     const onStart = (e) => {
         isDragging = true;
-        startX = (e.pageX || e.touches[0].pageX) - currentPos;
+        const pageX = e.pageX || e.touches[0].pageX;
+        const pageY = e.pageY || e.touches[0].pageY;
+        startX = pageX - currentX;
+        startY = pageY - currentY;
     };
 
     const onMove = (e) => {
         if (!isDragging) return;
-        currentPos = (e.pageX || e.touches[0].pageX) - startX;
-        const resetPoint = setA.offsetWidth + 10;
-        if (currentPos > 0) currentPos = -resetPoint;
-        if (Math.abs(currentPos) >= resetPoint) currentPos = 0;
-        container.style.transform = `translateX(${currentPos}px)`;
+        if (e.cancelable) e.preventDefault();
+
+        const pageX = e.pageX || e.touches[0].pageX;
+        const pageY = e.pageY || e.touches[0].pageY;
+        
+        currentX = pageX - startX;
+        currentY = pageY - startY;
+
+        // 手で動かした通りにだけ移動
+        container.style.transform = `translate(${currentX}px, ${currentY}px)`;
     };
 
     const onEnd = () => { isDragging = false; };
