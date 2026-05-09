@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        /* 余計なマージンをすべて殺す */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: transparent; overflow: hidden; user-select: none; }
         
         #viewport {
             width: 100vw;
             height: 100vh;
-            overflow: hidden;
             position: relative;
         }
 
-        /* 手動ドラッグ専用コンテナ：自動スライドの命令は一切ありません */
+        /* 手で動かすための板 */
         #scroll-container {
             position: absolute;
             top: 0;
             left: 0;
             cursor: grab;
-            touch-action: pan-x;
+            touch-action: none; /* ブラウザの勝手な動きを止める */
             will-change: transform;
         }
         #scroll-container:active { cursor: grabbing; }
 
-        /* 元サイトをそのままのサイズで読み込み */
+        /* 元サイトを1枚だけ、加工せずそのまま読み込む */
         iframe {
-            width: 100vw;
-            height: 15000px; /* 全アイテムを出し切るための高さ */
+            width: 400px; /* 元サイトの標準幅 */
+            height: 12000px; /* 全アイテムが入る高さ */
             border: none;
             pointer-events: none; /* ドラッグ操作を優先 */
         }
@@ -37,7 +37,6 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <!-- 余計な分割はせず、iframeを1枚だけそのまま読み込みます -->
         <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
     </div>
 </div>
@@ -45,29 +44,23 @@
 <script>
     const container = document.getElementById('scroll-container');
     let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let currentY = 0;
+    let startX = 0, startY = 0;
+    let currentX = 0, currentY = 0;
 
     const onStart = (e) => {
         isDragging = true;
-        const pageX = e.pageX || e.touches[0].pageX;
-        const pageY = e.pageY || e.touches[0].pageY;
-        startX = pageX - currentX;
-        startY = pageY - currentY;
+        const x = e.pageX || e.touches[0].pageX;
+        const y = e.pageY || e.touches[0].pageY;
+        startX = x - currentX;
+        startY = y - currentY;
     };
 
     const onMove = (e) => {
         if (!isDragging) return;
-        if (e.cancelable) e.preventDefault();
-
-        const pageX = e.pageX || e.touches[0].pageX;
-        const pageY = e.pageY || e.touches[0].pageY;
-        
-        currentX = pageX - startX;
-        currentY = pageY - startY;
-
+        const x = e.pageX || e.touches[0].pageX;
+        const y = e.pageY || e.touches[0].pageY;
+        currentX = x - startX;
+        currentY = y - startY;
         // 手で動かした通りにだけ移動
         container.style.transform = `translate(${currentX}px, ${currentY}px)`;
     };
@@ -78,7 +71,7 @@
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onEnd);
     container.addEventListener('touchstart', onStart);
-    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchmove', onMove);
     window.addEventListener('touchend', onEnd);
 </script>
 </body>
