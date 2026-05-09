@@ -9,28 +9,28 @@
             margin: 0; 
             padding: 0; 
             background: transparent !important; 
+            overflow-x: hidden;
         }
         
-        /* コンテナのサイズを中身に合わせて自動調整 */
+        /* ページ全体を収めるコンテナ */
         #viewport {
             width: 100vw;
             height: 100vh;
-            overflow-y: auto; /* 縦に長く表示されるためスクロール可能に設定 */
         }
 
-        /* 指定URLをそのまま表示する枠 */
+        /* 指定URLを一切加工せずにそのまま表示 */
         .full-content {
             width: 100%;
-            /* 50個以上のアイテムが表示されるよう、十分な高さを指定 */
-            height: 15000px; 
+            /* 50個以上のアイテムがすべて入り切る高さを確保 */
+            height: 10000px; 
             border: none;
+            overflow: hidden;
         }
     </style>
 </head>
 <body>
 
 <div id="viewport">
-    <!-- 余計なスクリプトによる分割をせず、このまま表示させます -->
     <iframe class="full-content" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
 </div>
 
