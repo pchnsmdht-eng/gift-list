@@ -17,41 +17,34 @@
         #scroll-container {
             position: absolute;
             left: 0;
-            top: 50%;
-            transform: translateY(-50%);
+            top: 0;
             display: flex;
             flex-direction: row;
-            gap: 0;
+            gap: 15px; /* 列ごとの隙間（お好みで） */
+            padding: 10px;
             cursor: grab;
             touch-action: pan-x;
             will-change: transform;
         }
 
+        /* 1列分の「窓」 */
         .column-unit {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
+            width: 160px; /* 横幅を少し広めに確保 */
+            height: 900px; /* 縦6枚分が収まる十分な高さ */
+            overflow: hidden;
+            position: relative;
             flex-shrink: 0;
         }
 
-        .gift-item {
-            width: 150px; 
-            height: 150px; 
-            overflow: hidden;
-            position: relative;
-            border: none !important;
-            background: transparent;
-        }
-
+        /* 中身のiframe：1列につき1つのiframeを読み込み、位置だけをずらす */
         .content-frame {
             position: absolute;
-            width: 500px;
+            width: 400px; /* 元サイトの幅 */
             height: 10000px;
             border: none;
             pointer-events: none;
             left: 50%;
-            /* 縮尺を少し下げて、画像全体が枠に収まるように調整 */
-            transform: translateX(-50%) scale(0.95);
+            transform: translateX(-50%) scale(1.0);
             transform-origin: top;
         }
     </style>
@@ -60,8 +53,10 @@
 
 <div id="viewport">
     <div id="scroll-container">
-        <div id="content-a" style="display: flex;"></div>
-        <div id="content-b" style="display: flex;"></div>
+        <!-- セットA（5列） -->
+        <div id="content-a" style="display: flex; gap: 15px;"></div>
+        <!-- セットB（ループ用） -->
+        <div id="content-b" style="display: flex; gap: 15px;"></div>
     </div>
 </div>
 
@@ -72,34 +67,23 @@
     const url = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
     function build(target) {
-        let frag = document.createDocumentFragment();
-        // 最初の画像の開始位置を少し下げて、ヘッダー等のズレを吸収
-        const startOffset = -10; 
-        // 1枚あたりの移動距離（ここを微調整するとズレが直ります）
-        const stepY = -158; 
-
-        let count = 0;
+        // 1列ごとに iframe を配置し、その iframe の表示開始位置をずらす
+        // これにより、画像同士が被ることは物理的にあり得なくなります。
         for (let i = 0; i < 5; i++) {
             let col = document.createElement('div');
             col.className = 'column-unit';
-            for (let j = 0; j < 6; j++) {
-                let item = document.createElement('div');
-                item.className = 'gift-item';
-                
-                let frame = document.createElement('iframe');
-                frame.src = url;
-                frame.className = 'content-frame';
-                
-                // 計算式：開始位置 + (通し番号 * 1枚の高さ)
-                frame.style.top = `${startOffset + (count * stepY)}px`;
-                
-                item.appendChild(frame);
-                col.appendChild(item);
-                count++;
-            }
-            frag.appendChild(col);
+            
+            let frame = document.createElement('iframe');
+            frame.src = url;
+            frame.className = 'content-frame';
+            
+            // 1列目 = 0px〜, 2列目 = 900px〜（6枚分）という風に「列ごと」にガッツリずらす
+            // 910px などの数値は、元サイトで6枚並んだ時の「だいたいの高さ」です。
+            frame.style.top = `${i * -915}px`; 
+            
+            col.appendChild(frame);
+            target.appendChild(col);
         }
-        target.appendChild(frag);
     }
 
     build(contentA);
@@ -111,10 +95,10 @@
 
     function move() {
         if (!isPaused) {
-            pos -= 1.2;
-            const halfWidth = contentA.offsetWidth;
+            pos -= 1.0;
+            const halfWidth = contentA.offsetWidth + 15;
             if (Math.abs(pos) >= halfWidth) pos = 0;
-            container.style.transform = `translate3d(${pos}px, -50%, 0)`;
+            container.style.transform = `translate3d(${pos}px, 0, 0)`;
         }
         requestAnimationFrame(move);
     }
@@ -131,10 +115,10 @@
     function onMove(e) {
         const currentX = e.touches ? e.touches[0].pageX : e.pageX;
         pos = initialPos + (currentX - startX);
-        const halfWidth = contentA.offsetWidth;
+        const halfWidth = contentA.offsetWidth + 15;
         if (pos > 0) pos = -halfWidth;
         if (Math.abs(pos) >= halfWidth) pos = 0;
-        container.style.transform = `translate3d(${pos}px, -50%, 0)`;
+        container.style.transform = `translate3d(${pos}px, 0, 0)`;
         if(e.cancelable) e.preventDefault();
     }
 
