@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        /* 背景を軽くし、GPU加速を有効にする */
         body { margin: 0; background: transparent; overflow: hidden; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
         
         #viewport { 
@@ -11,8 +10,10 @@
             height: 396px; 
             position: relative; 
             overflow: hidden; 
-            transform: translateZ(0); /* GPU加速 */
+            transform: translateZ(0);
+            cursor: grab; /* つかめることを示すアイコン */
         }
+        #viewport:active { cursor: grabbing; }
 
         #lane-container { 
             position: absolute; 
@@ -20,24 +21,16 @@
             width: max-content; 
             height: 393px; 
             top: 3px; 
-            will-change: transform; /* ブラウザにアニメーションを準備させる */
+            will-change: transform;
             transform: translate3d(0, 0, 0); 
+            pointer-events: none; /* コンテナ自体はクリックを貫通させる */
         }
 
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; }
-        
-        /* iframeの負荷を最小限にする */
-        iframe { 
-            position: absolute; 
-            width: 1200px; 
-            height: 1500px; 
-            border: none; 
-            pointer-events: none; 
-            visibility: visible;
-        }
+        iframe { position: absolute; width: 1200px; height: 1500px; border: none; pointer-events: none; }
 
-        /* クリップ位置 */
+        /* クリップ位置（変更なし） */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -47,20 +40,39 @@
         .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
+
+        /* つまむための透明レイヤー */
+        #touch-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: transparent;
+            touch-action: none;
+        }
     </style>
 </head>
 <body>
-<div id="viewport"><div id="lane-container"></div></div>
+<div id="viewport">
+    <div id="touch-layer"></div>
+    <div id="lane-container"></div>
+</div>
+
 <script>
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1115;
     const container = document.getElementById('lane-container');
+    const touchLayer = document.getElementById('touch-layer');
     
     let posX = 0;
     let speed = -1.0;
     let lastTime = 0;
+    let isDragging = false;
+    let startX = 0;
 
     // スピード同期
     async function syncSpeed() {
@@ -75,7 +87,6 @@
 
     function init() {
         container.innerHTML = '';
-        // 描画負荷を考え、必要最小限の3ブロック（ループ用）に設定
         for (let i = 0; i < 3; i++) {
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
@@ -83,7 +94,6 @@
                     const l = document.createElement('div'); l.className = 'lane';
                     const f = document.createElement('iframe'); 
                     f.className = `r${n}`;
-                    // 読み込み負荷分散のため少し遅延させてロード
                     setTimeout(() => { f.src = `${SRC}?lane=${n}`; }, (i * 9 + n) * 50);
                     l.appendChild(f); b.appendChild(l);
                 });
@@ -92,20 +102,35 @@
         }
     }
 
-    // 高性能なアニメーションループ
+    // 🔴 つまむ（ドラッグ）機能の復活
+    touchLayer.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        startX = e.pageX - posX;
+        touchLayer.setPointerCapture(e.pointerId);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        posX = e.pageX - startX;
+    });
+
+    window.addEventListener('pointerup', () => {
+        isDragging = false;
+    });
+
     function animate(timestamp) {
         if (!lastTime) lastTime = timestamp;
         const deltaTime = timestamp - lastTime;
         lastTime = timestamp;
 
-        // 前回の描画からの経過時間に基づいて移動量を計算（カクつき防止）
-        posX += speed * (deltaTime / 16.6); 
+        // つまんでいる間は自動スクロールを止める
+        if (!isDragging) {
+            posX += speed * (deltaTime / 16.6); 
+            const totalW = W * 3;
+            if (posX <= -totalW) posX += totalW;
+            if (posX > 0) posX -= totalW;
+        }
 
-        const totalW = W * 3;
-        if (posX <= -totalW) posX += totalW;
-        if (posX > 0) posX -= totalW;
-
-        // translate3dを使うことでハードウェア加速を効かせる
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
