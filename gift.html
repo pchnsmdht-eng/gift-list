@@ -27,8 +27,8 @@
         .block {
             display: flex;
             flex-direction: column;
-            /* 🔴 さらに10px詰め、1133pxで完全に重なりを強化 */
-            width: 1133px; 
+            /* 🔴 1133pxからさらに10px詰め、1123pxに設定 */
+            width: 1123px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
@@ -37,7 +37,7 @@
         }
 
         .lane {
-            /* 1174pxの抜き出しに対し、41px分が隣と重なります */
+            /* 1174pxの抜き出しに対し、51px分が隣と重なります */
             width: 1174px; 
             height: 131px;
             position: relative;
@@ -73,13 +73,14 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1133; // 🔴 10pxさらに縮めた送り幅
+    const W = 1123; // 🔴 精密送り幅：1123px
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
     function init() {
         container.innerHTML = '';
+        // 永遠ループのために4セット配置
         for (let i = 0; i < 4; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
