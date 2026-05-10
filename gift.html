@@ -27,8 +27,8 @@
         .block {
             display: flex;
             flex-direction: column;
-            /* 🔴 1123pxからさらに10px詰め、1113pxに設定 */
-            width: 1113px; 
+            /* 🔴 1113pxからさらに5px詰め、1108pxに設定 */
+            width: 1108px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
@@ -37,7 +37,7 @@
         }
 
         .lane {
-            /* 1174pxの抜き出し幅を維持。隣と61px重なります */
+            /* 1174pxの抜き出し幅。隣と66px重なります */
             width: 1174px; 
             height: 131px;
             position: relative;
@@ -53,7 +53,7 @@
             left: 0; 
         }
 
-        /* 成功している精密クリップ設定を継承 */
+        /* 精密クリップ設定を継承 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -73,7 +73,7 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1113; // 🔴 精密送り幅：1113px
+    const W = 1108; // 🔴 精密送り幅：1108px
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
