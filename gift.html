@@ -6,7 +6,6 @@
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         #wrapper { width: 100vw; height: 106px; position: relative; cursor: grab; overflow: hidden; }
         
-        /* 1本の長い帯として結合 */
         #scroller {
             position: absolute;
             display: flex;
@@ -20,30 +19,24 @@
             width: 131px;
             height: 106px;
             flex-shrink: 0;
-            margin: 0; /* 隙間を徹底排除 */
-            padding: 0;
         }
 
         iframe {
             position: absolute;
             width: 131px;
-            height: 212px; /* 106の2倍 */
+            height: 212px;
             border: none;
             pointer-events: none;
         }
 
-        /* --- 修正：1段目と2段目をシームレスに結合 --- */
-        
-        /* 上段（元の1段目）: 余計な余白をカット */
         .top-part {
             top: 0;
-            clip-path: inset(1px 0 50% 0); /* 上下の1pxのゴミをカット */
+            clip-path: inset(0 0 50% 0);
         }
 
-        /* 下段（元の2段目）: 1段目の真横に並ぶよう持ち上げる */
         .bottom-part {
             top: 0;
-            clip-path: inset(50% 0 1px 0); 
+            clip-path: inset(50% 0 0 0);
             transform: translateY(-106px);
         }
     </style>
@@ -61,40 +54,35 @@
 
     const ITEM_WIDTH = 131;
 
-    // 10ペア（合計20枚）を生成して余裕を持たせる
-    function init() {
-        for (let i = 0; i < 10; i++) {
-            // 上半分
-            const boxT = document.createElement('div');
-            boxT.className = 'item-box';
-            const fT = document.createElement('iframe');
-            fT.src = TARGET_URL;
-            fT.className = 'top-part';
-            boxT.appendChild(fT);
-            scroller.appendChild(boxT);
+    // 途切れないよう多めに生成
+    for (let i = 0; i < 10; i++) {
+        const boxTop = document.createElement('div');
+        boxTop.className = 'item-box';
+        const fTop = document.createElement('iframe');
+        fTop.src = TARGET_URL;
+        fTop.className = 'top-part';
+        boxTop.appendChild(fTop);
+        scroller.appendChild(boxTop);
 
-            // 下半分
-            const boxB = document.createElement('div');
-            boxB.className = 'item-box';
-            const fB = document.createElement('iframe');
-            fB.src = TARGET_URL;
-            fB.className = 'bottom-part';
-            boxB.appendChild(fB);
-            scroller.appendChild(boxB);
-        }
+        const boxBottom = document.createElement('div');
+        boxBottom.className = 'item-box';
+        const fBottom = document.createElement('iframe');
+        fBottom.src = TARGET_URL;
+        fBottom.className = 'bottom-part';
+        boxBottom.appendChild(fBottom);
+        scroller.appendChild(boxBottom);
     }
 
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.5;
+    let speed = -1.2;
 
     function animate() {
         if (!isDragging) {
             posX += speed;
             
-            // 重要：1ユニット(上+下=262px)分進んだら瞬時に戻す
-            // これで「繋ぎ目」が消えます
+            // 🔴 修正：0に戻さず、1ユニット分(262px)戻すことで繋ぎ目をシームレス化
             const unitWidth = ITEM_WIDTH * 2;
             if (posX <= -unitWidth) {
                 posX += unitWidth;
@@ -104,12 +92,17 @@
         requestAnimationFrame(animate);
     }
 
-    // ドラッグUI
-    wrapper.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX - posX; });
-    window.addEventListener('mousemove', (e) => { if (isDragging) posX = e.pageX - startX; });
-    window.addEventListener('mouseup', () => { isDragging = false; });
+    wrapper.addEventListener('mousedown', (e) => { 
+        isDragging = true; 
+        startX = e.pageX - posX; 
+    });
+    window.addEventListener('mousemove', (e) => { 
+        if (isDragging) posX = e.pageX - startX; 
+    });
+    window.addEventListener('mouseup', () => { 
+        isDragging = false; 
+    });
 
-    init();
     animate();
 </script>
 </body>
