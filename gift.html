@@ -5,37 +5,37 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦130pxを3段（390px）積み上げた全体の枠 */
-        #main-container {
-            display: flex;
-            flex-direction: column;
+        /* 縦130px × 3段 = 390px の固定エリア */
+        #viewport {
             width: 100vw;
             height: 390px;
-        }
-
-        /* 各段（レーン） */
-        .lane {
-            width: 100vw;
-            height: 130px;
             position: relative;
             overflow: hidden;
+            cursor: grab;
         }
 
-        /* 🔴 データの「列」そのもの。細かく刻まず、1200pxのまま流す */
-        .scroller {
+        /* 3つの段を一つのユニットとして右へ流す */
+        #scroller {
             position: absolute;
             display: flex;
             width: max-content;
-            height: 130px;
+            height: 390px;
             will-change: transform;
         }
 
-        /* 1200pxあるデータの塊（これを2つ並べて無限ループにする） */
-        .data-strip {
-            position: relative;
-            width: 1200px; 
-            height: 130px;
+        /* データの1ブロック（1200px幅） */
+        .data-block {
+            display: flex;
+            flex-direction: column;
+            width: 1200px;
+            height: 390px;
             flex-shrink: 0;
+        }
+
+        .lane {
+            width: 1200px;
+            height: 130px;
+            position: relative;
             overflow: hidden;
         }
 
@@ -45,70 +45,78 @@
             height: 1200px;
             border: none;
             pointer-events: none;
-            /* 🔴 スケールをいじらず、データの元の大きさを維持 */
-            transform: scale(1.0); 
+            transform-origin: 0 0;
         }
 
-        /* 各段で、元のサイトの1・2・3段目をそのまま「窓」に映す */
-        .row-1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
-        .row-2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
-        .row-3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
+        /* 🔴 抜き出し位置の設定 */
+        .r1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
+        .r2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
+        .r3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
+        
+        /* 🔴 後半（下半分）用の抜き出し位置（数値はデータの並びに合わせ調整） */
+        .r4 { top: 0; clip-path: inset(390px 0px 680px 0px); transform: translateY(-390px); }
+        .r5 { top: 0; clip-path: inset(520px 0px 550px 0px); transform: translateY(-520px); }
+        .r6 { top: 0; clip-path: inset(650px 0px 420px 0px); transform: translateY(-650px); }
     </style>
 </head>
 <body>
 
-<div id="main-container">
-    <div class="lane"><div class="scroller" id="l1"></div></div>
-    <div class="lane"><div class="scroller" id="l2"></div></div>
-    <div class="lane"><div class="scroller" id="l3"></div></div>
+<div id="viewport">
+    <div id="scroller"></div>
 </div>
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const DATA_WIDTH = 1200; // 元のデータの横幅
-    let positions = [0, 0, 0];
+    const BLOCK_W = 1200;
+    const scroller = document.getElementById('scroller');
+
+    // 「前半3段セット」と「後半3段セット」を生成
+    function init() {
+        // 前半(1,2,3段目)と後半(4,5,6段目)を配列にしてループで回す
+        const groups = [[1, 2, 3], [4, 5, 6]];
+        
+        // シームレスループのために2回繰り返す
+        for (let i = 0; i < 2; i++) {
+            groups.forEach(rows => {
+                const block = document.createElement('div');
+                block.className = 'data-block';
+                rows.forEach(n => {
+                    const lane = document.createElement('div');
+                    lane.className = 'lane';
+                    const f = document.createElement('iframe');
+                    f.src = URL;
+                    f.className = `r${n}`;
+                    lane.appendChild(f);
+                    block.appendChild(lane);
+                });
+                scroller.appendChild(block);
+            });
+        }
+    }
+
+    let posX = -(BLOCK_W * 2); // 初期位置
     let isDragging = false;
     let startX = 0;
-
-    // 各段に、1200pxの「データの帯」を2枚ずつ繋げて無限ループを作る
-    [1, 2, 3].forEach(n => {
-        const scroller = document.getElementById(`l${n}`);
-        for (let i = 0; i < 2; i++) {
-            const div = document.createElement('div');
-            div.className = 'data-strip';
-            const f = document.createElement('iframe');
-            f.src = URL;
-            f.className = `row-${n}`;
-            div.appendChild(f);
-            scroller.appendChild(div);
-        }
-    });
+    let speed = 1.5; // 右方向
 
     function animate() {
         if (!isDragging) {
-            for (let i = 0; i < 3; i++) {
-                positions[i] -= 1.5; // スピード
-                // 1200px（データの末尾）まで行ったら先頭に戻して無限に見せる
-                if (positions[i] <= -DATA_WIDTH) positions[i] += DATA_WIDTH;
-                document.getElementById(`l${i+1}`).style.transform = `translateX(${positions[i]}px)`;
+            posX += speed;
+            // 前半+後半（2400px）分進んだらリセット
+            if (posX >= 0) {
+                posX -= (BLOCK_W * 2);
             }
         }
+        scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    // ドラッグUI：左右に振って確認できる
-    const container = document.getElementById('main-container');
-    container.onmousedown = (e) => { isDragging = true; startX = e.pageX; this.oldP = [...positions]; };
-    window.onmousemove = (e) => {
-        if (!isDragging) return;
-        const diff = e.pageX - startX;
-        for (let i = 0; i < 3; i++) {
-            positions[i] = this.oldP[i] + diff;
-            document.getElementById(`l${i+1}`).style.transform = `translateX(${positions[i]}px)`;
-        }
-    };
+    const vp = document.getElementById('viewport');
+    vp.onmousedown = (e) => { isDragging = true; startX = e.pageX - posX; };
+    window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
 
+    init();
     animate();
 </script>
 </body>
