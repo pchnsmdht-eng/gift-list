@@ -5,19 +5,18 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦131px × 3段 = 393px に拡張 */
+        /* 縦135px × 3段 = 405px に拡張 */
         #viewport {
             width: 100vw;
-            height: 393px;
+            height: 405px;
             position: relative;
             overflow: hidden;
             cursor: grab;
         }
 
-        /* 各段の枠を131pxに */
         .lane {
             width: 100vw;
-            height: 131px;
+            height: 135px;
             position: relative;
             overflow: hidden;
         }
@@ -25,10 +24,10 @@
         iframe {
             position: absolute;
             width: 1200px;
-            height: 1500px;
+            height: 1600px; /* 余裕を持って高さを確保 */
             border: none;
             pointer-events: none;
-            will-change: transform; /* GPU加速 */
+            will-change: transform;
         }
     </style>
 </head>
@@ -43,12 +42,13 @@
 <script>
     const BASE_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1200;
-    const H = 131; // 1段の高さを131に変更
+    const H = 135; // 1段の高さを135pxに設定
     const iframes = [document.getElementById('f1'), document.getElementById('f2'), document.getElementById('f3')];
 
     function loadIframes() {
         iframes.forEach((f, i) => {
-            f.src = `${BASE_URL}?v=${Date.now()}_${i}`;
+            // 強制リフレッシュ用のパラメータ
+            f.src = `${BASE_URL}?v=${Date.now()}_${i}_${Math.random().toString(36).slice(2, 7)}`;
         });
     }
 
@@ -61,21 +61,24 @@
         if (!isDragging) {
             posX += speed;
             if (posX <= -(W * 3)) posX += (W * 3);
+            if (posX > 0) posX -= (W * 3);
         }
 
-        const scrollX = posX % W;
+        // 1200pxごとにセット(0:1-3段, 1:4-6段, 2:7-9段)を判定
         const setIndex = Math.floor(Math.abs(posX) / W) % 3;
+        const scrollX = posX % W;
 
         iframes.forEach((f, i) => {
-            const rowOffset = setIndex * 3;
-            // 縦位置の計算を131px基準に修正
-            const targetY = -( (i + rowOffset) * H );
+            // 段ごとの表示位置を135px基準で計算
+            const currentRow = i + (setIndex * 3);
+            const targetY = -(currentRow * H);
             
+            // translate3dでGPU加速
             f.style.transform = `translate3d(${scrollX}px, ${targetY}px, 0)`;
             
-            // クリップ範囲も131pxに合わせて1pxずつ拡張
-            const top = (i + rowOffset) * H;
-            f.style.clipPath = `inset(${top}px 0px ${1500 - (top + H)}px 0px)`;
+            // クリップ範囲も135pxに連動
+            const top = currentRow * H;
+            f.style.clipPath = `inset(${top}px 0px ${1600 - (top + H)}px 0px)`;
         });
 
         requestAnimationFrame(animate);
@@ -86,7 +89,9 @@
     window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
 
+    // 10分おきにリフレッシュ
     setInterval(loadIframes, 600000);
+
     loadIframes();
     animate();
 </script>
