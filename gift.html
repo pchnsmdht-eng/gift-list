@@ -10,38 +10,42 @@
             position: absolute;
             display: flex;
             width: max-content;
-            height: 106px; /* 指定の高さ */
+            height: 100%;
             will-change: transform;
         }
 
         .item-box {
             position: relative;
-            width: 131px; /* 指定の横幅 */
-            height: 106px;
+            width: 1000px; /* 横幅 */
+            height: 100vh;
             flex-shrink: 0;
         }
 
         iframe {
             position: absolute;
-            width: 131px;
-            height: 212px; /* 106pxの2倍（上下2段分） */
+            width: 1000px;
+            height: 200vh;
             border: none;
             pointer-events: none;
         }
 
-        /* --- 131x106サイズ用の切り抜き調整 --- */
+        /* --- 切れ目調整セクション --- */
         
-        /* 上半分パーツ（1段目） */
+        /* 上段の設定 */
         .top-part {
             top: 0;
-            clip-path: inset(0 0 50% 0);
+            height: 380px; /* 🔴 1段目の高さに合わせて調整 */
+            clip-path: inset(0 0 52% 0); /* 🔴 下から52%を隠す（切れ目を見て調整） */
         }
 
-        /* 下半分パーツ（2段目を1段目の高さまで持ち上げる） */
+        /* 下段の設定 */
         .bottom-part {
             top: 0;
-            clip-path: inset(50% 0 0 0);
-            transform: translateY(-106px); /* ちょうど1段分持ち上げる */
+            height: 380px;
+            /* 🔴 上から48%を隠して「2段目」の頭を出す */
+            clip-path: inset(48% 0 0 0); 
+            /* 下段を「1段目のすぐ下」ではなく「1段目と同じ高さ」に無理やり持ち上げる */
+            transform: translateY(-48%); 
         }
     </style>
 </head>
@@ -56,12 +60,9 @@
     const scroller = document.getElementById('scroller');
     const wrapper = document.getElementById('wrapper');
 
-    // 指定サイズ 131px
-    const ITEM_WIDTH = 131;
-
-    // 途切れないように多めに（8ペア）生成
-    for (let i = 0; i < 8; i++) {
-        // 上半分
+    // ペアを生成
+    for (let i = 0; i < 4; i++) {
+        // 上半分ユニット
         const boxTop = document.createElement('div');
         boxTop.className = 'item-box';
         const fTop = document.createElement('iframe');
@@ -70,7 +71,7 @@
         boxTop.appendChild(fTop);
         scroller.appendChild(boxTop);
 
-        // 下半分（これが右隣に並ぶ）
+        // 下半分ユニット（これが右隣に並ぶ）
         const boxBottom = document.createElement('div');
         boxBottom.className = 'item-box';
         const fBottom = document.createElement('iframe');
@@ -83,31 +84,20 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.2; // サイズが小さいので少しゆっくりめに設定
+    let speed = -1.8;
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 2枚（上・下）の合計幅 262px 分流れたらループ
-            if (posX <= -(ITEM_WIDTH * 2)) {
-                posX = 0;
-            }
+            if (posX <= -2000) posX = 0;
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    // ドラッグ操作
-    wrapper.addEventListener('mousedown', (e) => { 
-        isDragging = true; 
-        startX = e.pageX - posX; 
-    });
-    window.addEventListener('mousemove', (e) => { 
-        if (isDragging) posX = e.pageX - startX; 
-    });
-    window.addEventListener('mouseup', () => { 
-        isDragging = false; 
-    });
+    wrapper.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX - posX; });
+    window.addEventListener('mousemove', (e) => { if (isDragging) posX = e.pageX - startX; });
+    window.addEventListener('mouseup', () => isDragging = false);
 
     animate();
 </script>
