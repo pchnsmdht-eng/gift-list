@@ -4,10 +4,27 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
-        /* 窓枠のサイズを固定 */
-        #wrapper { width: 100vw; height: 106px; position: relative; cursor: grab; overflow: hidden; }
         
-        #scroller {
+        /* 131x106の窓を「縦に3つ」積み上げる */
+        #container {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 318px; /* 106px * 3段 */
+        }
+
+        /* 各段（レーン）の枠 */
+        .lane {
+            width: 100vw;
+            height: 106px;
+            position: relative;
+            overflow: hidden;
+            /* 境界線が必要なら以下を有効に */
+            /* border-bottom: 1px solid rgba(255,255,255,0.1); */
+        }
+
+        /* 各レーンの中で横に流れるベルト */
+        .scroller {
             position: absolute;
             display: flex;
             width: max-content;
@@ -15,12 +32,11 @@
             will-change: transform;
         }
 
-        .item-box {
+        .gift-box {
             position: relative;
             width: 131px;
             height: 106px;
             flex-shrink: 0;
-            overflow: hidden;
         }
 
         iframe {
@@ -29,65 +45,69 @@
             height: 1200px;
             border: none;
             pointer-events: none;
-            transform-origin: 0 0;
-            /* 🔴 アイコンを枠に収める倍率 */
-            transform: scale(0.85); 
+            transform-origin: top left;
+            transform: scale(0.85);
         }
 
-        /* --- 1段目・2段目・3段目の切り抜き設定 --- */
-        .p1 { top: 0; clip-path: inset(5px 1010px 900px 5px); }
-        .p2 { top: 0; clip-path: inset(135px 1010px 770px 5px); transform: translateY(-135px) scale(0.85); }
-        .p3 { top: 0; clip-path: inset(265px 1010px 640px 5px); transform: translateY(-265px) scale(0.85); }
+        /* 各レーンで「元のサイトの何段目を映すか」を厳密に固定 */
+        .clip-1 { clip-path: inset(5px 1010px 900px 5px); }
+        .clip-2 { clip-path: inset(135px 1010px 770px 5px); transform: translateY(-135px) scale(0.85); }
+        .clip-3 { clip-path: inset(265px 1010px 640px 5px); transform: translateY(-265px) scale(0.85); }
     </style>
 </head>
 <body>
-    <div id="wrapper">
-        <div id="scroller"></div>
-    </div>
+
+<div id="container">
+    <div class="lane"><div class="scroller" id="scr-1"></div></div>
+    <div class="lane"><div class="scroller" id="scr-2"></div></div>
+    <div class="lane"><div class="scroller" id="scr-3"></div></div>
+</div>
 
 <script>
     const TARGET_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const scroller = document.getElementById('scroller');
-    const wrapper = document.getElementById('wrapper');
     const W = 131;
-
-    // 「1段目・2段目・3段目」を一つのセットとして、横に並べる
-    function init() {
-        for (let i = 0; i < 8; i++) {
-            [1, 2, 3].forEach(n => {
-                const box = document.createElement('div');
-                box.className = 'item-box';
-                const f = document.createElement('iframe');
-                f.src = TARGET_URL;
-                f.className = `p${n}`;
-                box.appendChild(f);
-                scroller.appendChild(box);
-            });
-        }
-    }
-
-    let posX = 0;
-    let isDragging = false;
+    let pos = [0, 0, 0];
+    let isDrag = false;
     let startX = 0;
-    let speed = -1.5;
+
+    // 各段にギフトを独立して流し込む
+    [1, 2, 3].forEach(n => {
+        const target = document.getElementById(`scr-${n}`);
+        for (let i = 0; i < 20; i++) { // 横に20枚（無限に見えるよう多めに）
+            const box = document.createElement('div');
+            box.className = 'gift-box';
+            const f = document.createElement('iframe');
+            f.src = TARGET_URL;
+            f.className = `clip-${n}`;
+            box.appendChild(f);
+            target.appendChild(box);
+        }
+    });
 
     function animate() {
-        if (!isDragging) {
-            posX += speed;
-            // 3枚1セット（131px * 3 = 393px）分流れたらループ
-            const unit = W * 3;
-            if (posX <= -unit) posX += unit;
+        if (!isDrag) {
+            for (let i = 0; i < 3; i++) {
+                pos[i] -= (1.2 + (i * 0.1)); // 各段の速度をわずかに変えると「生きてる感」が出ます
+                if (pos[i] <= -W) pos[i] += W;
+                document.getElementById(`scr-${i+1}`).style.transform = `translateX(${pos[i]}px)`;
+            }
         }
-        scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    // ドラッグUI
-    wrapper.onmousedown = (e) => { isDragging = true; startX = e.pageX - posX; };
-    window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
-    window.onmouseup = () => isDragging = false;
+    // ドラッグ操作：3段まとめて動かせる
+    const wrapper = document.getElementById('container');
+    wrapper.onmousedown = (e) => { isDrag = true; startX = e.pageX; this.oldP = [...pos]; };
+    window.onmousemove = (e) => {
+        if (!isDrag) return;
+        const diff = e.pageX - startX;
+        for (let i = 0; i < 3; i++) {
+            pos[i] = this.oldP[i] + diff;
+            document.getElementById(`scr-${i+1}`).style.transform = `translateX(${pos[i]}px)`;
+        }
+    };
+    window.onmouseup = () => isDrag = false;
 
-    init();
     animate();
 </script>
 </body>
