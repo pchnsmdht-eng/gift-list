@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
-        /* 131x106の窓枠 */
+        /* 131x106の窓枠を固定 */
         #wrapper { width: 100vw; height: 106px; position: relative; cursor: grab; overflow: hidden; }
         
         #scroller {
@@ -26,45 +26,45 @@
         iframe {
             position: absolute;
             width: 1200px;
-            height: 1200px; /* 3段分読み込める高さ */
+            height: 1200px;
             border: none;
             pointer-events: none;
             transform-origin: 0 0;
-            transform: scale(0.73); /* アイコンサイズ調整 */
+            /* 🔴 アイコンが枠に収まるよう倍率を固定 */
+            transform: scale(0.85); 
         }
 
-        /* --- 3段それぞれの切り抜き位置 --- */
+        /* --- 3段それぞれの切り抜き位置を「px」で直接指定 --- */
+        /* アイコンが切れる場合は、最初の数字（上からの距離）を少し変えてください */
         
-        .part-1 {
-            top: 0; clip-path: inset(0px 1018px 653px 0px); 
+        .part-1 { top: 0; clip-path: inset(5px 1010px 900px 5px); }
+
+        .part-2 { 
+            top: 0; 
+            clip-path: inset(135px 1010px 770px 5px); 
+            transform: translateY(-135px) scale(0.85); 
         }
 
-        .part-2 {
-            top: 0; clip-path: inset(146px 1018px 507px 0px);
-            transform: translateY(-106px) scale(0.73);
-        }
-
-        .part-3 {
-            top: 0; clip-path: inset(292px 1018px 361px 0px);
-            transform: translateY(-212px) scale(0.73);
+        .part-3 { 
+            top: 0; 
+            clip-path: inset(265px 1010px 640px 5px); 
+            transform: translateY(-265px) scale(0.85); 
         }
     </style>
 </head>
 <body>
-
-<div id="wrapper">
-    <div id="scroller"></div>
-</div>
+    <div id="wrapper">
+        <div id="scroller"></div>
+    </div>
 
 <script>
     const TARGET_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const scroller = document.getElementById('scroller');
     const wrapper = document.getElementById('wrapper');
-
     const ITEM_WIDTH = 131;
 
-    // 「1段目・2段目・3段目」をペアで並べる
     function init() {
+        // 繋ぎ目が見えないよう6セット分生成
         for (let i = 0; i < 6; i++) {
             [1, 2, 3].forEach(num => {
                 const box = document.createElement('div');
@@ -86,8 +86,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 3枚1セット（131px * 3 = 393px）分流れたらループ
-            const unitWidth = ITEM_WIDTH * 3;
+            const unitWidth = ITEM_WIDTH * 3; // 3段1セット
             if (posX <= -unitWidth) posX += unitWidth;
         }
         scroller.style.transform = `translateX(${posX}px)`;
