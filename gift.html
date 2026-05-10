@@ -13,21 +13,33 @@
 
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         
-        /* 各レーンの高さを厳密に131pxに固定（隙間対策） */
-        .lane { width: 1115px; height: 131px; position: relative; overflow: hidden; margin: 0; padding: 0; }
+        /* レーンの高さを131pxに厳密固定し、隙間（margin）を完全にゼロにする */
+        .lane { 
+            width: 1115px; 
+            height: 131px; 
+            position: relative; 
+            overflow: hidden; 
+            margin: 0 !important; 
+            padding: 0 !important;
+            display: block;
+        }
         
         iframe { 
             position: absolute; width: 1200px; height: 1500px; border: none; 
             background: transparent;
         }
 
-        /* 重なりを直すための精密な切り抜き位置（clip-path） */
-        /* 1行目: 上から0px */
+        /* clip-pathの計算: inset(上 右 下 左)
+           各行が重ならないよう、131pxずつ正確にずらして切り抜きます
+        */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
-        /* 2行目: 上から131pxの位置を切り取って、上に131pxずらす */
+        
+        /* 2行目: 131px目から切り出し、上に131px戻して表示 */
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
-        /* 3行目: 262pxの位置... 以下同様 */
+        
+        /* 3行目: 262px目から切り出し、上に262px戻して表示 */
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
+        
         .r4 { top: 0; clip-path: inset(393px 26px 976px 0px); transform: translateY(-393px); }
         .r5 { top: 0; clip-path: inset(524px 26px 845px 0px); transform: translateY(-524px); }
         .r6 { top: 0; clip-path: inset(655px 26px 714px 0px); transform: translateY(-655px); }
@@ -43,7 +55,6 @@
     <div id="touch-overlay"></div>
     <div id="lane-container"></div>
 </div>
-
 <script>
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
@@ -51,7 +62,6 @@
     const W = 1115;
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
-    
     let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
 
     async function syncSpeed() {
@@ -65,9 +75,8 @@
 
     function init() {
         container.innerHTML = '';
-        // ループを滑らかにするため、同じセットを3つ並べる
         for (let i = 0; i < 3; i++) {
-            // 3段ずつの固まりを作る
+            // ブロック単位で縦に3つ並べる（r1,r2,r3 / r4,r5,r6...）
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
@@ -89,14 +98,13 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const totalW = W * 3; // 全体の幅でループ
+            const totalW = W * 3;
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
-
     init(); syncSpeed(); animate();
 </script>
 </body>
