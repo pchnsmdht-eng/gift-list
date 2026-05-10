@@ -5,7 +5,7 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 🔴 131px * 3段 = 393px に上部余白3pxを足して 396px */
+        /* 131px * 3段 + 上部3px = 396px */
         #viewport {
             width: 100vw;
             height: 396px; 
@@ -17,20 +17,24 @@
         #lane-container {
             position: absolute;
             display: flex;
+            /* 🔴 隙間を物理的に排除 */
+            gap: 0;
             width: max-content;
-            height: 393px; /* 中身の高さは維持 */
+            height: 393px;
             will-change: transform;
             left: 0;
-            /* 🔴 全体を3px下に下げる */
             top: 3px; 
         }
 
         .block {
             display: flex;
             flex-direction: column;
+            /* 🔴 ブロックの横幅を固定 */
             width: 1200px;
             height: 393px;
             flex-shrink: 0;
+            margin: 0;
+            padding: 0;
         }
 
         .lane {
@@ -48,7 +52,7 @@
             pointer-events: none;
         }
 
-        /* 131px刻みの座標（構造は維持） */
+        /* 131px刻みの座標 */
         .r1 { top: 0; clip-path: inset(0px 0px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 0px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 0px 1107px 0px); transform: translateY(-262px); }
@@ -75,6 +79,7 @@
 
     function init() {
         container.innerHTML = '';
+        // 3ユニットを2周分繋いで、絶対に隙間を見せない
         for (let i = 0; i < 2; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
@@ -102,6 +107,7 @@
         if (!isDragging) {
             posX += speed;
             const cycleWidth = W * 3;
+            // 🔴 余計な余白が生まれないようリセット位置を厳密に
             if (posX <= -cycleWidth) {
                 posX += cycleWidth;
             }
