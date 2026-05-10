@@ -27,8 +27,8 @@
         .block {
             display: flex;
             flex-direction: column;
-            /* 🔴 さらに4px詰め、1150pxで完全に左右を密着 */
-            width: 1150px; 
+            /* 🔴 解析結果：1150pxからさらに2px詰め、1148pxで完全密着 */
+            width: 1148px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
@@ -37,7 +37,7 @@
         }
 
         .lane {
-            /* 絵柄の表示幅は1174pxを維持し、24px分を隣と重ねる */
+            /* 絵柄の表示幅は1174pxを維持し、26px分を隣と重ねる */
             width: 1174px; 
             height: 131px;
             position: relative;
@@ -73,15 +73,14 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1150; // 🔴 隙間ゼロ・完全吸着の送り幅
+    const W = 1148; // 🔴 精密計算：隙間ゼロ・完全吸着の送り幅
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
     function init() {
         container.innerHTML = '';
-        // 🔴 4セット（計12ブロック）を物理的に連結。
-        // これにより、ループリセット時に背後が途切れる隙を一切与えません。
+        // 永遠ループのために予備を多めに生成（計12ブロック）
         for (let i = 0; i < 4; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
@@ -90,6 +89,7 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
+                    // キャッシュ対策
                     f.src = `${URL}?lane=${n}&t=${Date.now()}_${i}_${n}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
@@ -108,8 +108,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 🔴 3ユニット分（1150 * 3 = 3450px）進んだらリセット。
-            // 物理的にその先にまだブロックがあるので、見た目上は「永遠に」続き、途切れません。
+            // 3ユニット分（1148 * 3 = 3444px）進んだらリセット
             const cycleWidth = W * 3; 
             if (posX <= -cycleWidth) {
                 posX += cycleWidth;
