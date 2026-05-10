@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
+        /* 131x106の枠を定義 */
         #wrapper { width: 100vw; height: 106px; position: relative; cursor: grab; overflow: hidden; }
         
         #scroller {
@@ -16,28 +17,40 @@
 
         .item-box {
             position: relative;
-            width: 131px;
-            height: 106px;
+            width: 131px; /* 横幅厳守 */
+            height: 106px; /* 高さ厳守 */
             flex-shrink: 0;
+            overflow: hidden; /* 枠からはみ出た分を隠す */
         }
 
         iframe {
             position: absolute;
-            width: 131px;
-            height: 212px;
+            /* 🔴 重要：ページを縮小させず、等倍で読み込む */
+            width: 1000px; 
+            height: 800px; 
             border: none;
             pointer-events: none;
+            transform-origin: 0 0;
+            /* 必要に応じてここで倍率を微調整（0.5 = 半分など） */
+            transform: scale(1.0); 
         }
 
+        /* --- 1段目と2段目を同じ高さ（106px）に並べる --- */
+        
         .top-part {
             top: 0;
-            clip-path: inset(0 0 50% 0);
+            left: 0;
+            /* 🔴 1段目の位置合わせ（数字を微調整して枠を合わせる） */
+            clip-path: inset(0px 869px 694px 0px); 
         }
 
         .bottom-part {
             top: 0;
-            clip-path: inset(50% 0 0 0);
-            transform: translateY(-106px);
+            left: 0;
+            /* 🔴 2段目の位置合わせ（106px分下の段を切り抜く） */
+            clip-path: inset(106px 869px 588px 0px);
+            /* 下段を1段目の高さまで持ち上げる */
+            transform: translateY(-106px) scale(1.0);
         }
     </style>
 </head>
@@ -54,23 +67,23 @@
 
     const ITEM_WIDTH = 131;
 
-    // 途切れないよう多めに生成
+    // 1段目と2段目を交互に生成
     for (let i = 0; i < 10; i++) {
-        const boxTop = document.createElement('div');
-        boxTop.className = 'item-box';
-        const fTop = document.createElement('iframe');
-        fTop.src = TARGET_URL;
-        fTop.className = 'top-part';
-        boxTop.appendChild(fTop);
-        scroller.appendChild(boxTop);
+        const boxT = document.createElement('div');
+        boxT.className = 'item-box';
+        const fT = document.createElement('iframe');
+        fT.src = TARGET_URL;
+        fT.className = 'top-part';
+        boxT.appendChild(fT);
+        scroller.appendChild(boxT);
 
-        const boxBottom = document.createElement('div');
-        boxBottom.className = 'item-box';
-        const fBottom = document.createElement('iframe');
-        fBottom.src = TARGET_URL;
-        fBottom.className = 'bottom-part';
-        boxBottom.appendChild(fBottom);
-        scroller.appendChild(boxBottom);
+        const boxB = document.createElement('div');
+        boxB.className = 'item-box';
+        const fB = document.createElement('iframe');
+        fB.src = TARGET_URL;
+        fB.className = 'bottom-part';
+        boxB.appendChild(fB);
+        scroller.appendChild(boxB);
     }
 
     let posX = 0;
@@ -81,27 +94,16 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            
-            // 🔴 修正：0に戻さず、1ユニット分(262px)戻すことで繋ぎ目をシームレス化
             const unitWidth = ITEM_WIDTH * 2;
-            if (posX <= -unitWidth) {
-                posX += unitWidth;
-            }
+            if (posX <= -unitWidth) posX += unitWidth;
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    wrapper.addEventListener('mousedown', (e) => { 
-        isDragging = true; 
-        startX = e.pageX - posX; 
-    });
-    window.addEventListener('mousemove', (e) => { 
-        if (isDragging) posX = e.pageX - startX; 
-    });
-    window.addEventListener('mouseup', () => { 
-        isDragging = false; 
-    });
+    wrapper.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX - posX; });
+    window.addEventListener('mousemove', (e) => { if (isDragging) posX = e.pageX - startX; });
+    window.addEventListener('mouseup', () => isDragging = false);
 
     animate();
 </script>
