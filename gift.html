@@ -4,19 +4,17 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
-        /* 全体の高さを余裕を持って400pxに */
         #viewport { width: 100vw; height: 400px; position: relative; overflow: hidden; cursor: grab; }
         
         #lane-container { 
             position: absolute; display: flex; width: max-content; height: 396px;
-            top: 2px; /* 上部のわずかな隙間 */
+            top: 2px;
             will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
-        /* 🔴 1セットの横幅を1115pxに固定。これで重なりを防ぎます */
+        /* 重なりを防ぐための安定幅 1115px */
         .block { display: flex; flex-direction: column; width: 1115px; height: 396px; flex-shrink: 0; }
         
-        /* 1つのレーン（3列分）の高さを132pxに設定 */
         .lane { 
             width: 1115px; 
             height: 132px; 
@@ -31,18 +29,15 @@
             background: transparent; transform-origin: top left;
         }
 
-        /* 🔴 clip-pathを初期の「重ならない設定」に完全固定 */
-        /* 1段目（レーン1,2,3） */
+        /* 安定したclip-path設定 */
         .r1 { top: 0; clip-path: inset(0px 26px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 26px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 26px 1104px 0px); transform: translateY(-264px); }
         
-        /* 2段目（レーン4,5,6） */
         .r4 { top: 0; clip-path: inset(396px 26px 972px 0px); transform: translateY(-396px); }
         .r5 { top: 0; clip-path: inset(528px 26px 840px 0px); transform: translateY(-528px); }
         .r6 { top: 0; clip-path: inset(660px 26px 708px 0px); transform: translateY(-660px); }
         
-        /* 3段目（レーン7,8,9） */
         .r7 { top: 0; clip-path: inset(792px 26px 576px 0px); transform: translateY(-792px); }
         .r8 { top: 0; clip-path: inset(924px 26px 444px 0px); transform: translateY(-924px); }
         .r9 { top: 0; clip-path: inset(1056px 26px 312px 0px); transform: translateY(-1056px); }
@@ -56,26 +51,38 @@
     <div id="lane-container"></div>
 </div>
 <script>
+    // 🔴 ユーザー名とリポジトリ名が正しいか念のため確認してください
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1115; // 🔴 1セットの横幅
+    const W = 1115; 
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
-    let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
+    let posX = 0; 
+    let speed = -1.0; 
+    let isDragging = false; 
+    let startX = 0;
 
+    // 🔴 コントローラー（speed.txt）の読み込み機能を復活
     async function syncSpeed() {
         try {
-            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`;
+            const res = await fetch(rawUrl);
             const text = await res.text();
-            if(!isNaN(text) && text.trim() !== "") speed = parseFloat(text);
-        } catch (e) {}
+            // 数字が正しく読み込めた場合のみ更新
+            if(!isNaN(text) && text.trim() !== "") {
+                speed = parseFloat(text);
+                console.log("Speed updated:", speed);
+            }
+        } catch (e) {
+            console.error("Sync failed:", e);
+        }
     }
+    // 3秒おきにチェック
     setInterval(syncSpeed, 3000);
 
     function init() {
         container.innerHTML = '';
-        // 1セット（3列×3段）を3回繰り返し並べる
         for (let i = 0; i < 3; i++) {
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
@@ -91,21 +98,33 @@
         }
     }
 
-    overlay.onpointerdown = (e) => { isDragging = true; startX = e.clientX - posX; overlay.setPointerCapture(e.pointerId); };
-    window.onpointermove = (e) => { if (isDragging) posX = e.clientX - startX; };
-    window.onpointerup = () => isDragging = false;
+    // ドラッグ操作
+    overlay.onpointerdown = (e) => { 
+        isDragging = true; 
+        startX = e.clientX - posX; 
+        overlay.setPointerCapture(e.pointerId); 
+    };
+    window.onpointermove = (e) => { 
+        if (isDragging) {
+            posX = e.clientX - startX; 
+        }
+    };
+    window.onpointerup = () => { isDragging = false; };
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const totalW = W * 3; // 🔴 3セット分の幅で正確にループ
+            const totalW = W * 3;
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
-    init(); syncSpeed(); animate();
+
+    init(); 
+    syncSpeed(); // 初回実行
+    animate();
 </script>
 </body>
 </html>
