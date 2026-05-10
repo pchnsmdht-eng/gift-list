@@ -8,7 +8,7 @@
         
         #scroller {
             position: absolute;
-            display: flex; /* ここで「上・下・上・下」と横に並べる */
+            display: flex;
             width: max-content;
             height: 100%;
             will-change: transform;
@@ -16,7 +16,7 @@
 
         .item-box {
             position: relative;
-            width: 1000px; /* 画像の横幅 */
+            width: 1000px; /* 横幅 */
             height: 100vh;
             flex-shrink: 0;
         }
@@ -24,39 +24,35 @@
         iframe {
             position: absolute;
             width: 1000px;
-            height: 200vh; /* 縦を2倍にして解像度を確保 */
+            height: 200vh;
             border: none;
             pointer-events: none;
         }
 
-        /* --- 修正ポイント：上下の切り分け --- */
+        /* --- 切れ目調整セクション --- */
         
-        /* 上半分パーツ */
+        /* 上段の設定 */
         .top-part {
             top: 0;
-            height: 50vh;
-            clip-path: inset(0 0 50% 0);
+            height: 380px; /* 🔴 1段目の高さに合わせて調整 */
+            clip-path: inset(0 0 52% 0); /* 🔴 下から52%を隠す（切れ目を見て調整） */
         }
 
-        /* 下半分パーツ（上段の右隣に並ぶように設定） */
+        /* 下段の設定 */
         .bottom-part {
-            top: 50vh; /* 画面の下半分に配置 */
-            height: 50vh;
-            clip-path: inset(50% 0 0 0);
-            transform: translateY(-50vh); /* 下半分を上の枠まで持ち上げる */
-        }
-
-        /* 2つのパーツを横にずらす */
-        .shift-right {
-            margin-left: 1000px; /* 上半分の横幅分、右へずらして「後尾」にする */
+            top: 0;
+            height: 380px;
+            /* 🔴 上から48%を隠して「2段目」の頭を出す */
+            clip-path: inset(48% 0 0 0); 
+            /* 下段を「1段目のすぐ下」ではなく「1段目と同じ高さ」に無理やり持ち上げる */
+            transform: translateY(-48%); 
         }
     </style>
 </head>
 <body>
 
 <div id="wrapper">
-    <div id="scroller">
-        </div>
+    <div id="scroller"></div>
 </div>
 
 <script>
@@ -64,9 +60,9 @@
     const scroller = document.getElementById('scroller');
     const wrapper = document.getElementById('wrapper');
 
-    // ループ用に「上・下のペア」を3セット作る
-    for (let i = 0; i < 3; i++) {
-        // 上半分を表示する箱
+    // ペアを生成
+    for (let i = 0; i < 4; i++) {
+        // 上半分ユニット
         const boxTop = document.createElement('div');
         boxTop.className = 'item-box';
         const fTop = document.createElement('iframe');
@@ -75,7 +71,7 @@
         boxTop.appendChild(fTop);
         scroller.appendChild(boxTop);
 
-        // 下半分を表示する箱（上半分の右隣に来る）
+        // 下半分ユニット（これが右隣に並ぶ）
         const boxBottom = document.createElement('div');
         boxBottom.className = 'item-box';
         const fBottom = document.createElement('iframe');
@@ -88,25 +84,19 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -2;
+    let speed = -1.8;
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 画像2枚分（2000px）流れたらループ
             if (posX <= -2000) posX = 0;
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    wrapper.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        startX = e.pageX - posX;
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (isDragging) posX = e.pageX - startX;
-    });
+    wrapper.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX - posX; });
+    window.addEventListener('mousemove', (e) => { if (isDragging) posX = e.pageX - startX; });
     window.addEventListener('mouseup', () => isDragging = false);
 
     animate();
