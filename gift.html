@@ -12,11 +12,11 @@
             will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
-        /* 🔴 1ブロックの幅を2列分（約740px）に縮小 */
-        .block { display: flex; flex-direction: column; width: 740px; height: 393px; flex-shrink: 0; }
+        /* 1つのギフトの幅に合わせたブロックサイズ（約400px） */
+        .block { display: flex; flex-direction: column; width: 400px; height: 393px; flex-shrink: 0; }
         
         .lane { 
-            width: 740px; 
+            width: 400px; 
             height: 131px; 
             position: relative; 
             overflow: hidden; 
@@ -32,16 +32,28 @@
             border: none; 
             background: transparent;
             transform-origin: top left;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
-        /* 🔴 2列分だけを抽出するように clip-path を調整 */
-        .r1 { top: 0; clip-path: inset(1px 480px 1368px 0px); }
-        .r2 { top: 0; clip-path: inset(132.5px 480px 1236.5px 0px); transform: translateY(-132.5px); }
-        .r3 { top: 0; clip-path: inset(264px 480px 1105px 0px); transform: translateY(-264px); }
+        /* 🔴 全段共通の「安定した1列」を切り出す設定
+           左右の数値を全レーンで「350px 450px」のように統一することで、
+           1段目の端っこも2段目と同じ位置のデータとして抽出します。
+        */
+        /* 1段目グループ */
+        .r1 { top: 0; clip-path: inset(0px 450px 1369px 350px); transform: translateX(-350px); }
+        .r2 { top: 0; clip-path: inset(131.5px 450px 1237.5px 350px); transform: translate(-350px, -131.5px); }
+        .r3 { top: 0; clip-path: inset(263px 450px 1106px 350px); transform: translate(-350px, -263px); }
         
-        .r4 { top: 0; clip-path: inset(395.5px 480px 973.5px 0px); transform: translateY(-395.5px); }
-        .r5 { top: 0; clip-path: inset(527px 480px 842px 0px); transform: translateY(-527px); }
-        .r6 { top: 0; clip-path: inset(658.5px 480px 710.5px 0px); transform: translateY(-658.5px); }
+        /* 2段目グループ（1段目と同じ横位置を抽出） */
+        .r4 { top: 0; clip-path: inset(394.5px 450px 974.5px 350px); transform: translate(-350px, -394.5px); }
+        .r5 { top: 0; clip-path: inset(526px 450px 843px 350px); transform: translate(-350px, -526px); }
+        .r6 { top: 0; clip-path: inset(657.5px 450px 711.5px 350px); transform: translate(-350px, -657.5px); }
+
+        /* 3段目グループ（同様） */
+        .r7 { top: 0; clip-path: inset(789px 450px 580px 350px); transform: translate(-350px, -789px); }
+        .r8 { top: 0; clip-path: inset(920.5px 450px 448.5px 350px); transform: translate(-350px, -920.5px); }
+        .r9 { top: 0; clip-path: inset(1052px 450px 317px 350px); transform: translate(-350px, -1052px); }
 
         #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: transparent; }
     </style>
@@ -55,8 +67,7 @@
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    // 🔴 1ブロックの横幅を修正
-    const W = 740; 
+    const W = 400; // ブロック幅を1列分に
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
     let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
@@ -72,14 +83,15 @@
 
     function init() {
         container.innerHTML = '';
-        // 2セット（r1-r3, r4-r6）を3回ループ
-        for (let i = 0; i < 3; i++) {
-            [[1,2,3],[4,5,6]].forEach(rows => {
+        // 1ブロック1列にして、それをたくさん並べて密度の高いループを作る
+        for (let i = 0; i < 8; i++) {
+            [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
                     const l = document.createElement('div'); l.className = 'lane';
                     const f = document.createElement('iframe');
                     f.className = `r${n}`;
+                    f.onload = () => { f.style.opacity = "1"; };
                     f.src = `${SRC}?lane=${n}`;
                     l.appendChild(f); b.appendChild(l);
                 });
@@ -95,7 +107,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const totalW = W * 6; // 2セット×3ループ分
+            const totalW = W * 24; // ブロック数(8セット*3)に合わせてループ
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
