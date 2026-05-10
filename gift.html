@@ -9,11 +9,12 @@
             position: absolute; display: flex; width: max-content; 
             top: 2px; will-change: transform; transform: translate3d(0, 0, 0); 
         }
+        /* 安定した初期の幅 1115px */
         .block { display: flex; flex-direction: column; width: 1115px; flex-shrink: 0; }
         .lane { width: 1115px; height: 132px; position: relative; overflow: hidden; }
         iframe { position: absolute; width: 1200px; height: 1500px; border: none; transform-origin: top left; }
 
-        /* clip-path 安定設定 */
+        /* clip-path 数値リセット */
         .r1 { top: 0; clip-path: inset(0px 26px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 26px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 26px 1104px 0px); transform: translateY(-264px); }
@@ -26,33 +27,38 @@
     </style>
 </head>
 <body>
-<div id="viewport"><div id="lane-container"></div></div>
+<div id="viewport"><div id="touch-overlay"></div><div id="lane-container"></div></div>
 <script>
     const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1115;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
-    let posX = 0, speed = -1.0;
+    let posX = 0; 
+    let speed = -1.0; 
 
-    // 🔴 リモコンが書き換えた speed.txt を読み込む
+    // リモコン（control.html）が書き換えた値を読み込む
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
             const text = await res.text();
             const s = parseFloat(text.trim());
-            if(!isNaN(s)) speed = s; 
+            if(!isNaN(s)) {
+                speed = s; // ここでプラスかマイナスかが決まる
+            }
         } catch (e) {}
     }
     setInterval(syncSpeed, 2000);
 
     function init() {
         container.innerHTML = '';
-        for (let i = 0; i < 3; i++) { // 3ブロック並べる
+        // 余裕を持ってブロックを並べる
+        for (let i = 0; i < 3; i++) {
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
                     const l = document.createElement('div'); l.className = 'lane';
-                    const f = document.createElement('iframe'); f.className = `r${n}`;
+                    const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
+                    f.className = `r${n}`;
                     l.appendChild(f); b.appendChild(l);
                 });
                 container.appendChild(b);
@@ -62,15 +68,19 @@
 
     function animate() {
         posX += speed;
-        const totalW = W * 3; // 3ブロック分の全幅
+        const totalW = W * 3; // 全体のループ幅
 
-        // 🔴 ここが重要：リモコンのプラス・マイナス両方で無限ループさせる
-        if (posX <= -totalW) posX += totalW; // 左に消えすぎたら右に戻す
-        if (posX > 0) posX -= totalW;        // 右に消えすぎたら左に戻す
+        // 🔴 ここを修正！プラス（右向き）にもマイナス（左向き）にも対応
+        if (posX <= -totalW) {
+            posX += totalW; // 左に消えすぎたら右に戻す
+        } else if (posX >= 0) {
+            posX -= totalW; // 右に消えすぎたら左に戻す
+        }
 
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
+
     init(); syncSpeed(); animate();
 </script>
 </body>
