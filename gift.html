@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* 1. 全ブラウザ共通：余計なスクロールやバウンスを禁止 */
         body { 
             margin: 0; 
             background: transparent; 
             overflow: hidden; 
-            touch-action: none; /* iPhone/Androidでのブラウザ操作干渉を完全に防ぐ */
+            touch-action: none; 
             -webkit-overflow-scrolling: touch;
         }
         
@@ -21,7 +20,6 @@
             cursor: grab;
             user-select: none;
             -webkit-user-select: none;
-            /* 🔴 どのブラウザでもポインターイベントを優先 */
             touch-action: none; 
         }
 
@@ -39,7 +37,7 @@
         .block {
             display: flex;
             flex-direction: column;
-            width: 1115px; /* 前回のベストな密着幅 */
+            width: 1115px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
@@ -59,11 +57,10 @@
             width: 1200px;
             height: 1500px;
             border: none;
-            /* 🔴 iframeが指の動きを吸い取らないようにする（超重要） */
             pointer-events: none; 
         }
 
-        /* クリップ位置 */
+        /* クリップ位置設定 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -112,13 +109,12 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.8; 
+    let speed = -1.0; // 🔴 スピードを1.0に変更
 
-    // 🔴 Pointer Events: Chrome, Safari(iOS13+), Androidブラウザすべてをカバー
     vp.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startX = e.pageX - posX;
-        vp.setPointerCapture(e.pointerId); // 指が画面外に外れても追いかける
+        vp.setPointerCapture(e.pointerId);
         vp.style.cursor = 'grabbing';
     });
 
