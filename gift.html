@@ -3,33 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
-        #viewport { width: 100vw; height: 396px; position: relative; overflow: hidden; transform: translateZ(0); }
-        
-        #lane-container { 
-            position: absolute; 
-            display: flex; 
-            width: max-content; 
-            height: 393px; 
-            top: 3px; 
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
-            pointer-events: none;
-        }
-
+        body { margin: 0; background: transparent; overflow: hidden; }
+        #viewport { width: 100vw; height: 396px; position: relative; overflow: hidden; }
+        #lane-container { position: absolute; display: flex; width: max-content; height: 393px; top: 3px; will-change: transform; }
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
-        .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; }
-        
-        /* iframeの基本設定。初期状態では描画を抑制 */
-        iframe { 
-            position: absolute; 
-            width: 1200px; 
-            height: 1500px; 
-            border: none;
-            content-visibility: auto; /* ブラウザの最適化を有効化 */
-        }
-
-        /* クリップ位置 */
+        .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; background: rgba(255,255,255,0.01); }
+        iframe { position: absolute; width: 1200px; height: 1500px; border: none; pointer-events: none; }
+        /* クリップ位置省略なし（r1~r9） */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -39,109 +19,76 @@
         .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
-
-        #touch-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 9999; background: transparent; cursor: grab; touch-action: none;
-        }
+        #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: transparent; cursor: grab; }
     </style>
 </head>
 <body>
-<div id="viewport">
-    <div id="touch-overlay"></div>
-    <div id="lane-container"></div>
-</div>
-
+<div id="viewport"><div id="touch-overlay"></div><div id="lane-container"></div></div>
 <script>
-    const USER = "pchnsmdht-eng";
-    const REPO = "gift-list";
+    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1115;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1115;
     const container = document.getElementById('lane-container');
-    const overlay = document.getElementById('touch-overlay');
-    
-    let posX = 0;
-    let speed = -1.0;
-    let lastTime = 0;
-    let isDragging = false;
-    let startX = 0;
+    let posX = 0, speed = -1.0, isDragging = false;
 
+    // スピード同期
     async function syncSpeed() {
         try {
-            const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`;
-            const res = await fetch(rawUrl);
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
             const text = await res.text();
-            if(!isNaN(text) && text.trim() !== "") speed = parseFloat(text);
+            if(!isNaN(text)) speed = parseFloat(text);
         } catch (e) {}
     }
     setInterval(syncSpeed, 3000);
 
+    // 画面に必要な分だけブロックを作成
     function init() {
         container.innerHTML = '';
-        // 3ブロックのみ生成
-        for (let i = 0; i < 3; i++) {
-            [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
-                const b = document.createElement('div'); 
-                b.className = 'block';
-                // 各ブロックに識別用IDを付与
-                b.dataset.idx = i; 
-                rows.forEach(n => {
-                    const l = document.createElement('div'); l.className = 'lane';
-                    const f = document.createElement('iframe'); 
-                    f.className = `r${n}`;
-                    f.src = `${SRC}?lane=${n}`;
-                    l.appendChild(f); b.appendChild(l);
-                });
-                container.appendChild(b);
-            });
+        for(let i=0; i<3; i++) {
+            const b = document.createElement('div'); b.className = 'block';
+            for(let n=1; n<=9; n++) {
+                const l = document.createElement('div'); l.className = 'lane';
+                l.dataset.lane = n;
+                b.appendChild(l);
+            }
+            container.appendChild(b);
         }
     }
 
-    // ドラッグ操作
-    overlay.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        startX = e.clientX - posX;
-        overlay.setPointerCapture(e.pointerId);
-    });
-    overlay.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        posX = e.clientX - startX;
-    });
-    overlay.addEventListener('pointerup', () => isDragging = false);
+    // 🌟 画面内にあるものだけiframeを生成し、外れたら即削除
+    function manageMemory() {
+        const lanes = document.querySelectorAll('.lane');
+        lanes.forEach(l => {
+            const rect = l.getBoundingClientRect();
+            const isVisible = rect.left < window.innerWidth + 200 && rect.right > -200;
+            const hasIframe = l.querySelector('iframe');
 
-    function animate(timestamp) {
-        if (!lastTime) lastTime = timestamp;
-        const deltaTime = timestamp - lastTime;
-        lastTime = timestamp;
-
-        if (!isDragging) {
-            // スムーズな移動計算（deltaTimeを使用）
-            posX += speed * (deltaTime / 16.6); 
-            const totalW = W * 3;
-            if (posX <= -totalW) posX += totalW;
-            if (posX > 0) posX -= totalW;
-        }
-
-        // 🌟 最適化：画面外にあるブロックの描画をスキップ
-        const blocks = document.querySelectorAll('.block');
-        blocks.forEach((block, index) => {
-            const blockLeft = posX + (index * W);
-            // 画面内（-W から 画面幅まで）にあるかチェック
-            if (blockLeft < -W || blockLeft > window.innerWidth + 50) {
-                if (block.style.display !== 'none') block.style.display = 'none';
-            } else {
-                if (block.style.display !== 'flex') block.style.display = 'flex';
+            if (isVisible && !hasIframe) {
+                const f = document.createElement('iframe');
+                f.className = `r${l.dataset.lane}`;
+                f.src = `${SRC}?lane=${l.dataset.lane}`;
+                l.appendChild(f);
+            } else if (!isVisible && hasIframe) {
+                l.innerHTML = ''; // メモリ解放のために要素ごと削除
             }
         });
+    }
 
+    document.getElementById('touch-overlay').onpointerdown = (e) => { isDragging = true; startX = e.clientX - posX; };
+    window.onpointermove = (e) => { if (isDragging) posX = e.clientX - startX; };
+    window.onpointerup = () => isDragging = false;
+
+    function animate() {
+        if (!isDragging) {
+            posX += speed;
+            if (posX <= -W) posX += W;
+            if (posX > 0) posX -= W;
+        }
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
+        manageMemory();
         requestAnimationFrame(animate);
     }
 
-    init();
-    syncSpeed();
-    requestAnimationFrame(animate);
+    init(); syncSpeed(); animate();
 </script>
 </body>
 </html>
