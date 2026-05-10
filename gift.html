@@ -5,24 +5,24 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦に3段並べるコンテナ */
-        #main-wrapper {
+        /* 全体のサイズ：131pxの幅で、106pxが3段分（318px） */
+        #main-container {
             display: flex;
-            flex-direction: column; /* 縦並び */
+            flex-direction: column; /* 縦に積み上げる */
             width: 100vw;
-            height: 318px; /* 106px * 3 */
+            height: 318px; 
         }
 
-        /* 各段の横長の窓 */
-        .lane-wrapper {
+        /* 各段（レーン）の設定：ここが重ならない「枠」になります */
+        .lane {
             width: 100vw;
-            height: 106px;
+            height: 106px; /* 1段の高さを固定 */
             position: relative;
             overflow: hidden;
-            cursor: grab;
-            border-bottom: 1px solid rgba(255,255,255,0.1); /* 境目が見やすいよう薄く線 */
+            background: rgba(0,0,0,0.1); /* 枠の確認用（不要なら消してください） */
         }
 
+        /* 横に流れるベルトコンベア */
         .scroller {
             position: absolute;
             display: flex;
@@ -31,86 +31,84 @@
             will-change: transform;
         }
 
-        .item-box {
+        /* 1つ1つのギフトの箱 */
+        .gift-box {
             position: relative;
             width: 131px;
             height: 106px;
             flex-shrink: 0;
+            overflow: hidden;
         }
 
+        /* ページの中身：重ならないよう、各段ごとに「映す場所」だけを切り抜く */
         iframe {
             position: absolute;
             width: 1200px;
             height: 1200px;
             border: none;
             pointer-events: none;
-            transform-origin: 0 0;
-            transform: scale(0.85); /* アイコンサイズ調整 */
+            transform-origin: top left;
+            transform: scale(0.85); /* アイコンの大きさ */
         }
 
-        /* 段ごとの切り抜き位置 */
-        .clip-1 { clip-path: inset(5px 1010px 900px 5px); }
-        .clip-2 { clip-path: inset(135px 1010px 770px 5px); transform: translateY(-135px) scale(0.85); }
-        .clip-3 { clip-path: inset(265px 1010px 640px 5px); transform: translateY(-265px) scale(0.85); }
+        /* 段ごとの切り抜き（縦の座標を固定して重なりを防ぐ） */
+        .pos-1 { top: 0; clip-path: inset(5px 1010px 900px 5px); }
+        .pos-2 { top: 0; clip-path: inset(135px 1010px 770px 5px); transform: translateY(-135px) scale(0.85); }
+        .pos-3 { top: 0; clip-path: inset(265px 1010px 640px 5px); transform: translateY(-265px) scale(0.85); }
     </style>
 </head>
 <body>
 
-<div id="main-wrapper">
-    <div class="lane-wrapper" id="lane-1"><div class="scroller" id="scroll-1"></div></div>
-    <div class="lane-wrapper" id="lane-2"><div class="scroller" id="scroll-2"></div></div>
-    <div class="lane-wrapper" id="lane-3"><div class="scroller" id="scroll-3"></div></div>
+<div id="main-container">
+    <div class="lane"><div class="scroller" id="row-1"></div></div>
+    <div class="lane"><div class="scroller" id="row-2"></div></div>
+    <div class="lane"><div class="scroller" id="row-3"></div></div>
 </div>
 
 <script>
     const TARGET_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const ITEM_WIDTH = 131;
+    const ITEM_W = 131;
+    let posX = [0, 0, 0];
     let isDragging = false;
-    let startX = 0;
-    let currentPosX = [0, 0, 0]; // 各段の座標
+    let startMouseX = 0;
 
-    // 3つの段それぞれに中身を詰める
-    [1, 2, 3].forEach(num => {
-        const scroller = document.getElementById(`scroll-${num}`);
-        for (let i = 0; i < 15; i++) { // 横は制限なし（多めに生成）
+    // 各段にギフトを生成して並べる
+    [1, 2, 3].forEach(n => {
+        const row = document.getElementById(`row-${n}`);
+        for (let i = 0; i < 20; i++) { 
             const box = document.createElement('div');
-            box.className = 'item-box';
+            box.className = 'gift-box';
             const f = document.createElement('iframe');
             f.src = TARGET_URL;
-            f.className = `clip-${num}`;
+            f.className = `pos-${n}`;
             box.appendChild(f);
-            scroller.appendChild(box);
+            row.appendChild(box);
         }
     });
 
     function animate() {
         if (!isDragging) {
             for (let i = 0; i < 3; i++) {
-                currentPosX[i] -= (1.2 + (i * 0.2)); // 段ごとに少し速度を変えると自然です
-                if (currentPosX[i] <= -ITEM_WIDTH) currentPosX[i] += ITEM_WIDTH;
-                document.getElementById(`scroll-${i+1}`).style.transform = `translateX(${currentPosX[i]}px)`;
+                posX[i] -= 1.5; // スピード
+                if (posX[i] <= -ITEM_W) posX[i] += ITEM_W;
+                document.getElementById(`row-${i+1}`).style.transform = `translateX(${posX[i]}px)`;
             }
         }
         requestAnimationFrame(animate);
     }
 
-    // ドラッグ操作（全体または各段）
-    document.getElementById('main-wrapper').addEventListener('mousedown', (e) => {
-        isDragging = true;
-        startX = e.pageX;
-        this.basePosX = [...currentPosX];
-    });
-
-    window.addEventListener('mousemove', (e) => {
+    // ドラッグ操作
+    const container = document.getElementById('main-container');
+    container.onmousedown = (e) => { isDragging = true; startMouseX = e.pageX; this.preX = [...posX]; };
+    window.onmousemove = (e) => {
         if (!isDragging) return;
-        const diff = e.pageX - startX;
+        const diff = e.pageX - startMouseX;
         for (let i = 0; i < 3; i++) {
-            currentPosX[i] = this.basePosX[i] + diff;
-            document.getElementById(`scroll-${i+1}`).style.transform = `translateX(${currentPosX[i]}px)`;
+            posX[i] = this.preX[i] + diff;
+            document.getElementById(`row-${i+1}`).style.transform = `translateX(${posX[i]}px)`;
         }
-    });
-
-    window.addEventListener('mouseup', () => isDragging = false);
+    };
+    window.onmouseup = () => isDragging = false;
 
     animate();
 </script>
