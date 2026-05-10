@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
-        /* 131x106の枠を固定 */
+        /* 131x106の窓枠 */
         #wrapper { width: 100vw; height: 106px; position: relative; cursor: grab; overflow: hidden; }
         
         #scroller {
@@ -17,40 +17,39 @@
 
         .item-box {
             position: relative;
-            width: 131px; /* 横幅 */
-            height: 106px; /* 高さ */
+            width: 131px; /* 131px固定 */
+            height: 106px; /* 106px固定 */
             flex-shrink: 0;
             overflow: hidden;
         }
 
         iframe {
             position: absolute;
-            /* 🔴 ここを固定：元のページのサイズで読み込む */
-            width: 1200px; 
-            height: 800px; 
+            width: 1200px; /* 元のサイト幅 */
+            height: 800px; /* 元のサイト高 */
             border: none;
             pointer-events: none;
-            /* 🔴 勝手に縮小させない */
-            transform: scale(1.0); 
-            transform-origin: top left;
+            transform-origin: 0 0;
+            /* 🔴 アイコンがちょうど良い大きさになるよう倍率を固定(0.7程度) */
+            transform: scale(0.73); 
         }
 
-        /* --- 1段目と2段目を「窓」にピッタリ合わせる --- */
+        /* --- 1段目と2段目を「窓」にピッタリはめる --- */
         
         .top-part {
             top: 0;
             left: 0;
-            /* 1段目のアイコンの位置（左上から131x106の範囲だけ切り抜く） */
-            clip-path: inset(0px 1069px 694px 0px); 
+            /* 🔴 上段のアイコン1つ分を切り抜く(数値は scale 0.73 に最適化) */
+            clip-path: inset(0px 1018px 653px 0px); 
         }
 
         .bottom-part {
             top: 0;
             left: 0;
-            /* 2段目のアイコンの位置（106px分下の位置を切り抜く） */
-            clip-path: inset(106px 1069px 588px 0px);
-            /* 切り抜いた下段を、窓の高さまで持ち上げる */
-            transform: translateY(-106px);
+            /* 🔴 下段のアイコン1つ分を切り抜く */
+            clip-path: inset(146px 1018px 507px 0px);
+            /* 下段を上の枠まで持ち上げる */
+            transform: translateY(-106px) scale(0.73);
         }
     </style>
 </head>
@@ -67,7 +66,7 @@
 
     const ITEM_WIDTH = 131;
 
-    // 1段目と2段目を交互に生成（合計20枚）
+    // 1段目と2段目を交互に並べる
     for (let i = 0; i < 10; i++) {
         const boxT = document.createElement('div'); boxT.className = 'item-box';
         const fT = document.createElement('iframe'); fT.src = TARGET_URL; fT.className = 'top-part';
@@ -81,7 +80,7 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.2;
+    let speed = -1.5;
 
     function animate() {
         if (!isDragging) {
