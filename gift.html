@@ -5,6 +5,7 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
+        /* 131px * 3段 + 上部3px余白 = 396px */
         #viewport {
             width: 100vw;
             height: 396px; 
@@ -16,29 +17,27 @@
         #lane-container {
             position: absolute;
             display: flex;
-            gap: 0;
+            gap: 0; /* 🔴 物理的な隙間をゼロに */
             width: max-content;
             height: 393px;
             will-change: transform;
             left: 0;
-            top: 3px; 
+            top: 3px; /* 上部3px余白 */
         }
 
         .block {
             display: flex;
             flex-direction: column;
-            /* 🔴 1110pxから5px広げ、1115pxに設定 */
-            width: 1115px; 
+            /* 🔴 両サイドの余白を完全に削るため、幅を1180pxに絞り込む */
+            width: 1180px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
             padding: 0;
-            overflow: visible;
         }
 
         .lane {
-            /* 抜き出し幅1174pxに対し、送り幅1115pxなので、重なりは59pxになります */
-            width: 1174px; 
+            width: 1180px; /* 🔴 ここも連動 */
             height: 131px;
             position: relative;
             overflow: hidden;
@@ -46,23 +45,23 @@
 
         iframe {
             position: absolute;
-            width: 1200px;
+            width: 1200px; /* 元のデータ幅は維持 */
             height: 1500px;
             border: none;
             pointer-events: none;
             left: 0; 
         }
 
-        /* 精密クリップ設定 */
-        .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
-        .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
-        .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
-        .r4 { top: 0; clip-path: inset(393px 26px 976px 0px); transform: translateY(-393px); }
-        .r5 { top: 0; clip-path: inset(524px 26px 845px 0px); transform: translateY(-524px); }
-        .r6 { top: 0; clip-path: inset(655px 26px 714px 0px); transform: translateY(-655px); }
-        .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
-        .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
-        .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
+        /* 131px刻みの座標（構造は維持、右カット幅を20pxに強化） */
+        .r1 { top: 0; clip-path: inset(0px 20px 1369px 0px); }
+        .r2 { top: 0; clip-path: inset(131px 20px 1238px 0px); transform: translateY(-131px); }
+        .r3 { top: 0; clip-path: inset(262px 20px 1107px 0px); transform: translateY(-262px); }
+        .r4 { top: 0; clip-path: inset(393px 20px 976px 0px); transform: translateY(-393px); }
+        .r5 { top: 0; clip-path: inset(524px 20px 845px 0px); transform: translateY(-524px); }
+        .r6 { top: 0; clip-path: inset(655px 20px 714px 0px); transform: translateY(-655px); }
+        .r7 { top: 0; clip-path: inset(786px 20px 583px 0px); transform: translateY(-786px); }
+        .r8 { top: 0; clip-path: inset(917px 20px 452px 0px); transform: translateY(-917px); }
+        .r9 { top: 0; clip-path: inset(1048px 20px 321px 0px); transform: translateY(-1048px); }
     </style>
 </head>
 <body>
@@ -73,14 +72,15 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1115; // 🔴 最終精密送り幅：1115px
+    const W = 1180; // 🔴 表示幅を1180pxに短縮
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
     function init() {
         container.innerHTML = '';
-        for (let i = 0; i < 4; i++) {
+        // 3交代ユニットを2周分物理的に繋ぐ
+        for (let i = 0; i < 2; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
                 block.className = 'block';
@@ -88,7 +88,7 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
-                    f.src = `${URL}?lane=${n}&t=${Date.now()}_${i}_${n}`;
+                    f.src = `${URL}?lane=${n}&t=${Date.now()}_${Math.random()}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
                     block.appendChild(lane);
@@ -101,12 +101,13 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.8; 
+    let speed = -1.8; // 右から左（←）
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const cycleWidth = W * 3; 
+            const cycleWidth = W * 3;
+            // 🔴 新しい幅(1180*3)でピッタリ戻す
             if (posX <= -cycleWidth) {
                 posX += cycleWidth;
             }
