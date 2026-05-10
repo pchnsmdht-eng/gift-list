@@ -7,43 +7,42 @@
         #viewport { width: 100vw; height: 400px; position: relative; overflow: hidden; cursor: grab; }
         
         #lane-container { 
-            position: absolute; display: flex; width: max-content; height: 396px;
-            top: 2px;
+            position: absolute; display: flex; width: max-content; height: 393px;
+            top: 2px; /* 以前の「くっつきすぎ防止」余白 */
             will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
-        /* 1ブロックの幅を指定された132pxに合わせて固定 */
-        .block { display: flex; flex-direction: column; width: 132px; height: 396px; flex-shrink: 0; margin-right: 5px; }
+        /* 以前の安定した横幅 1115px に戻します */
+        .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         
-        /* 1段の高さを131pxに固定 */
         .lane { 
-            width: 132px; 
+            width: 1115px; 
             height: 131px; 
             position: relative; 
             overflow: hidden; 
-            margin-bottom: 1px;
-            background: transparent;
+            margin: 0 !important; 
+            padding: 0 !important;
+            display: block;
         }
         
         iframe { 
-            position: absolute; 
-            width: 1200px; 
-            height: 1500px; 
-            border: none; 
+            position: absolute; width: 1200px; height: 1500px; border: none; 
             background: transparent;
             transform-origin: top left;
         }
 
-        /* 🔴 指定された123pxと132pxを基準に、重ならないように切り抜き */
-        /* r1〜r3: 1段目（上・中・下） */
-        .r1 { top: 0; clip-path: inset(0px 1068px 1369px 0px); }
-        .r2 { top: 0; clip-path: inset(132px 1068px 1237px 0px); transform: translateY(-132px); }
-        .r3 { top: 0; clip-path: inset(264px 1068px 1105px 0px); transform: translateY(-264px); }
-
-        /* r4〜r6: 2段目（上・中・下） */
-        .r4 { top: 0; clip-path: inset(396px 1068px 973px 0px); transform: translateY(-396px); }
-        .r5 { top: 0; clip-path: inset(528px 1068px 841px 0px); transform: translateY(-528px); }
-        .r6 { top: 0; clip-path: inset(660px 1068px 709px 0px); transform: translateY(-660px); }
+        /* 正常だった頃の clip-path 数値 */
+        .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
+        .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
+        .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
+        
+        .r4 { top: 0; clip-path: inset(393px 26px 976px 0px); transform: translateY(-393px); }
+        .r5 { top: 0; clip-path: inset(524px 26px 845px 0px); transform: translateY(-524px); }
+        .r6 { top: 0; clip-path: inset(655px 26px 714px 0px); transform: translateY(-655px); }
+        
+        .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
+        .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
+        .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
 
         #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: transparent; }
     </style>
@@ -57,7 +56,7 @@
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 137; // blockの幅(132) + 余白(5)
+    const W = 1115; 
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
     let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
@@ -73,9 +72,8 @@
 
     function init() {
         container.innerHTML = '';
-        // 縦3つを1セットとして、横にたくさん並べてループさせる
-        for (let i = 0; i < 15; i++) {
-            [[1,2,3],[4,5,6]].forEach(rows => {
+        for (let i = 0; i < 3; i++) {
+            [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
                     const l = document.createElement('div'); l.className = 'lane';
@@ -96,7 +94,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const totalW = W * 30; // ブロック数に合わせてループ
+            const totalW = W * 3; 
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
