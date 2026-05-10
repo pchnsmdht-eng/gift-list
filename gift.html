@@ -7,7 +7,7 @@
         
         #viewport {
             width: 100vw;
-            height: 405px;
+            height: 405px; /* 135px * 3段 */
             position: relative;
             overflow: hidden;
             cursor: grab;
@@ -45,7 +45,7 @@
             pointer-events: none;
         }
 
-        /* 抜き出し座標（135px刻み） */
+        /* 🔴 135px刻みで全9段を定義 */
         .r1 { top: 0; clip-path: inset(0px 0px 1365px 0px); }
         .r2 { top: 0; clip-path: inset(135px 0px 1230px 0px); transform: translateY(-135px); }
         .r3 { top: 0; clip-path: inset(270px 0px 1095px 0px); transform: translateY(-270px); }
@@ -68,13 +68,13 @@
     const W = 1200;
     const container = document.getElementById('lane-container');
 
-    // 交代する3つのセット
+    // 交代する3つのユニット
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
     function init() {
         container.innerHTML = '';
-        // 🔴 永遠ループのために、3つのブロックを3セット（計9ブロック）並べて余裕を持たせる
-        for (let i = 0; i < 3; i++) {
+        // 🔴 シームレス化のために、全3ユニット(3600px分)を「2周分」物理的に繋ぐ
+        for (let i = 0; i < 2; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
                 block.className = 'block';
@@ -82,7 +82,7 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
-                    f.src = `${URL}?v=${Date.now()}_${n}_${Math.random()}`;
+                    f.src = `${URL}?lane=${n}&t=${Date.now()}_${Math.random()}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
                     block.appendChild(lane);
@@ -101,13 +101,13 @@
         if (!isDragging) {
             posX += speed;
             
-            // 🔴 3ブロックの合計幅（3600px）分移動したら、シームレスに位置を戻す
-            const loopThreshold = -(W * 3);
-            if (posX <= loopThreshold) {
-                posX += Math.abs(loopThreshold);
+            // 🔴 3ユニット分（3600px）流れた瞬間に座標をリセット
+            // 後ろに2周目が繋がっているので、見た目上の途切れは一切ありません
+            const cycleWidth = W * 3;
+            if (posX <= -cycleWidth) {
+                posX += cycleWidth;
             }
         }
-        // transformを使用して滑らかに動かす
         container.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
@@ -119,9 +119,6 @@
 
     init();
     animate();
-
-    // 10分おきにリフレッシュして最新データを取得
-    setInterval(init, 600000);
 </script>
 </body>
 </html>
