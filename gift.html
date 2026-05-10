@@ -3,13 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        /* 背景を透明に固定して白飛びを防ぐ */
         body { margin: 0; background: transparent; overflow: hidden; }
         #viewport { width: 100vw; height: 396px; position: relative; overflow: hidden; }
-        #lane-container { position: absolute; display: flex; width: max-content; height: 393px; top: 3px; will-change: transform; }
+        
+        #lane-container { 
+            position: absolute; display: flex; width: max-content; height: 393px; top: 3px; 
+            will-change: transform; transform: translate3d(0, 0, 0); 
+        }
+
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
-        .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; background: rgba(255,255,255,0.01); }
-        iframe { position: absolute; width: 1200px; height: 1500px; border: none; pointer-events: none; }
-        /* クリップ位置省略なし（r1~r9） */
+        .lane { 
+            width: 1174px; height: 131px; position: relative; overflow: hidden; 
+            /* 読み込み待ちの間、白くならないよう透明な背景を設定 */
+            background: rgba(0,0,0,0.05); 
+        }
+
+        iframe { 
+            position: absolute; width: 1200px; height: 1500px; border: none; 
+            opacity: 0; transition: opacity 0.3s; /* 読み込み完了後にふわっと出す */
+        }
+        
+        /* クリップ位置 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -19,6 +34,7 @@
         .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
+
         #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: transparent; cursor: grab; }
     </style>
 </head>
@@ -28,9 +44,8 @@
     const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1115;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
-    let posX = 0, speed = -1.0, isDragging = false;
+    let posX = 0, speed = -1.0, isDragging = false, startX = 0;
 
-    // スピード同期
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -40,40 +55,41 @@
     }
     setInterval(syncSpeed, 3000);
 
-    // 画面に必要な分だけブロックを作成
     function init() {
         container.innerHTML = '';
+        // 3つのブロックをあらかじめ作っておき、iframeを仕込む
         for(let i=0; i<3; i++) {
             const b = document.createElement('div'); b.className = 'block';
             for(let n=1; n<=9; n++) {
                 const l = document.createElement('div'); l.className = 'lane';
-                l.dataset.lane = n;
+                const f = document.createElement('iframe');
+                f.className = `r${n}`;
+                // 読み込み完了時に表示
+                f.onload = () => { f.style.opacity = "1"; };
+                f.src = `${SRC}?lane=${n}`;
+                l.appendChild(f);
                 b.appendChild(l);
             }
             container.appendChild(b);
         }
     }
 
-    // 🌟 画面内にあるものだけiframeを生成し、外れたら即削除
-    function manageMemory() {
-        const lanes = document.querySelectorAll('.lane');
-        lanes.forEach(l => {
-            const rect = l.getBoundingClientRect();
-            const isVisible = rect.left < window.innerWidth + 200 && rect.right > -200;
-            const hasIframe = l.querySelector('iframe');
-
-            if (isVisible && !hasIframe) {
-                const f = document.createElement('iframe');
-                f.className = `r${l.dataset.lane}`;
-                f.src = `${SRC}?lane=${l.dataset.lane}`;
-                l.appendChild(f);
-            } else if (!isVisible && hasIframe) {
-                l.innerHTML = ''; // メモリ解放のために要素ごと削除
+    // 🌟 描画負荷対策：画面外のブロックを「消さずに隠す」
+    function optimizeLayers() {
+        const blocks = document.querySelectorAll('.block');
+        blocks.forEach((b, i) => {
+            const rect = b.getBoundingClientRect();
+            // 画面外に完全に出たブロックは描画を止める（でも中身は消さない）
+            if (rect.right < -100 || rect.left > window.innerWidth + 100) {
+                b.style.visibility = 'hidden';
+            } else {
+                b.style.visibility = 'visible';
             }
         });
     }
 
-    document.getElementById('touch-overlay').onpointerdown = (e) => { isDragging = true; startX = e.clientX - posX; };
+    const overlay = document.getElementById('touch-overlay');
+    overlay.onpointerdown = (e) => { isDragging = true; startX = e.clientX - posX; };
     window.onpointermove = (e) => { if (isDragging) posX = e.clientX - startX; };
     window.onpointerup = () => isDragging = false;
 
@@ -84,7 +100,7 @@
             if (posX > 0) posX -= W;
         }
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
-        manageMemory();
+        optimizeLayers();
         requestAnimationFrame(animate);
     }
 
