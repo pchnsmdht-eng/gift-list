@@ -18,70 +18,68 @@
             height: 135px;
             position: relative;
             overflow: hidden;
-            /* 🔴 ブラウザに「ここは個別に描画しろ」と強制する設定 */
-            transform: translateZ(0); 
-            background: rgba(0,0,0,0.01); /* 描画を誘発 */
         }
 
         iframe {
             position: absolute;
             width: 1200px;
-            height: 2000px; 
+            height: 1200px;
             border: none;
             pointer-events: none;
             will-change: transform;
         }
+
+        /* 🔴 シンプルに各段の抜き出し位置を固定 */
+        .r1 { top: 0; clip-path: inset(0px 0px 1065px 0px); }
+        .r2 { top: 0; clip-path: inset(135px 0px 930px 0px); transform: translateY(-135px); }
+        .r3 { top: 0; clip-path: inset(270px 0px 795px 0px); transform: translateY(-270px); }
     </style>
 </head>
 <body>
 
 <div id="viewport">
-    <div class="lane"><iframe id="f1"></iframe></div>
-    <div class="lane"><iframe id="f2"></iframe></div>
-    <div class="lane"><iframe id="f3"></iframe></div>
+    <div class="lane" id="l1"></div>
+    <div class="lane" id="l2"></div>
+    <div class="lane" id="l3"></div>
 </div>
 
 <script>
-    const BASE_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1200;
-    const H = 135; 
-    const iframes = [document.getElementById('f1'), document.getElementById('f2'), document.getElementById('f3')];
+    const lanes = [document.getElementById('l1'), document.getElementById('l2'), document.getElementById('l3')];
 
-    // 🔴 同時読み込みを避け、1つずつ時間を空けて読み込む
-    async function init() {
-        for (let i = 0; i < iframes.length; i++) {
-            // URLを完全にバラバラにして認識させる
-            iframes[i].src = `${BASE_URL}?lane=${i}&t=${Date.now()}`;
-            await new Promise(r => setTimeout(r, 200)); // 0.2秒待機
+    // 各レーンに2枚ずつiframeを置いてループ（合計6枚、これが限界の軽さです）
+    function init() {
+        for (let n = 1; n <= 3; n++) {
+            const container = document.getElementById(`l${n}`);
+            container.innerHTML = ''; 
+            for (let i = 0; i < 2; i++) {
+                const f = document.createElement('iframe');
+                // キャッシュ対策で末尾を変える
+                f.src = `${URL}?lane=${n}&i=${i}&t=${Date.now()}`;
+                f.className = `r${n}`;
+                f.style.left = `${i * W}px`;
+                container.appendChild(f);
+            }
         }
     }
 
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.8;
+    let speed = -1.8; // 右から左へ
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            if (posX <= -(W * 3)) posX += (W * 3);
-            if (posX > 0) posX -= (W * 3);
+            if (posX <= -W) posX += W;
         }
-
-        const setIndex = Math.floor(Math.abs(posX) / W) % 3;
-        const scrollX = posX % W;
-
-        iframes.forEach((f, i) => {
-            const currentRow = i + (setIndex * 3);
-            const targetY = -(currentRow * H);
-            
-            // 描画バグを防ぐため、常に座標を更新し続ける
-            f.style.transform = `translate3d(${scrollX}px, ${targetY}px, 0)`;
-            
-            const top = currentRow * H;
-            f.style.clipPath = `inset(${top}px 0px ${2000 - (top + H)}px 0px)`;
+        
+        // 3つのレーンをまとめて動かす
+        lanes.forEach(lane => {
+            lane.style.transform = `translateX(${posX}px)`;
         });
-
+        
         requestAnimationFrame(animate);
     }
 
@@ -92,9 +90,6 @@
 
     init();
     animate();
-
-    // 10分おきにリフレッシュ
-    setInterval(init, 600000);
 </script>
 </body>
 </html>
