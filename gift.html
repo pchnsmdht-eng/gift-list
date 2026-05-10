@@ -2,58 +2,13 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
-        
-        #viewport {
-            width: 100vw;
-            height: 396px; 
-            position: relative;
-            overflow: hidden;
-            cursor: grab;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-        }
-
-        #lane-container {
-            position: absolute;
-            display: flex;
-            gap: 0;
-            width: max-content;
-            height: 393px;
-            will-change: transform;
-            left: 0;
-            top: 3px;
-        }
-
-        .block {
-            display: flex;
-            flex-direction: column;
-            width: 1115px; 
-            height: 393px;
-            flex-shrink: 0;
-            margin: 0;
-            padding: 0;
-        }
-
-        .lane {
-            width: 1174px; 
-            height: 131px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        iframe {
-            position: absolute;
-            width: 1200px;
-            height: 1500px;
-            border: none;
-            pointer-events: none;
-        }
-
-        /* 精密クリップ位置（復元） */
+        body { margin: 0; background: transparent; overflow: hidden; }
+        #viewport { width: 100vw; height: 396px; position: relative; overflow: hidden; }
+        #lane-container { position: absolute; display: flex; width: max-content; height: 393px; top: 3px; will-change: transform; }
+        .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
+        .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; }
+        iframe { position: absolute; width: 1200px; height: 1500px; border: none; pointer-events: none; }
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -63,104 +18,63 @@
         .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
-
-        /* 操作を邪魔しないための透明レイヤー */
-        #interaction-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 100;
-            background: transparent;
-        }
     </style>
 </head>
 <body>
-
-<div id="viewport">
-    <div id="interaction-layer"></div>
-    <div id="lane-container"></div>
-</div>
-
+<div id="viewport"><div id="lane-container"></div></div>
 <script>
-    // 🔴 以下の2行だけ、ご自身のものに書き換えてください
-    const USER = "あなたのユーザー名";
-    const REPO = "あなたのリポジトリ名";
+    // 🔴 自分のユーザー名とリポジトリ名に書き換えてください
+    const USER = "pchnsmdht-eng";
+    const REPO = "gift-list";
 
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1115; 
+    const W = 1115;
     const container = document.getElementById('lane-container');
-    const interLayer = document.getElementById('interaction-layer');
-
     let posX = 0;
-    let isDragging = false;
-    let startX = 0;
-    let speed = -1.0; 
+    let speed = -1.0;
 
-    // 🔴 別PCからのスピード命令を監視する機能
+    // スピードを取得する際、末尾にデタラメな数字を付けて常に最新版を強制的に読み込ませます
     async function syncSpeed() {
         try {
-            const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`;
+            const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?nocache=${Math.random()}`;
             const res = await fetch(rawUrl);
             const text = await res.text();
             if(!isNaN(text) && text.trim() !== "") {
                 speed = parseFloat(text);
+                console.log("現在のスピード:", speed);
             }
-        } catch (e) { console.log("Speed Sync Error"); }
+        } catch (e) {}
     }
-    setInterval(syncSpeed, 5000); // 5秒おきに確認
 
-    const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    // 🔴 監視を「3秒おき」に短縮しました
+    setInterval(syncSpeed, 3000);
 
     function init() {
         container.innerHTML = '';
         for (let i = 0; i < 4; i++) {
-            groups.forEach(rows => {
-                const block = document.createElement('div');
-                block.className = 'block';
+            [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
+                const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
-                    const lane = document.createElement('div');
-                    lane.className = 'lane';
-                    const f = document.createElement('iframe');
-                    f.src = `${URL}?lane=${n}&t=${Date.now()}_${i}_${n}`;
-                    f.className = `r${n}`;
-                    lane.appendChild(f);
-                    block.appendChild(lane);
+                    const l = document.createElement('div'); l.className = 'lane';
+                    const f = document.createElement('iframe'); f.className = `r${n}`;
+                    f.src = `${URL}?lane=${n}&t=${Date.now()}`;
+                    l.appendChild(f); b.appendChild(l);
                 });
-                container.appendChild(block);
+                container.appendChild(b);
             });
         }
     }
 
-    // ドラッグ操作（スマホ・Studio対応）
-    interLayer.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        startX = e.pageX - posX;
-        interLayer.setPointerCapture(e.pointerId);
-    });
-
-    window.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        posX = e.pageX - startX;
-    });
-
-    window.addEventListener('pointerup', () => isDragging = false);
-
     function animate() {
-        if (!isDragging) {
-            posX += speed;
-            const cycleWidth = W * 3; 
-            if (posX <= -cycleWidth) posX += cycleWidth;
-            if (posX > 0) posX -= cycleWidth;
-        }
+        posX += speed;
+        const totalW = W * 3;
+        if (posX <= -totalW) posX += totalW;
+        if (posX > 0) posX -= totalW;
         container.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    init();
-    syncSpeed();
-    animate();
+    init(); syncSpeed(); animate();
 </script>
 </body>
 </html>
