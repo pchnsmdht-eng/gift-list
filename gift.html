@@ -8,17 +8,17 @@
         
         #lane-container { 
             position: absolute; display: flex; width: max-content; height: 393px;
-            /* 🔴 上部に1pxの余白を追加しました */
-            top: 1px;
+            /* 上部の余白（お好みで調整してください） */
+            top: 2px;
             will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         
-        /* 各レーンの高さを厳密に131pxに固定 */
+        /* 🔴 ズレ修正：レーンの高さを精密に調整 */
         .lane { 
             width: 1115px; 
-            height: 131px; 
+            height: 131px; /* 表示上の高さ */
             position: relative; 
             overflow: hidden; 
             margin: 0 !important; 
@@ -31,16 +31,24 @@
             background: transparent;
         }
 
-        /* 切り抜き位置（変更なし） */
-        .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
-        .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
-        .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
-        .r4 { top: 0; clip-path: inset(393px 26px 976px 0px); transform: translateY(-393px); }
-        .r5 { top: 0; clip-path: inset(524px 26px 845px 0px); transform: translateY(-524px); }
-        .r6 { top: 0; clip-path: inset(655px 26px 714px 0px); transform: translateY(-655px); }
-        .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
-        .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
-        .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
+        /* 🔴 切り抜き位置（clip-path）を精密に再計算（131.5px刻み）
+           inset(上 右 下 左)
+        */
+        .r1 { top: 0; clip-path: inset(0px 26px 1368.5px 0px); }
+        
+        /* 2行目: 131.5pxから切り出し、上に131.5px戻す */
+        .r2 { top: 0; clip-path: inset(131.5px 26px 1237px 0px); transform: translateY(-131.5px); }
+        
+        /* 3行目: 263px(131.5*2)から切り出し、上に263px戻す */
+        .r3 { top: 0; clip-path: inset(263px 26px 1105.5px 0px); transform: translateY(-263px); }
+        
+        /* 以降、131.5pxずつ足していく */
+        .r4 { top: 0; clip-path: inset(394.5px 26px 974px 0px); transform: translateY(-394.5px); }
+        .r5 { top: 0; clip-path: inset(526px 26px 842.5px 0px); transform: translateY(-526px); }
+        .r6 { top: 0; clip-path: inset(657.5px 26px 711px 0px); transform: translateY(-657.5px); }
+        .r7 { top: 0; clip-path: inset(789px 26px 579.5px 0px); transform: translateY(-789px); }
+        .r8 { top: 0; clip-path: inset(920.5px 26px 448px 0px); transform: translateY(-920.5px); }
+        .r9 { top: 0; clip-path: inset(1052px 26px 316.5px 0px); transform: translateY(-1052px); }
 
         #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: transparent; }
     </style>
@@ -54,7 +62,7 @@
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1115;
+    const W = 1115; // 1ブロックの横幅
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
     let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
@@ -70,7 +78,9 @@
 
     function init() {
         container.innerHTML = '';
+        // 滑らかなループのため、セットを3つ並べる
         for (let i = 0; i < 3; i++) {
+            // 3段ずつのセットを作成
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
@@ -85,6 +95,7 @@
         }
     }
 
+    // ドラッグ操作
     overlay.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX - posX; overlay.setPointerCapture(e.pointerId); });
     overlay.addEventListener('pointermove', (e) => { if (!isDragging) return; posX = e.clientX - startX; });
     overlay.addEventListener('pointerup', () => isDragging = false);
@@ -92,7 +103,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const totalW = W * 3;
+            const totalW = W * 3; // 3セット分の幅でループ
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
