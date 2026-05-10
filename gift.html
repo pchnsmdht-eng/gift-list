@@ -5,10 +5,10 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 131px * 3段 = 393px */
+        /* 🔴 131px * 3段 = 393px に上部余白3pxを足して 396px */
         #viewport {
             width: 100vw;
-            height: 393px; 
+            height: 396px; 
             position: relative;
             overflow: hidden;
             cursor: grab;
@@ -18,9 +18,11 @@
             position: absolute;
             display: flex;
             width: max-content;
-            height: 393px;
+            height: 393px; /* 中身の高さは維持 */
             will-change: transform;
             left: 0;
+            /* 🔴 全体を3px下に下げる */
+            top: 3px; 
         }
 
         .block {
@@ -46,7 +48,7 @@
             pointer-events: none;
         }
 
-        /* 🔴 131px刻みで再計算した座標 */
+        /* 131px刻みの座標（構造は維持） */
         .r1 { top: 0; clip-path: inset(0px 0px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 0px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 0px 1107px 0px); transform: translateY(-262px); }
@@ -81,7 +83,6 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
-                    // キャッシュ対策
                     f.src = `${URL}?lane=${n}&t=${Date.now()}_${Math.random()}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
