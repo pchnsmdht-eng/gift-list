@@ -5,7 +5,6 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦130px × 3段 = 390px 固定枠 */
         #viewport {
             width: 100vw;
             height: 390px;
@@ -14,111 +13,74 @@
             cursor: grab;
         }
 
-        #scroller {
-            position: absolute;
-            display: flex;
-            width: max-content;
-            height: 390px;
-            will-change: transform;
-            left: 0;
-        }
-
-        .block {
-            display: flex;
-            flex-direction: column;
-            width: 1200px;
-            height: 390px;
-            flex-shrink: 0;
-        }
-
+        /* 各段の枠 */
         .lane {
-            width: 1200px;
+            width: 100vw;
             height: 130px;
             position: relative;
             overflow: hidden;
         }
 
+        /* iframeは各段1枚だけ！ */
         iframe {
             position: absolute;
             width: 1200px;
-            height: 1500px; /* 🔴 高さを十分に確保 */
+            height: 1500px;
             border: none;
             pointer-events: none;
-            transform-origin: 0 0;
+            will-change: transform; /* GPU加速 */
         }
-
-        /* --- 抜き出し座標（全ブロック分） --- */
-        .r1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
-        .r2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
-        .r3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
-        
-        .r4 { top: 0; clip-path: inset(390px 0px 680px 0px); transform: translateY(-390px); }
-        .r5 { top: 0; clip-path: inset(520px 0px 550px 0px); transform: translateY(-520px); }
-        .r6 { top: 0; clip-path: inset(650px 0px 420px 0px); transform: translateY(-650px); }
-        
-        .r7 { top: 0; clip-path: inset(780px 0px 290px 0px); transform: translateY(-780px); }
-        .r8 { top: 0; clip-path: inset(910px 0px 160px 0px); transform: translateY(-910px); }
-        .r9 { top: 0; clip-path: inset(1040px 0px 30px 0px); transform: translateY(-1040px); }
     </style>
 </head>
 <body>
 
 <div id="viewport">
-    <div id="scroller"></div>
+    <div class="lane"><iframe id="f1"></iframe></div>
+    <div class="lane"><iframe id="f2"></iframe></div>
+    <div class="lane"><iframe id="f3"></iframe></div>
 </div>
 
 <script>
     const BASE_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1200;
-    const scroller = document.getElementById('scroller');
+    const iframes = [document.getElementById('f1'), document.getElementById('f2'), document.getElementById('f3')];
 
-    function init() {
-        scroller.innerHTML = '';
-        
-        // 3交代の定義
-        const groups = [
-            [1, 2, 3], // Block A
-            [4, 5, 6], // Block B
-            [7, 8, 9]  // Block C
-        ];
-
-        // 2セット分作成
-        for (let i = 0; i < 2; i++) {
-            groups.forEach(rows => {
-                const block = document.createElement('div');
-                block.className = 'block';
-                rows.forEach(n => {
-                    const lane = document.createElement('div');
-                    lane.className = 'lane';
-                    const f = document.createElement('iframe');
-                    // 🔴 強力なキャッシュ回避：ランダムなIDを付与
-                    const randomID = Math.random().toString(36).substring(7);
-                    f.src = `${BASE_URL}?v=${randomID}&row=${n}`;
-                    f.className = `r${n}`;
-                    lane.appendChild(f);
-                    block.appendChild(lane);
-                });
-                scroller.appendChild(block);
-            });
-        }
+    // 初回読み込み（キャッシュ回避）
+    function loadIframes() {
+        iframes.forEach((f, i) => {
+            f.src = `${BASE_URL}?v=${Date.now()}_${i}`;
+        });
     }
 
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.8; // 右から左へ（←）
+    let speed = -1.8;
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            
-            // 3ブロック分（3600px）通り過ぎたらリセット
-            const limit = W * 3;
-            if (posX <= -limit) {
-                posX += limit;
-            }
+            // 3セット分(3600px)のループ
+            if (posX <= -(W * 3)) posX += (W * 3);
         }
-        scroller.style.transform = `translateX(${posX}px)`;
+
+        // 現在どのセット(0:1-3段目, 1:4-6段目, 2:7-9段目)を表示すべきか計算
+        const scrollX = posX % W;
+        const setIndex = Math.floor(Math.abs(posX) / W) % 3;
+
+        iframes.forEach((f, i) => {
+            // 表示する段（row）をセットに合わせて変更
+            const rowOffset = setIndex * 3;
+            const targetY = -( (i + rowOffset) * 130 );
+            
+            // GPUで動かすことでCPU負荷を軽減
+            f.style.transform = `translate3d(${scrollX}px, ${targetY}px, 0)`;
+            
+            // クリップ範囲も動的に更新（全9段分をカバー）
+            const top = (i + rowOffset) * 130;
+            f.style.clipPath = `inset(${top}px 0px ${1500 - (top + 130)}px 0px)`;
+        });
+
         requestAnimationFrame(animate);
     }
 
@@ -127,10 +89,10 @@
     window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
 
-    // 10分周期で中身を入れ替え
-    setInterval(init, 600000);
+    // 10分おきにリフレッシュ（CPUに優しい頻度）
+    setInterval(loadIframes, 600000);
 
-    init();
+    loadIframes();
     animate();
 </script>
 </body>
