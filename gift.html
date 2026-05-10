@@ -8,17 +8,15 @@
         
         #lane-container { 
             position: absolute; display: flex; width: max-content; height: 393px;
-            /* 上部の余白（お好みで調整してください） */
             top: 2px;
             will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         
-        /* 🔴 ズレ修正：レーンの高さを精密に調整 */
         .lane { 
             width: 1115px; 
-            height: 131px; /* 表示上の高さ */
+            height: 131px; 
             position: relative; 
             overflow: hidden; 
             margin: 0 !important; 
@@ -27,28 +25,29 @@
         }
         
         iframe { 
-            position: absolute; width: 1200px; height: 1500px; border: none; 
+            position: absolute; 
+            width: 1200px; 
+            height: 1500px; 
+            border: none; 
             background: transparent;
+            /* 🔴 リサイズによるズレを抑えるため、原点を固定 */
+            transform-origin: top left;
         }
 
-        /* 🔴 切り抜き位置（clip-path）を精密に再計算（131.5px刻み）
-           inset(上 右 下 左)
+        /* 🔴 データの無い余白によるズレを吸収するための新数値
+           元のページの余白を考慮し、切り抜き位置を少しだけ内側に寄せました
         */
-        .r1 { top: 0; clip-path: inset(0px 26px 1368.5px 0px); }
+        .r1 { top: 0; clip-path: inset(1px 26px 1368px 0px); }
+        .r2 { top: 0; clip-path: inset(132.5px 26px 1236.5px 0px); transform: translateY(-132.5px); }
+        .r3 { top: 0; clip-path: inset(264px 26px 1105px 0px); transform: translateY(-264px); }
         
-        /* 2行目: 131.5pxから切り出し、上に131.5px戻す */
-        .r2 { top: 0; clip-path: inset(131.5px 26px 1237px 0px); transform: translateY(-131.5px); }
+        .r4 { top: 0; clip-path: inset(395.5px 26px 973.5px 0px); transform: translateY(-395.5px); }
+        .r5 { top: 0; clip-path: inset(527px 26px 842px 0px); transform: translateY(-527px); }
+        .r6 { top: 0; clip-path: inset(658.5px 26px 710.5px 0px); transform: translateY(-658.5px); }
         
-        /* 3行目: 263px(131.5*2)から切り出し、上に263px戻す */
-        .r3 { top: 0; clip-path: inset(263px 26px 1105.5px 0px); transform: translateY(-263px); }
-        
-        /* 以降、131.5pxずつ足していく */
-        .r4 { top: 0; clip-path: inset(394.5px 26px 974px 0px); transform: translateY(-394.5px); }
-        .r5 { top: 0; clip-path: inset(526px 26px 842.5px 0px); transform: translateY(-526px); }
-        .r6 { top: 0; clip-path: inset(657.5px 26px 711px 0px); transform: translateY(-657.5px); }
-        .r7 { top: 0; clip-path: inset(789px 26px 579.5px 0px); transform: translateY(-789px); }
-        .r8 { top: 0; clip-path: inset(920.5px 26px 448px 0px); transform: translateY(-920.5px); }
-        .r9 { top: 0; clip-path: inset(1052px 26px 316.5px 0px); transform: translateY(-1052px); }
+        .r7 { top: 0; clip-path: inset(790px 26px 579px 0px); transform: translateY(-790px); }
+        .r8 { top: 0; clip-path: inset(921.5px 26px 447.5px 0px); transform: translateY(-921.5px); }
+        .r9 { top: 0; clip-path: inset(1053px 26px 316px 0px); transform: translateY(-1053px); }
 
         #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: transparent; }
     </style>
@@ -62,7 +61,7 @@
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1115; // 1ブロックの横幅
+    const W = 1115;
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
     let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
@@ -78,9 +77,7 @@
 
     function init() {
         container.innerHTML = '';
-        // 滑らかなループのため、セットを3つ並べる
         for (let i = 0; i < 3; i++) {
-            // 3段ずつのセットを作成
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
@@ -95,7 +92,6 @@
         }
     }
 
-    // ドラッグ操作
     overlay.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX - posX; overlay.setPointerCapture(e.pointerId); });
     overlay.addEventListener('pointermove', (e) => { if (!isDragging) return; posX = e.clientX - startX; });
     overlay.addEventListener('pointerup', () => isDragging = false);
@@ -103,7 +99,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const totalW = W * 3; // 3セット分の幅でループ
+            const totalW = W * 3;
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
