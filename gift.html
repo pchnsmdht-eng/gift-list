@@ -4,45 +4,48 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
+        /* 全体の高さを余裕を持って400pxに */
         #viewport { width: 100vw; height: 400px; position: relative; overflow: hidden; cursor: grab; }
         
         #lane-container { 
-            position: absolute; display: flex; width: max-content; height: 393px;
-            top: 2px; /* 以前の「くっつきすぎ防止」余白 */
+            position: absolute; display: flex; width: max-content; height: 396px;
+            top: 2px; /* 上部のわずかな隙間 */
             will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
-        /* 以前の安定した横幅 1115px に戻します */
-        .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
+        /* 🔴 1セットの横幅を1115pxに固定。これで重なりを防ぎます */
+        .block { display: flex; flex-direction: column; width: 1115px; height: 396px; flex-shrink: 0; }
         
+        /* 1つのレーン（3列分）の高さを132pxに設定 */
         .lane { 
             width: 1115px; 
-            height: 131px; 
+            height: 132px; 
             position: relative; 
             overflow: hidden; 
             margin: 0 !important; 
             padding: 0 !important;
-            display: block;
         }
         
         iframe { 
             position: absolute; width: 1200px; height: 1500px; border: none; 
-            background: transparent;
-            transform-origin: top left;
+            background: transparent; transform-origin: top left;
         }
 
-        /* 正常だった頃の clip-path 数値 */
-        .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
-        .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
-        .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
+        /* 🔴 clip-pathを初期の「重ならない設定」に完全固定 */
+        /* 1段目（レーン1,2,3） */
+        .r1 { top: 0; clip-path: inset(0px 26px 1368px 0px); }
+        .r2 { top: 0; clip-path: inset(132px 26px 1236px 0px); transform: translateY(-132px); }
+        .r3 { top: 0; clip-path: inset(264px 26px 1104px 0px); transform: translateY(-264px); }
         
-        .r4 { top: 0; clip-path: inset(393px 26px 976px 0px); transform: translateY(-393px); }
-        .r5 { top: 0; clip-path: inset(524px 26px 845px 0px); transform: translateY(-524px); }
-        .r6 { top: 0; clip-path: inset(655px 26px 714px 0px); transform: translateY(-655px); }
+        /* 2段目（レーン4,5,6） */
+        .r4 { top: 0; clip-path: inset(396px 26px 972px 0px); transform: translateY(-396px); }
+        .r5 { top: 0; clip-path: inset(528px 26px 840px 0px); transform: translateY(-528px); }
+        .r6 { top: 0; clip-path: inset(660px 26px 708px 0px); transform: translateY(-660px); }
         
-        .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
-        .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
-        .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
+        /* 3段目（レーン7,8,9） */
+        .r7 { top: 0; clip-path: inset(792px 26px 576px 0px); transform: translateY(-792px); }
+        .r8 { top: 0; clip-path: inset(924px 26px 444px 0px); transform: translateY(-924px); }
+        .r9 { top: 0; clip-path: inset(1056px 26px 312px 0px); transform: translateY(-1056px); }
 
         #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: transparent; }
     </style>
@@ -56,7 +59,7 @@
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1115; 
+    const W = 1115; // 🔴 1セットの横幅
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
     let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
@@ -72,6 +75,7 @@
 
     function init() {
         container.innerHTML = '';
+        // 1セット（3列×3段）を3回繰り返し並べる
         for (let i = 0; i < 3; i++) {
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
@@ -87,14 +91,14 @@
         }
     }
 
-    overlay.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX - posX; overlay.setPointerCapture(e.pointerId); });
-    overlay.addEventListener('pointermove', (e) => { if (!isDragging) return; posX = e.clientX - startX; });
-    overlay.addEventListener('pointerup', () => isDragging = false);
+    overlay.onpointerdown = (e) => { isDragging = true; startX = e.clientX - posX; overlay.setPointerCapture(e.pointerId); };
+    window.onpointermove = (e) => { if (isDragging) posX = e.clientX - startX; };
+    window.onpointerup = () => isDragging = false;
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const totalW = W * 3; 
+            const totalW = W * 3; // 🔴 3セット分の幅で正確にループ
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
