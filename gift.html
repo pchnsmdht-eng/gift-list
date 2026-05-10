@@ -17,23 +17,44 @@
             height: 396px; 
             position: relative;
             overflow: hidden;
-            cursor: grab;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: none; /* TikTok Studio内での干渉を防止 */
+            touch-action: none;
         }
 
-        /* 🔴 操作を100%拾うための透明なカバー */
+        /* 🔴 透明な操作用カバー（ここを触れば動く） */
         #interaction-layer {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 10; /* iframeより上に配置 */
-            background: rgba(0,0,0,0); /* 透明 */
+            z-index: 100;
+            background: rgba(0,0,0,0);
             cursor: grab;
         }
+
+        /* 🔴 視覚的な操作ガイドUI（左右の端に薄く表示） */
+        .drag-handle {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            z-index: 101;
+            pointer-events: none; /* タッチはinteraction-layerに任せる */
+            opacity: 0.5;
+        }
+        .left-handle { left: 10px; }
+        .right-handle { right: 10px; }
 
         #lane-container {
             position: absolute;
@@ -55,7 +76,6 @@
             flex-shrink: 0;
             margin: 0;
             padding: 0;
-            overflow: visible;
         }
 
         .lane {
@@ -70,9 +90,10 @@
             width: 1200px;
             height: 1500px;
             border: none;
-            pointer-events: none; /* iframe内のクリックを無視 */
+            pointer-events: none;
         }
 
+        /* 精密クリップ設定 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -88,6 +109,9 @@
 
 <div id="viewport">
     <div id="interaction-layer"></div>
+    <div class="drag-handle left-handle">◀</div>
+    <div class="drag-handle right-handle">▶</div>
+    
     <div id="lane-container"></div>
 </div>
 
@@ -124,7 +148,7 @@
     let startX = 0;
     let speed = -1.0; 
 
-    // 🔴 interaction-layer に対してイベントを設定
+    // ドラッグ開始
     interLayer.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startX = e.pageX - posX;
@@ -132,30 +156,26 @@
         interLayer.style.cursor = 'grabbing';
     });
 
+    // 移動中
     interLayer.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         posX = e.pageX - startX;
     });
 
+    // 終了
     interLayer.addEventListener('pointerup', () => {
         isDragging = false;
         interLayer.style.cursor = 'grab';
     });
 
-    interLayer.addEventListener('pointercancel', () => {
-        isDragging = false;
-    });
+    interLayer.addEventListener('pointercancel', () => isDragging = false);
 
     function animate() {
         if (!isDragging) {
             posX += speed;
             const cycleWidth = W * 3; 
-            if (posX <= -cycleWidth) {
-                posX += cycleWidth;
-            }
-            if (posX > 0) {
-                posX -= cycleWidth;
-            }
+            if (posX <= -cycleWidth) posX += cycleWidth;
+            if (posX > 0) posX -= cycleWidth;
         }
         container.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
