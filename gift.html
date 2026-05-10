@@ -4,33 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            margin: 0; 
-            background: transparent; 
-            overflow: hidden; 
-            touch-action: none; 
-        }
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
         #viewport {
             width: 100vw;
             height: 396px; 
             position: relative;
             overflow: hidden;
-            touch-action: none;
+            cursor: grab;
             user-select: none;
             -webkit-user-select: none;
-        }
-
-        /* 🔴 Studioの「対話」を確実に拾うための前面シールド */
-        #interaction-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9999; /* 何よりも上に配置 */
-            background: rgba(0,0,0,0); /* 完全透明 */
-            cursor: move;
+            touch-action: none;
         }
 
         #lane-container {
@@ -50,6 +34,8 @@
             width: 1115px; 
             height: 393px;
             flex-shrink: 0;
+            margin: 0;
+            padding: 0;
         }
 
         .lane {
@@ -64,10 +50,10 @@
             width: 1200px;
             height: 1500px;
             border: none;
-            pointer-events: none; /* iframeへの干渉を完全に遮断 */
+            pointer-events: none;
         }
 
-        /* クリップ設定 */
+        /* 精密クリップ位置（復元） */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -77,6 +63,17 @@
         .r7 { top: 0; clip-path: inset(786px 26px 583px 0px); transform: translateY(-786px); }
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
+
+        /* 操作を邪魔しないための透明レイヤー */
+        #interaction-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            background: transparent;
+        }
     </style>
 </head>
 <body>
@@ -87,10 +84,32 @@
 </div>
 
 <script>
+    // 🔴 以下の2行だけ、ご自身のものに書き換えてください
+    const USER = "あなたのユーザー名";
+    const REPO = "あなたのリポジトリ名";
+
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1115; 
     const container = document.getElementById('lane-container');
     const interLayer = document.getElementById('interaction-layer');
+
+    let posX = 0;
+    let isDragging = false;
+    let startX = 0;
+    let speed = -1.0; 
+
+    // 🔴 別PCからのスピード命令を監視する機能
+    async function syncSpeed() {
+        try {
+            const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`;
+            const res = await fetch(rawUrl);
+            const text = await res.text();
+            if(!isNaN(text) && text.trim() !== "") {
+                speed = parseFloat(text);
+            }
+        } catch (e) { console.log("Speed Sync Error"); }
+    }
+    setInterval(syncSpeed, 5000); // 5秒おきに確認
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
@@ -114,26 +133,19 @@
         }
     }
 
-    let posX = 0;
-    let isDragging = false;
-    let startX = 0;
-    let speed = -1.0; 
-
-    // TikTok Studioの対話モードで最も確実に反応する設定
+    // ドラッグ操作（スマホ・Studio対応）
     interLayer.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startX = e.pageX - posX;
         interLayer.setPointerCapture(e.pointerId);
-    }, {passive: false});
+    });
 
     window.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         posX = e.pageX - startX;
-    }, {passive: false});
-
-    window.addEventListener('pointerup', () => {
-        isDragging = false;
     });
+
+    window.addEventListener('pointerup', () => isDragging = false);
 
     function animate() {
         if (!isDragging) {
@@ -147,6 +159,7 @@
     }
 
     init();
+    syncSpeed();
     animate();
 </script>
 </body>
