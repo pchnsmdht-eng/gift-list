@@ -17,39 +17,36 @@
 
         .item-box {
             position: relative;
-            width: 131px; /* 131px固定 */
-            height: 106px; /* 106px固定 */
+            width: 131px;
+            height: 106px;
             flex-shrink: 0;
             overflow: hidden;
         }
 
         iframe {
             position: absolute;
-            width: 1200px; /* 元のサイト幅 */
-            height: 800px; /* 元のサイト高 */
+            width: 1200px;
+            height: 1200px; /* 3段分読み込める高さ */
             border: none;
             pointer-events: none;
             transform-origin: 0 0;
-            /* 🔴 アイコンがちょうど良い大きさになるよう倍率を固定(0.7程度) */
-            transform: scale(0.73); 
+            transform: scale(0.73); /* アイコンサイズ調整 */
         }
 
-        /* --- 1段目と2段目を「窓」にピッタリはめる --- */
+        /* --- 3段それぞれの切り抜き位置 --- */
         
-        .top-part {
-            top: 0;
-            left: 0;
-            /* 🔴 上段のアイコン1つ分を切り抜く(数値は scale 0.73 に最適化) */
-            clip-path: inset(0px 1018px 653px 0px); 
+        .part-1 {
+            top: 0; clip-path: inset(0px 1018px 653px 0px); 
         }
 
-        .bottom-part {
-            top: 0;
-            left: 0;
-            /* 🔴 下段のアイコン1つ分を切り抜く */
-            clip-path: inset(146px 1018px 507px 0px);
-            /* 下段を上の枠まで持ち上げる */
+        .part-2 {
+            top: 0; clip-path: inset(146px 1018px 507px 0px);
             transform: translateY(-106px) scale(0.73);
+        }
+
+        .part-3 {
+            top: 0; clip-path: inset(292px 1018px 361px 0px);
+            transform: translateY(-212px) scale(0.73);
         }
     </style>
 </head>
@@ -66,15 +63,19 @@
 
     const ITEM_WIDTH = 131;
 
-    // 1段目と2段目を交互に並べる
-    for (let i = 0; i < 10; i++) {
-        const boxT = document.createElement('div'); boxT.className = 'item-box';
-        const fT = document.createElement('iframe'); fT.src = TARGET_URL; fT.className = 'top-part';
-        boxT.appendChild(fT); scroller.appendChild(boxT);
-
-        const boxB = document.createElement('div'); boxB.className = 'item-box';
-        const fB = document.createElement('iframe'); fB.src = TARGET_URL; fB.className = 'bottom-part';
-        boxB.appendChild(fB); scroller.appendChild(boxB);
+    // 「1段目・2段目・3段目」をペアで並べる
+    function init() {
+        for (let i = 0; i < 6; i++) {
+            [1, 2, 3].forEach(num => {
+                const box = document.createElement('div');
+                box.className = 'item-box';
+                const f = document.createElement('iframe');
+                f.src = TARGET_URL;
+                f.className = `part-${num}`;
+                box.appendChild(f);
+                scroller.appendChild(box);
+            });
+        }
     }
 
     let posX = 0;
@@ -85,7 +86,8 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const unitWidth = ITEM_WIDTH * 2;
+            // 3枚1セット（131px * 3 = 393px）分流れたらループ
+            const unitWidth = ITEM_WIDTH * 3;
             if (posX <= -unitWidth) posX += unitWidth;
         }
         scroller.style.transform = `translateX(${posX}px)`;
@@ -96,6 +98,7 @@
     window.addEventListener('mousemove', (e) => { if (isDragging) posX = e.pageX - startX; });
     window.addEventListener('mouseup', () => isDragging = false);
 
+    init();
     animate();
 </script>
 </body>
