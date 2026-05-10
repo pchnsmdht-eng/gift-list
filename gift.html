@@ -3,18 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        /* 全体の設定：不要な余白を消し、スクロールを禁止 */
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
+        #viewport { width: 100vw; height: 396px; position: relative; overflow: hidden; transform: translateZ(0); }
         
-        #viewport { 
-            width: 100vw; 
-            height: 396px; 
-            position: relative; 
-            overflow: hidden;
-            background: transparent;
-            cursor: grab;
-        }
-
         #lane-container { 
             position: absolute; 
             display: flex; 
@@ -22,14 +13,21 @@
             height: 393px; 
             top: 3px; 
             will-change: transform;
-            transform: translate3d(0, 0, 0); 
-            /* iframeがクリックを奪わないように設定 */
-            pointer-events: none; 
+            transform: translate3d(0, 0, 0);
+            pointer-events: none;
         }
 
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; }
-        iframe { position: absolute; width: 1200px; height: 1500px; border: none; }
+        
+        /* iframeの基本設定。初期状態では描画を抑制 */
+        iframe { 
+            position: absolute; 
+            width: 1200px; 
+            height: 1500px; 
+            border: none;
+            content-visibility: auto; /* ブラウザの最適化を有効化 */
+        }
 
         /* クリップ位置 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
@@ -42,17 +40,10 @@
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
 
-        /* つまむための最前面レイヤー：ここを絶対に反応するように設定 */
         #touch-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9999;
-            background: rgba(0,0,0,0); /* 透明だが確実に存在する状態 */
-            cursor: grab;
-            touch-action: none;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999; background: transparent; cursor: grab; touch-action: none;
         }
     </style>
 </head>
@@ -88,9 +79,13 @@
 
     function init() {
         container.innerHTML = '';
+        // 3ブロックのみ生成
         for (let i = 0; i < 3; i++) {
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
-                const b = document.createElement('div'); b.className = 'block';
+                const b = document.createElement('div'); 
+                b.className = 'block';
+                // 各ブロックに識別用IDを付与
+                b.dataset.idx = i; 
                 rows.forEach(n => {
                     const l = document.createElement('div'); l.className = 'lane';
                     const f = document.createElement('iframe'); 
@@ -103,22 +98,17 @@
         }
     }
 
-    // 🔴 ドラッグ操作の確実な検知
+    // ドラッグ操作
     overlay.addEventListener('pointerdown', (e) => {
         isDragging = true;
         startX = e.clientX - posX;
         overlay.setPointerCapture(e.pointerId);
-        container.style.transition = "none";
     });
-
     overlay.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         posX = e.clientX - startX;
-        container.style.transform = `translate3d(${posX}px, 0, 0)`;
     });
-
     overlay.addEventListener('pointerup', () => isDragging = false);
-    overlay.addEventListener('pointercancel', () => isDragging = false);
 
     function animate(timestamp) {
         if (!lastTime) lastTime = timestamp;
@@ -126,13 +116,26 @@
         lastTime = timestamp;
 
         if (!isDragging) {
+            // スムーズな移動計算（deltaTimeを使用）
             posX += speed * (deltaTime / 16.6); 
             const totalW = W * 3;
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
-            container.style.transform = `translate3d(${posX}px, 0, 0)`;
         }
 
+        // 🌟 最適化：画面外にあるブロックの描画をスキップ
+        const blocks = document.querySelectorAll('.block');
+        blocks.forEach((block, index) => {
+            const blockLeft = posX + (index * W);
+            // 画面内（-W から 画面幅まで）にあるかチェック
+            if (blockLeft < -W || blockLeft > window.innerWidth + 50) {
+                if (block.style.display !== 'none') block.style.display = 'none';
+            } else {
+                if (block.style.display !== 'flex') block.style.display = 'flex';
+            }
+        });
+
+        container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
 
