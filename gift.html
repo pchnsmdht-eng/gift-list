@@ -5,9 +5,10 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
+        /* 132px * 3段 = 396px */
         #viewport {
             width: 100vw;
-            height: 405px; /* 135px * 3段 */
+            height: 396px; 
             position: relative;
             overflow: hidden;
             cursor: grab;
@@ -17,7 +18,7 @@
             position: absolute;
             display: flex;
             width: max-content;
-            height: 405px;
+            height: 396px;
             will-change: transform;
             left: 0;
         }
@@ -26,13 +27,13 @@
             display: flex;
             flex-direction: column;
             width: 1200px;
-            height: 405px;
+            height: 396px;
             flex-shrink: 0;
         }
 
         .lane {
             width: 1200px;
-            height: 135px;
+            height: 132px;
             position: relative;
             overflow: hidden;
         }
@@ -45,16 +46,16 @@
             pointer-events: none;
         }
 
-        /* 🔴 135px刻みで全9段を定義 */
-        .r1 { top: 0; clip-path: inset(0px 0px 1365px 0px); }
-        .r2 { top: 0; clip-path: inset(135px 0px 1230px 0px); transform: translateY(-135px); }
-        .r3 { top: 0; clip-path: inset(270px 0px 1095px 0px); transform: translateY(-270px); }
-        .r4 { top: 0; clip-path: inset(405px 0px 960px 0px); transform: translateY(-405px); }
-        .r5 { top: 0; clip-path: inset(540px 0px 825px 0px); transform: translateY(-540px); }
-        .r6 { top: 0; clip-path: inset(675px 0px 690px 0px); transform: translateY(-675px); }
-        .r7 { top: 0; clip-path: inset(810px 0px 555px 0px); transform: translateY(-810px); }
-        .r8 { top: 0; clip-path: inset(945px 0px 420px 0px); transform: translateY(-945px); }
-        .r9 { top: 0; clip-path: inset(1080px 0px 285px 0px); transform: translateY(-1080px); }
+        /* 🔴 132px刻みで再計算した座標 */
+        .r1 { top: 0; clip-path: inset(0px 0px 1368px 0px); }
+        .r2 { top: 0; clip-path: inset(132px 0px 1236px 0px); transform: translateY(-132px); }
+        .r3 { top: 0; clip-path: inset(264px 0px 1104px 0px); transform: translateY(-264px); }
+        .r4 { top: 0; clip-path: inset(396px 0px 972px 0px); transform: translateY(-396px); }
+        .r5 { top: 0; clip-path: inset(528px 0px 840px 0px); transform: translateY(-528px); }
+        .r6 { top: 0; clip-path: inset(660px 0px 708px 0px); transform: translateY(-660px); }
+        .r7 { top: 0; clip-path: inset(792px 0px 576px 0px); transform: translateY(-792px); }
+        .r8 { top: 0; clip-path: inset(924px 0px 444px 0px); transform: translateY(-924px); }
+        .r9 { top: 0; clip-path: inset(1056px 0px 312px 0px); transform: translateY(-1056px); }
     </style>
 </head>
 <body>
@@ -68,12 +69,10 @@
     const W = 1200;
     const container = document.getElementById('lane-container');
 
-    // 交代する3つのユニット
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
 
     function init() {
         container.innerHTML = '';
-        // 🔴 シームレス化のために、全3ユニット(3600px分)を「2周分」物理的に繋ぐ
         for (let i = 0; i < 2; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
@@ -100,9 +99,6 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            
-            // 🔴 3ユニット分（3600px）流れた瞬間に座標をリセット
-            // 後ろに2周目が繋がっているので、見た目上の途切れは一切ありません
             const cycleWidth = W * 3;
             if (posX <= -cycleWidth) {
                 posX += cycleWidth;
