@@ -3,76 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        /* 余計なマージンをすべて殺す */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: transparent; overflow: hidden; user-select: none; }
-        
-        #viewport {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        #wrapper { width: 100vw; height: 100vh; position: relative; cursor: grab; }
+        #wrapper:active { cursor: grabbing; }
 
-        /* 手で動かすための板 */
-        #scroll-container {
+        /* 全体の流れるコンテナ */
+        #scroller {
             position: absolute;
-            top: 0;
-            left: 0;
-            cursor: grab;
-            touch-action: none; /* ブラウザの勝手な動きを止める */
+            display: flex;
+            width: max-content;
+            height: 100%;
             will-change: transform;
         }
-        #scroll-container:active { cursor: grabbing; }
 
-        /* 元サイトを1枚だけ、加工せずそのまま読み込む */
+        /* 外部サイトを読み込む枠 */
+        .item-box {
+            position: relative;
+            width: 1000px; /* キャプチャしたい横幅 */
+            height: 100%;
+            flex-shrink: 0;
+        }
+
+        /* iframe（本物のページ）を強制的に埋め込む */
         iframe {
-            width: 400px; /* 元サイトの標準幅 */
-            height: 12000px; /* 全アイテムが入る高さ */
+            position: absolute;
+            width: 1000px; 
+            height: 1600px; /* 縦長に読み込む */
             border: none;
-            pointer-events: none; /* ドラッグ操作を優先 */
+            pointer-events: none; /* ドラッグを邪魔させない */
+        }
+
+        /* --- 上下分割のロジック --- */
+        /* 上段：元のページの上半分だけを表示 */
+        .top-part {
+            top: 0;
+            height: 50%;
+            clip-path: inset(0 0 50% 0);
+        }
+
+        /* 下段：元のページの下半分を上段の「右隣」に配置 */
+        .bottom-part {
+            top: 0; /* 配置は上と同じ。translateXで右へ飛ばす */
+            height: 50%;
+            clip-path: inset(50% 0 0 0);
+            transform: translateY(-25%); /* 下半分を上にずらして表示位置を調整 */
         }
     </style>
 </head>
 <body>
 
-<div id="viewport">
-    <div id="scroll-container">
-        <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-    </div>
+<div id="wrapper">
+    <div id="scroller">
+        </div>
 </div>
 
 <script>
-    const container = document.getElementById('scroll-container');
+    const TARGET_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const scroller = document.getElementById('scroller');
+    const wrapper = document.getElementById('wrapper');
+
+    // 1. パーツの生成
+    // 「上段の右に下段が追従する」構造にするため、セットで並べる
+    for (let i = 0; i < 3; i++) {
+        const box = document.createElement('div');
+        box.className = 'item-box';
+        
+        // 上半分ユニット
+        const fTop = document.createElement('iframe');
+        fTop.src = TARGET_URL;
+        fTop.className = 'top-part';
+        
+        // 下半分ユニット
+        const fBottom = document.createElement('iframe');
+        fBottom.src = TARGET_URL;
+        fBottom.className = 'bottom-part';
+        fBottom.style.left = "1000px"; // 上半分の右側に配置
+
+        box.appendChild(fTop);
+        box.appendChild(fBottom);
+        scroller.appendChild(box);
+    }
+
+    // 2. スクロールとUIのロジック
+    let posX = 0;
     let isDragging = false;
-    let startX = 0, startY = 0;
-    let currentX = 0, currentY = 0;
+    let startX = 0;
+    let speed = -1.5; // 自動速度
 
-    const onStart = (e) => {
+    function animate() {
+        if (!isDragging) {
+            posX += speed;
+            // 無限ループ処理
+            if (posX <= -2000) posX = 0; 
+        }
+        scroller.style.transform = `translateX(${posX}px)`;
+        requestAnimationFrame(animate);
+    }
+
+    // 3. ドラッグUI（触った時に自由に動かせる）
+    wrapper.addEventListener('mousedown', (e) => {
         isDragging = true;
-        const x = e.pageX || e.touches[0].pageX;
-        const y = e.pageY || e.touches[0].pageY;
-        startX = x - currentX;
-        startY = y - currentY;
-    };
+        startX = e.pageX - posX;
+    });
 
-    const onMove = (e) => {
+    window.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        const x = e.pageX || e.touches[0].pageX;
-        const y = e.pageY || e.touches[0].pageY;
-        currentX = x - startX;
-        currentY = y - startY;
-        // 手で動かした通りにだけ移動
-        container.style.transform = `translate(${currentX}px, ${currentY}px)`;
-    };
+        posX = e.pageX - startX;
+    });
 
-    const onEnd = () => { isDragging = false; };
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
 
-    container.addEventListener('mousedown', onStart);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onEnd);
-    container.addEventListener('touchstart', onStart);
-    window.addEventListener('touchmove', onMove);
-    window.addEventListener('touchend', onEnd);
+    animate();
 </script>
 </body>
 </html>
