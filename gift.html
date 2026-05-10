@@ -5,7 +5,7 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦390px（130x3）の固定枠 */
+        /* 縦130px × 3段 = 390px の固定枠 */
         #viewport {
             width: 100vw;
             height: 390px;
@@ -27,7 +27,7 @@
         .block {
             display: flex;
             flex-direction: column;
-            width: 1200px;
+            width: 1200px; /* 1ブロック1200px */
             height: 390px;
             flex-shrink: 0;
         }
@@ -48,13 +48,18 @@
             transform-origin: 0 0;
         }
 
-        /* --- 抜き出し座標 --- */
+        /* --- 抜き出し座標（130px刻みで全9段分まで対応） --- */
         .r1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
         .r2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
         .r3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
+        
         .r4 { top: 0; clip-path: inset(390px 0px 680px 0px); transform: translateY(-390px); }
         .r5 { top: 0; clip-path: inset(520px 0px 550px 0px); transform: translateY(-520px); }
         .r6 { top: 0; clip-path: inset(650px 0px 420px 0px); transform: translateY(-650px); }
+        
+        .r7 { top: 0; clip-path: inset(780px 0px 290px 0px); transform: translateY(-780px); }
+        .r8 { top: 0; clip-path: inset(910px 0px 160px 0px); transform: translateY(-910px); }
+        .r9 { top: 0; clip-path: inset(1040px 0px 30px 0px); transform: translateY(-1040px); }
     </style>
 </head>
 <body>
@@ -71,14 +76,14 @@
     function init() {
         scroller.innerHTML = '';
         
-        // 3交代のセット：[上][中][下]
+        // 🔴 3交代の優先順位（1セット = 1200px × 3ブロック）
         const groups = [
-            [1, 2, 3], // 1段目ユニット
-            [4, 5, 6], // 2段目ユニット
-            [1, 2, 3]  // 3段目（ループ接続用）
+            [1, 2, 3], // 1段目ユニット(Primary)
+            [4, 5, 6], // 2段目ユニット(Secondary)
+            [7, 8, 9]  // 3段目ユニット(Tertiary)
         ];
 
-        // 余裕を持って2セット（計6ブロック）並べる
+        // 2セット分（合計6ブロック・7200px分）並べてシームレス化
         for (let i = 0; i < 2; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
@@ -87,8 +92,8 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
-                    // 徹底したキャッシュ対策
-                    f.src = `${BASE_URL}?cache=${Date.now()}_${Math.random()}_r${n}`;
+                    // キャッシュ回避
+                    f.src = `${BASE_URL}?nocache=${Date.now()}_${Math.random()}_r${n}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
                     block.appendChild(lane);
@@ -101,17 +106,17 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.8; // 右から左へ流れる
+    let speed = -1.8; // 右から左（←）
 
     function animate() {
         if (!isDragging) {
             posX += speed;
             
-            // 3ブロック分(3600px)進んだらリセット
-            // ここを確実に通すことで3段目が飛ばされるのを防ぎます
-            const resetPoint = -(W * 3);
-            if (posX <= resetPoint) {
-                posX += Math.abs(resetPoint);
+            // 🔴 修正：3ブロック分（3600px）進んだらリセット
+            // これで1→2→3が順番に通り過ぎ、また1に戻ります
+            const cycleWidth = W * 3;
+            if (posX <= -cycleWidth) {
+                posX += cycleWidth;
             }
         }
         scroller.style.transform = `translateX(${posX}px)`;
@@ -123,7 +128,7 @@
     window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
 
-    // 5分おきにリフレッシュ
+    // 定期的なリフレッシュ
     setInterval(init, 300000);
 
     init();
