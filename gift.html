@@ -5,7 +5,7 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦390pxの表示枠 */
+        /* 縦130px × 3段 = 390px */
         #viewport {
             width: 100vw;
             height: 390px;
@@ -14,7 +14,6 @@
             cursor: grab;
         }
 
-        /* 2つのブロック（上半分セット と 下半分セット）を横に並べる */
         #scroller {
             position: absolute;
             display: flex;
@@ -23,7 +22,6 @@
             will-change: transform;
         }
 
-        /* 1ブロック（1200px幅） */
         .block {
             display: flex;
             flex-direction: column;
@@ -48,13 +46,10 @@
             transform-origin: 0 0;
         }
 
-        /* --- 抜き出し位置の設定 --- */
-        /* 上半分（Row 1-3） */
+        /* 抜き出し位置：上段(1-3)・下段(4-6) */
         .r1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
         .r2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
         .r3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
-        
-        /* 下半分（Row 4-6） */
         .r4 { top: 0; clip-path: inset(390px 0px 680px 0px); transform: translateY(-390px); }
         .r5 { top: 0; clip-path: inset(520px 0px 550px 0px); transform: translateY(-520px); }
         .r6 { top: 0; clip-path: inset(650px 0px 420px 0px); transform: translateY(-650px); }
@@ -67,15 +62,16 @@
 </div>
 
 <script>
-    const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    // キャッシュ回避：URLにタイムスタンプを付与
+    const BASE_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1200;
     const scroller = document.getElementById('scroller');
 
-    // 「上半分セット」→「下半分セット」を交互に繋げる
     function init() {
+        scroller.innerHTML = '';
         const groups = [[1, 2, 3], [4, 5, 6]];
         
-        // ループを滑らかにするため2周分生成 (上・下・上・下)
+        // 4ブロック(上・下・上・下)でシームレス化
         for (let i = 0; i < 2; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
@@ -84,7 +80,8 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
-                    f.src = URL;
+                    // iframe読み込み時にもキャッシュを回避
+                    f.src = `${BASE_URL}?t=${Date.now()}_${n}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
                     block.appendChild(lane);
@@ -94,27 +91,33 @@
         }
     }
 
-    let posX = -(W * 2); 
+    let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = 1.5; // 右へ流れる
+    let speed = -1.5; // 🔴 右から左へ流れる
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 「上半分+下半分」の合計幅(2400px)進んだらリセット
-            if (posX >= 0) {
-                posX -= (W * 2);
+            // 上下セット分(2400px)進んだらリセット
+            if (posX <= -(W * 2)) {
+                posX += (W * 2);
             }
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
+    // ドラッグUI
     const vp = document.getElementById('viewport');
     vp.onmousedown = (e) => { isDragging = true; startX = e.pageX - posX; };
     window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
+
+    // 定期的なリフレッシュ（10分ごとにiframeを再読み込みして最新データを取得）
+    setInterval(() => {
+        if (!isDragging) init();
+    }, 600000);
 
     init();
     animate();
