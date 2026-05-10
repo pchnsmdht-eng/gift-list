@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        /* 全体の設定：不要な余白を消し、スクロールを禁止 */
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
         #viewport { 
             width: 100vw; 
             height: 396px; 
             position: relative; 
-            overflow: hidden; 
-            transform: translateZ(0);
-            cursor: grab; /* つかめることを示すアイコン */
+            overflow: hidden;
+            background: transparent;
+            cursor: grab;
         }
-        #viewport:active { cursor: grabbing; }
 
         #lane-container { 
             position: absolute; 
@@ -23,14 +23,15 @@
             top: 3px; 
             will-change: transform;
             transform: translate3d(0, 0, 0); 
-            pointer-events: none; /* コンテナ自体はクリックを貫通させる */
+            /* iframeがクリックを奪わないように設定 */
+            pointer-events: none; 
         }
 
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; }
-        iframe { position: absolute; width: 1200px; height: 1500px; border: none; pointer-events: none; }
+        iframe { position: absolute; width: 1200px; height: 1500px; border: none; }
 
-        /* クリップ位置（変更なし） */
+        /* クリップ位置 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -41,22 +42,23 @@
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
 
-        /* つまむための透明レイヤー */
-        #touch-layer {
+        /* つまむための最前面レイヤー：ここを絶対に反応するように設定 */
+        #touch-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 10;
-            background: transparent;
+            z-index: 9999;
+            background: rgba(0,0,0,0); /* 透明だが確実に存在する状態 */
+            cursor: grab;
             touch-action: none;
         }
     </style>
 </head>
 <body>
 <div id="viewport">
-    <div id="touch-layer"></div>
+    <div id="touch-overlay"></div>
     <div id="lane-container"></div>
 </div>
 
@@ -66,7 +68,7 @@
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1115;
     const container = document.getElementById('lane-container');
-    const touchLayer = document.getElementById('touch-layer');
+    const overlay = document.getElementById('touch-overlay');
     
     let posX = 0;
     let speed = -1.0;
@@ -74,7 +76,6 @@
     let isDragging = false;
     let startX = 0;
 
-    // スピード同期
     async function syncSpeed() {
         try {
             const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`;
@@ -83,7 +84,7 @@
             if(!isNaN(text) && text.trim() !== "") speed = parseFloat(text);
         } catch (e) {}
     }
-    setInterval(syncSpeed, 5000);
+    setInterval(syncSpeed, 3000);
 
     function init() {
         container.innerHTML = '';
@@ -94,7 +95,7 @@
                     const l = document.createElement('div'); l.className = 'lane';
                     const f = document.createElement('iframe'); 
                     f.className = `r${n}`;
-                    setTimeout(() => { f.src = `${SRC}?lane=${n}`; }, (i * 9 + n) * 50);
+                    f.src = `${SRC}?lane=${n}`;
                     l.appendChild(f); b.appendChild(l);
                 });
                 container.appendChild(b);
@@ -102,36 +103,36 @@
         }
     }
 
-    // 🔴 つまむ（ドラッグ）機能の復活
-    touchLayer.addEventListener('pointerdown', (e) => {
+    // 🔴 ドラッグ操作の確実な検知
+    overlay.addEventListener('pointerdown', (e) => {
         isDragging = true;
-        startX = e.pageX - posX;
-        touchLayer.setPointerCapture(e.pointerId);
+        startX = e.clientX - posX;
+        overlay.setPointerCapture(e.pointerId);
+        container.style.transition = "none";
     });
 
-    window.addEventListener('pointermove', (e) => {
+    overlay.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
-        posX = e.pageX - startX;
+        posX = e.clientX - startX;
+        container.style.transform = `translate3d(${posX}px, 0, 0)`;
     });
 
-    window.addEventListener('pointerup', () => {
-        isDragging = false;
-    });
+    overlay.addEventListener('pointerup', () => isDragging = false);
+    overlay.addEventListener('pointercancel', () => isDragging = false);
 
     function animate(timestamp) {
         if (!lastTime) lastTime = timestamp;
         const deltaTime = timestamp - lastTime;
         lastTime = timestamp;
 
-        // つまんでいる間は自動スクロールを止める
         if (!isDragging) {
             posX += speed * (deltaTime / 16.6); 
             const totalW = W * 3;
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
+            container.style.transform = `translate3d(${posX}px, 0, 0)`;
         }
 
-        container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
 
