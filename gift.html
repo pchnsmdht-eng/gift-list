@@ -3,30 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        /* 背景を透明に固定して白飛びを防ぐ */
-        body { margin: 0; background: transparent; overflow: hidden; }
-        #viewport { width: 100vw; height: 396px; position: relative; overflow: hidden; }
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
+        #viewport { width: 100vw; height: 400px; position: relative; overflow: hidden; cursor: grab; }
         
         #lane-container { 
-            position: absolute; display: flex; width: max-content; height: 393px; top: 3px; 
-            will-change: transform; transform: translate3d(0, 0, 0); 
+            position: absolute; display: flex; width: max-content; height: 393px; top: 0;
+            will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
-        .lane { 
-            width: 1174px; height: 131px; position: relative; overflow: hidden; 
-            /* 読み込み待ちの間、白くならないよう透明な背景を設定 */
-            background: rgba(0,0,0,0.05); 
-        }
-
+        
+        /* 各レーンの高さを厳密に131pxに固定（隙間対策） */
+        .lane { width: 1115px; height: 131px; position: relative; overflow: hidden; margin: 0; padding: 0; }
+        
         iframe { 
             position: absolute; width: 1200px; height: 1500px; border: none; 
-            opacity: 0; transition: opacity 0.3s; /* 読み込み完了後にふわっと出す */
+            background: transparent;
         }
-        
-        /* クリップ位置 */
+
+        /* 重なりを直すための精密な切り抜き位置（clip-path） */
+        /* 1行目: 上から0px */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
+        /* 2行目: 上から131pxの位置を切り取って、上に131pxずらす */
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
+        /* 3行目: 262pxの位置... 以下同様 */
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
         .r4 { top: 0; clip-path: inset(393px 26px 976px 0px); transform: translateY(-393px); }
         .r5 { top: 0; clip-path: inset(524px 26px 845px 0px); transform: translateY(-524px); }
@@ -35,72 +35,65 @@
         .r8 { top: 0; clip-path: inset(917px 26px 452px 0px); transform: translateY(-917px); }
         .r9 { top: 0; clip-path: inset(1048px 26px 321px 0px); transform: translateY(-1048px); }
 
-        #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: transparent; cursor: grab; }
+        #touch-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: transparent; }
     </style>
 </head>
 <body>
-<div id="viewport"><div id="touch-overlay"></div><div id="lane-container"></div></div>
+<div id="viewport">
+    <div id="touch-overlay"></div>
+    <div id="lane-container"></div>
+</div>
+
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1115;
+    const USER = "pchnsmdht-eng";
+    const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const W = 1115;
     const container = document.getElementById('lane-container');
-    let posX = 0, speed = -1.0, isDragging = false, startX = 0;
+    const overlay = document.getElementById('touch-overlay');
+    
+    let posX = 0; let speed = -1.0; let isDragging = false; let startX = 0;
 
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
             const text = await res.text();
-            if(!isNaN(text)) speed = parseFloat(text);
+            if(!isNaN(text) && text.trim() !== "") speed = parseFloat(text);
         } catch (e) {}
     }
     setInterval(syncSpeed, 3000);
 
     function init() {
         container.innerHTML = '';
-        // 3つのブロックをあらかじめ作っておき、iframeを仕込む
-        for(let i=0; i<3; i++) {
-            const b = document.createElement('div'); b.className = 'block';
-            for(let n=1; n<=9; n++) {
-                const l = document.createElement('div'); l.className = 'lane';
-                const f = document.createElement('iframe');
-                f.className = `r${n}`;
-                // 読み込み完了時に表示
-                f.onload = () => { f.style.opacity = "1"; };
-                f.src = `${SRC}?lane=${n}`;
-                l.appendChild(f);
-                b.appendChild(l);
-            }
-            container.appendChild(b);
+        // ループを滑らかにするため、同じセットを3つ並べる
+        for (let i = 0; i < 3; i++) {
+            // 3段ずつの固まりを作る
+            [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
+                const b = document.createElement('div'); b.className = 'block';
+                rows.forEach(n => {
+                    const l = document.createElement('div'); l.className = 'lane';
+                    const f = document.createElement('iframe');
+                    f.className = `r${n}`;
+                    f.src = `${SRC}?lane=${n}`;
+                    l.appendChild(f); b.appendChild(l);
+                });
+                container.appendChild(b);
+            });
         }
     }
 
-    // 🌟 描画負荷対策：画面外のブロックを「消さずに隠す」
-    function optimizeLayers() {
-        const blocks = document.querySelectorAll('.block');
-        blocks.forEach((b, i) => {
-            const rect = b.getBoundingClientRect();
-            // 画面外に完全に出たブロックは描画を止める（でも中身は消さない）
-            if (rect.right < -100 || rect.left > window.innerWidth + 100) {
-                b.style.visibility = 'hidden';
-            } else {
-                b.style.visibility = 'visible';
-            }
-        });
-    }
-
-    const overlay = document.getElementById('touch-overlay');
-    overlay.onpointerdown = (e) => { isDragging = true; startX = e.clientX - posX; };
-    window.onpointermove = (e) => { if (isDragging) posX = e.clientX - startX; };
-    window.onpointerup = () => isDragging = false;
+    overlay.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX - posX; overlay.setPointerCapture(e.pointerId); });
+    overlay.addEventListener('pointermove', (e) => { if (!isDragging) return; posX = e.clientX - startX; });
+    overlay.addEventListener('pointerup', () => isDragging = false);
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            if (posX <= -W) posX += W;
-            if (posX > 0) posX -= W;
+            const totalW = W * 3; // 全体の幅でループ
+            if (posX <= -totalW) posX += totalW;
+            if (posX > 0) posX -= totalW;
         }
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
-        optimizeLayers();
         requestAnimationFrame(animate);
     }
 
