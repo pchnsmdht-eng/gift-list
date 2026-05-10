@@ -5,16 +5,32 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
+        /* 135px * 3 = 405px */
         #viewport {
             width: 100vw;
-            height: 405px; /* 135px * 3 */
+            height: 405px;
             position: relative;
             overflow: hidden;
             cursor: grab;
         }
 
+        .lane-container {
+            position: absolute;
+            display: flex;
+            width: max-content;
+            height: 405px;
+            will-change: transform;
+        }
+
+        .lane-block {
+            display: flex;
+            flex-direction: column;
+            width: 1200px;
+            height: 405px;
+        }
+
         .lane {
-            width: 100vw;
+            width: 1200px;
             height: 135px;
             position: relative;
             overflow: hidden;
@@ -26,10 +42,9 @@
             height: 1200px;
             border: none;
             pointer-events: none;
-            will-change: transform;
         }
 
-        /* 🔴 シンプルに各段の抜き出し位置を固定 */
+        /* 抜き出し位置を135px刻みで固定 */
         .r1 { top: 0; clip-path: inset(0px 0px 1065px 0px); }
         .r2 { top: 0; clip-path: inset(135px 0px 930px 0px); transform: translateY(-135px); }
         .r3 { top: 0; clip-path: inset(270px 0px 795px 0px); transform: translateY(-270px); }
@@ -38,48 +53,45 @@
 <body>
 
 <div id="viewport">
-    <div class="lane" id="l1"></div>
-    <div class="lane" id="l2"></div>
-    <div class="lane" id="l3"></div>
+    <div id="lane-container"></div>
 </div>
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1200;
-    const lanes = [document.getElementById('l1'), document.getElementById('l2'), document.getElementById('l3')];
+    const container = document.getElementById('lane-container');
 
-    // 各レーンに2枚ずつiframeを置いてループ（合計6枚、これが限界の軽さです）
+    // 1200pxの塊を2つ作り、横に並べてループさせる一番シンプルな形
     function init() {
-        for (let n = 1; n <= 3; n++) {
-            const container = document.getElementById(`l${n}`);
-            container.innerHTML = ''; 
-            for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < 2; i++) {
+            const block = document.createElement('div');
+            block.className = 'lane-block';
+            for (let n = 1; n <= 3; n++) {
+                const lane = document.createElement('div');
+                lane.className = 'lane';
                 const f = document.createElement('iframe');
-                // キャッシュ対策で末尾を変える
-                f.src = `${URL}?lane=${n}&i=${i}&t=${Date.now()}`;
+                f.src = `${URL}?v=${Date.now()}_${i}_${n}`;
                 f.className = `r${n}`;
-                f.style.left = `${i * W}px`;
-                container.appendChild(f);
+                lane.appendChild(f);
+                block.appendChild(lane);
             }
+            container.appendChild(block);
         }
     }
 
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.8; // 右から左へ
+    let speed = -1.8; // 右から左（←）
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            if (posX <= -W) posX += W;
+            if (posX <= -W) {
+                posX += W;
+            }
         }
-        
-        // 3つのレーンをまとめて動かす
-        lanes.forEach(lane => {
-            lane.style.transform = `translateX(${posX}px)`;
-        });
-        
+        container.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
