@@ -2,46 +2,78 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Gift Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Speed Controller</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #111; color: white; }
-        button { width: 150px; height: 60px; margin: 10px; font-size: 16px; cursor: pointer; border-radius: 10px; border: none; }
-        .fast { background: #ff4757; color: white; }
-        .slow { background: #2ed573; color: white; }
-        .stop { background: #3742fa; color: white; }
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; padding: 30px; }
+        .card { background: #2a2a2a; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { font-size: 1.2rem; color: #aaa; }
+        
+        /* スライダーの見た目 */
+        .slider-container { margin: 40px 0; }
+        input[type=range] { width: 100%; height: 15px; border-radius: 10px; background: #444; outline: none; -webkit-appearance: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; background: #007bff; border-radius: 50%; cursor: pointer; }
+
+        .speed-val { font-size: 3rem; font-weight: bold; margin: 10px 0; color: #007bff; }
+        .label { display: flex; justify-content: space-between; color: #666; font-size: 0.8rem; }
+        
+        button { width: 100%; padding: 15px; margin-top: 20px; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .apply-btn { background: #007bff; color: white; }
+        .stop-btn { background: #e74c3c; color: white; }
+        button:active { transform: scale(0.98); opacity: 0.8; }
     </style>
 </head>
 <body>
-    <h2>🚀 配信画面コントロール</h2>
-    <button class="fast" onclick="updateSpeed('-3.0')">速くする</button>
-    <button class="slow" onclick="updateSpeed('-1.0')">標準</button><br>
-    <button class="stop" onclick="updateSpeed('0')">一時停止</button>
-    <button class="fast" onclick="updateSpeed('1.8')">逆走</button>
+    <div class="card">
+        <h1>🎁 ギフトスクロール調整</h1>
+        
+        <div class="speed-val" id="current-val">-1.0</div>
+        
+        <div class="slider-container">
+            <div class="label"><span>ゆっくり</span><span>爆速</span></div>
+            <input type="range" id="speed-slider" min="-10" max="10" step="0.1" value="-1.0" oninput="updateLabel(this.value)">
+        </div>
+
+        <button class="apply-btn" onclick="sendSpeed()">このスピードを配信に反映</button>
+        <button class="stop-btn" onclick="quickStop()">一時停止 (0)</button>
+    </div>
 
     <script>
-        const GITHUB_USER = "あなたのユーザー名";
-        const REPO_NAME = "tiktok-gift";
-        const FILE_PATH = "speed.txt";
-        const TOKEN = "ここにメモしたghp_...を貼る"; // ⚠️他人に教えないでください
+        const USER = "あなたのユーザー名";
+        const REPO = "あなたのリポジトリ名";
+        const TOKEN = "ghp_XXXXXXXXXXXXXXXXXXXX"; 
 
-        async function updateSpeed(newSpeed) {
-            // 1. 現在のファイルの情報を取得（SHAコードが必要なため）
-            const url = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${FILE_PATH}`;
-            const res = await fetch(url);
-            const data = await res.json();
+        function updateLabel(val) {
+            document.getElementById('current-val').innerText = parseFloat(val).toFixed(1);
+        }
 
-            // 2. 書き換え実行
-            const updateRes = await fetch(url, {
-                method: "PUT",
-                headers: { "Authorization": `token ${TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message: "Update speed via Remote",
-                    content: btoa(newSpeed), // 文字列をBase64変換
-                    sha: data.sha
-                })
-            });
+        async function quickStop() {
+            document.getElementById('speed-slider').value = 0;
+            updateLabel(0);
+            sendSpeed();
+        }
 
-            if(updateRes.ok) alert("反映命令を送りました！反映まで1分ほどお待ちください。");
+        async function sendSpeed() {
+            const val = document.getElementById('speed-slider').value;
+            const url = `https://api.github.com/repos/${USER}/${REPO}/contents/speed.txt`;
+            
+            try {
+                const res = await fetch(url, { headers: { "Authorization": `token ${TOKEN}` } });
+                const data = await res.json();
+
+                const updateRes = await fetch(url, {
+                    method: "PUT",
+                    headers: { "Authorization": `token ${TOKEN}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: "speed updated via slider",
+                        content: btoa(val),
+                        sha: data.sha
+                    })
+                });
+
+                if(updateRes.ok) alert("反映しました！約15〜30秒で配信画面が変わります。");
+                else alert("エラー：トークン設定を確認してください。");
+            } catch (e) { alert("通信エラー"); }
         }
     </script>
 </body>
