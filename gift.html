@@ -16,8 +16,7 @@
         #lane-container {
             position: absolute;
             display: flex;
-            /* 🔴 15px被せるためにマイナスのgapを設定 */
-            gap: -15px; 
+            gap: 0; /* 🔴 不安定なマイナスgapを廃止 */
             width: max-content;
             height: 393px;
             will-change: transform;
@@ -28,15 +27,18 @@
         .block {
             display: flex;
             flex-direction: column;
-            width: 1174px; 
+            /* 🔴 表示幅を1159px(1174-15)に。これで次が15px手前から始まります */
+            width: 1159px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
             padding: 0;
+            overflow: visible; /* 重なりを許容 */
         }
 
         .lane {
-            width: 1174px;
+            /* 🔴 laneの幅は元の1174pxを維持し、右端を15px分はみ出させて重ねる */
+            width: 1174px; 
             height: 131px;
             position: relative;
             overflow: hidden;
@@ -51,7 +53,7 @@
             left: 0; 
         }
 
-        /* 成功していた1174px用のクリップ設定を維持 */
+        /* 成功していた1174px用のクリップ設定 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -71,9 +73,8 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W_BASE = 1174;
-    const OVERLAP = 15; // 🔴 15px被せる
-    const W = W_BASE - OVERLAP; // 実質的な送り幅：1159px
+    // 🔴 1174pxの絵柄に対し、ブロックの歩進を1159pxにすることで正確に15px重ねる
+    const W = 1159; 
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
@@ -106,7 +107,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const cycleWidth = W * 3; // 1159px * 3
+            const cycleWidth = W * 3; 
             if (posX <= -cycleWidth) {
                 posX += cycleWidth;
             }
