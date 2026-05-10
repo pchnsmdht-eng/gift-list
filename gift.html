@@ -5,10 +5,10 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 132px * 3段 = 396px */
+        /* 131px * 3段 = 393px */
         #viewport {
             width: 100vw;
-            height: 396px; 
+            height: 393px; 
             position: relative;
             overflow: hidden;
             cursor: grab;
@@ -18,7 +18,7 @@
             position: absolute;
             display: flex;
             width: max-content;
-            height: 396px;
+            height: 393px;
             will-change: transform;
             left: 0;
         }
@@ -27,13 +27,13 @@
             display: flex;
             flex-direction: column;
             width: 1200px;
-            height: 396px;
+            height: 393px;
             flex-shrink: 0;
         }
 
         .lane {
             width: 1200px;
-            height: 132px;
+            height: 131px;
             position: relative;
             overflow: hidden;
         }
@@ -46,16 +46,16 @@
             pointer-events: none;
         }
 
-        /* 🔴 132px刻みで再計算した座標 */
-        .r1 { top: 0; clip-path: inset(0px 0px 1368px 0px); }
-        .r2 { top: 0; clip-path: inset(132px 0px 1236px 0px); transform: translateY(-132px); }
-        .r3 { top: 0; clip-path: inset(264px 0px 1104px 0px); transform: translateY(-264px); }
-        .r4 { top: 0; clip-path: inset(396px 0px 972px 0px); transform: translateY(-396px); }
-        .r5 { top: 0; clip-path: inset(528px 0px 840px 0px); transform: translateY(-528px); }
-        .r6 { top: 0; clip-path: inset(660px 0px 708px 0px); transform: translateY(-660px); }
-        .r7 { top: 0; clip-path: inset(792px 0px 576px 0px); transform: translateY(-792px); }
-        .r8 { top: 0; clip-path: inset(924px 0px 444px 0px); transform: translateY(-924px); }
-        .r9 { top: 0; clip-path: inset(1056px 0px 312px 0px); transform: translateY(-1056px); }
+        /* 🔴 131px刻みで再計算した座標 */
+        .r1 { top: 0; clip-path: inset(0px 0px 1369px 0px); }
+        .r2 { top: 0; clip-path: inset(131px 0px 1238px 0px); transform: translateY(-131px); }
+        .r3 { top: 0; clip-path: inset(262px 0px 1107px 0px); transform: translateY(-262px); }
+        .r4 { top: 0; clip-path: inset(393px 0px 976px 0px); transform: translateY(-393px); }
+        .r5 { top: 0; clip-path: inset(524px 0px 845px 0px); transform: translateY(-524px); }
+        .r6 { top: 0; clip-path: inset(655px 0px 714px 0px); transform: translateY(-655px); }
+        .r7 { top: 0; clip-path: inset(786px 0px 583px 0px); transform: translateY(-786px); }
+        .r8 { top: 0; clip-path: inset(917px 0px 452px 0px); transform: translateY(-917px); }
+        .r9 { top: 0; clip-path: inset(1048px 0px 321px 0px); transform: translateY(-1048px); }
     </style>
 </head>
 <body>
@@ -81,6 +81,7 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
+                    // キャッシュ対策
                     f.src = `${URL}?lane=${n}&t=${Date.now()}_${Math.random()}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
