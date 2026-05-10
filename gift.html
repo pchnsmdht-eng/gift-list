@@ -4,59 +4,60 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
-        #wrapper { width: 100vw; height: 100vh; position: relative; cursor: grab; }
+        /* 131x106の枠を固定 */
+        #wrapper { width: 100vw; height: 106px; position: relative; cursor: grab; overflow: hidden; }
         
         #scroller {
             position: absolute;
-            display: flex; /* ここで「上・下・上・下」と横に並べる */
+            display: flex;
             width: max-content;
-            height: 100%;
+            height: 106px;
             will-change: transform;
         }
 
         .item-box {
             position: relative;
-            width: 1000px; /* 画像の横幅 */
-            height: 100vh;
+            width: 131px; /* 横幅 */
+            height: 106px; /* 高さ */
             flex-shrink: 0;
+            overflow: hidden;
         }
 
         iframe {
             position: absolute;
-            width: 1000px;
-            height: 200vh; /* 縦を2倍にして解像度を確保 */
+            /* 🔴 ここを固定：元のページのサイズで読み込む */
+            width: 1200px; 
+            height: 800px; 
             border: none;
             pointer-events: none;
+            /* 🔴 勝手に縮小させない */
+            transform: scale(1.0); 
+            transform-origin: top left;
         }
 
-        /* --- 修正ポイント：上下の切り分け --- */
+        /* --- 1段目と2段目を「窓」にピッタリ合わせる --- */
         
-        /* 上半分パーツ */
         .top-part {
             top: 0;
-            height: 50vh;
-            clip-path: inset(0 0 50% 0);
+            left: 0;
+            /* 1段目のアイコンの位置（左上から131x106の範囲だけ切り抜く） */
+            clip-path: inset(0px 1069px 694px 0px); 
         }
 
-        /* 下半分パーツ（上段の右隣に並ぶように設定） */
         .bottom-part {
-            top: 50vh; /* 画面の下半分に配置 */
-            height: 50vh;
-            clip-path: inset(50% 0 0 0);
-            transform: translateY(-50vh); /* 下半分を上の枠まで持ち上げる */
-        }
-
-        /* 2つのパーツを横にずらす */
-        .shift-right {
-            margin-left: 1000px; /* 上半分の横幅分、右へずらして「後尾」にする */
+            top: 0;
+            left: 0;
+            /* 2段目のアイコンの位置（106px分下の位置を切り抜く） */
+            clip-path: inset(106px 1069px 588px 0px);
+            /* 切り抜いた下段を、窓の高さまで持ち上げる */
+            transform: translateY(-106px);
         }
     </style>
 </head>
 <body>
 
 <div id="wrapper">
-    <div id="scroller">
-        </div>
+    <div id="scroller"></div>
 </div>
 
 <script>
@@ -64,49 +65,36 @@
     const scroller = document.getElementById('scroller');
     const wrapper = document.getElementById('wrapper');
 
-    // ループ用に「上・下のペア」を3セット作る
-    for (let i = 0; i < 3; i++) {
-        // 上半分を表示する箱
-        const boxTop = document.createElement('div');
-        boxTop.className = 'item-box';
-        const fTop = document.createElement('iframe');
-        fTop.src = TARGET_URL;
-        fTop.className = 'top-part';
-        boxTop.appendChild(fTop);
-        scroller.appendChild(boxTop);
+    const ITEM_WIDTH = 131;
 
-        // 下半分を表示する箱（上半分の右隣に来る）
-        const boxBottom = document.createElement('div');
-        boxBottom.className = 'item-box';
-        const fBottom = document.createElement('iframe');
-        fBottom.src = TARGET_URL;
-        fBottom.className = 'bottom-part';
-        boxBottom.appendChild(fBottom);
-        scroller.appendChild(boxBottom);
+    // 1段目と2段目を交互に生成（合計20枚）
+    for (let i = 0; i < 10; i++) {
+        const boxT = document.createElement('div'); boxT.className = 'item-box';
+        const fT = document.createElement('iframe'); fT.src = TARGET_URL; fT.className = 'top-part';
+        boxT.appendChild(fT); scroller.appendChild(boxT);
+
+        const boxB = document.createElement('div'); boxB.className = 'item-box';
+        const fB = document.createElement('iframe'); fB.src = TARGET_URL; fB.className = 'bottom-part';
+        boxB.appendChild(fB); scroller.appendChild(boxB);
     }
 
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -2;
+    let speed = -1.2;
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 画像2枚分（2000px）流れたらループ
-            if (posX <= -2000) posX = 0;
+            const unitWidth = ITEM_WIDTH * 2;
+            if (posX <= -unitWidth) posX += unitWidth;
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    wrapper.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        startX = e.pageX - posX;
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (isDragging) posX = e.pageX - startX;
-    });
+    wrapper.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX - posX; });
+    window.addEventListener('mousemove', (e) => { if (isDragging) posX = e.pageX - startX; });
     window.addEventListener('mouseup', () => isDragging = false);
 
     animate();
