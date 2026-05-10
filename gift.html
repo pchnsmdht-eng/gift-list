@@ -5,15 +5,14 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦130pxを3つ積み上げ、合計390pxのコンテナ */
+        /* 縦130pxを3段（合計390px） */
         #main-container {
             display: flex;
             flex-direction: column;
             width: 100vw;
-            height: 390px; /* 130 * 3 */
+            height: 390px;
         }
 
-        /* 各段（レーン）の高さ130px固定 */
         .lane {
             width: 100vw;
             height: 130px;
@@ -21,7 +20,7 @@
             overflow: hidden;
         }
 
-        /* 横に流れるコンベア */
+        /* 🔴 改善点：1つのレーンにつき、長いiframeを2枚だけ並べてループさせる */
         .scroller {
             position: absolute;
             display: flex;
@@ -30,10 +29,9 @@
             will-change: transform;
         }
 
-        /* 各セルのサイズ：高さ130pxに合わせる */
-        .cell {
+        .gift-strip {
             position: relative;
-            width: 160px; /* 横幅はアイコンが切れない程度に設定 */
+            width: 1200px; /* 元のサイトの横幅 */
             height: 130px;
             flex-shrink: 0;
             overflow: hidden;
@@ -45,65 +43,55 @@
             height: 1200px;
             border: none;
             pointer-events: none;
-            transform-origin: 0 0;
-            /* アイコンが130pxの高さに綺麗に収まるよう倍率を調整 */
-            transform: scale(1.0); 
         }
 
-        /* --- 各段の抜き出し位置（130px間隔で調整） --- */
-        .row-1 { clip-path: inset(0px 1040px 1070px 0px); }
-        .row-2 { 
-            clip-path: inset(130px 1040px 940px 0px); 
-            transform: translateY(-130px); 
-        }
-        .row-3 { 
-            clip-path: inset(260px 1040px 810px 0px); 
-            transform: translateY(-260px); 
-        }
+        /* 各段の抜き出し位置を固定 */
+        .row-1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
+        .row-2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
+        .row-3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
     </style>
 </head>
 <body>
 
 <div id="main-container">
-    <div class="lane"><div class="scroller" id="lane1"></div></div>
-    <div class="lane"><div class="scroller" id="lane2"></div></div>
-    <div class="lane"><div class="scroller" id="lane3"></div></div>
+    <div class="lane"><div class="scroller" id="l1"></div></div>
+    <div class="lane"><div class="scroller" id="l2"></div></div>
+    <div class="lane"><div class="scroller" id="l3"></div></div>
 </div>
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const CELL_W = 160; 
+    const STRIP_W = 1200; // 元のサイトの幅
     let positions = [0, 0, 0];
     let isDragging = false;
     let startX = 0;
 
-    // 各段にセルを流し込む（横無限に見えるよう多めに生成）
-    for (let n = 1; n <= 3; n++) {
-        const scroller = document.getElementById(`lane${n}`);
-        for (let i = 0; i < 20; i++) {
+    // 各段に「長いベルト」を2枚ずつ配置（これで無限ループさせる）
+    [1, 2, 3].forEach(n => {
+        const scroller = document.getElementById(`l${n}`);
+        for (let i = 0; i < 2; i++) {
             const div = document.createElement('div');
-            div.className = 'cell';
+            div.className = 'gift-strip';
             const f = document.createElement('iframe');
             f.src = URL;
             f.className = `row-${n}`;
             div.appendChild(f);
             scroller.appendChild(div);
         }
-    }
+    });
 
     function animate() {
         if (!isDragging) {
             for (let i = 0; i < 3; i++) {
-                positions[i] -= 1.5; // スピード
-                // 1セル分進んだら位置を戻して無限ループ
-                if (positions[i] <= -CELL_W) positions[i] += CELL_W;
-                document.getElementById(`lane${i+1}`).style.transform = `translateX(${positions[i]}px)`;
+                positions[i] -= 1.5;
+                // ベルト1枚分（1200px）進んだら戻す
+                if (positions[i] <= -STRIP_W) positions[i] += STRIP_W;
+                document.getElementById(`l${i+1}`).style.transform = `translateX(${positions[i]}px)`;
             }
         }
         requestAnimationFrame(animate);
     }
 
-    // ドラッグUI：左右にスライドして確認可能
     const container = document.getElementById('main-container');
     container.onmousedown = (e) => { isDragging = true; startX = e.pageX; this.oldP = [...positions]; };
     window.onmousemove = (e) => {
@@ -111,7 +99,7 @@
         const diff = e.pageX - startX;
         for (let i = 0; i < 3; i++) {
             positions[i] = this.oldP[i] + diff;
-            document.getElementById(`lane${i+1}`).style.transform = `translateX(${positions[i]}px)`;
+            document.getElementById(`l${i+1}`).style.transform = `translateX(${positions[i]}px)`;
         }
     };
     window.onmouseup = () => isDragging = false;
