@@ -3,50 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         #wrapper { width: 100vw; height: 100vh; position: relative; cursor: grab; }
-        #wrapper:active { cursor: grabbing; }
-
-        /* 全体の流れるコンテナ */
+        
         #scroller {
             position: absolute;
-            display: flex;
+            display: flex; /* ここで「上・下・上・下」と横に並べる */
             width: max-content;
             height: 100%;
             will-change: transform;
         }
 
-        /* 外部サイトを読み込む枠 */
         .item-box {
             position: relative;
-            width: 1000px; /* キャプチャしたい横幅 */
-            height: 100%;
+            width: 1000px; /* 画像の横幅 */
+            height: 100vh;
             flex-shrink: 0;
         }
 
-        /* iframe（本物のページ）を強制的に埋め込む */
         iframe {
             position: absolute;
-            width: 1000px; 
-            height: 1600px; /* 縦長に読み込む */
+            width: 1000px;
+            height: 200vh; /* 縦を2倍にして解像度を確保 */
             border: none;
-            pointer-events: none; /* ドラッグを邪魔させない */
+            pointer-events: none;
         }
 
-        /* --- 上下分割のロジック --- */
-        /* 上段：元のページの上半分だけを表示 */
+        /* --- 修正ポイント：上下の切り分け --- */
+        
+        /* 上半分パーツ */
         .top-part {
             top: 0;
-            height: 50%;
+            height: 50vh;
             clip-path: inset(0 0 50% 0);
         }
 
-        /* 下段：元のページの下半分を上段の「右隣」に配置 */
+        /* 下半分パーツ（上段の右隣に並ぶように設定） */
         .bottom-part {
-            top: 0; /* 配置は上と同じ。translateXで右へ飛ばす */
-            height: 50%;
+            top: 50vh; /* 画面の下半分に配置 */
+            height: 50vh;
             clip-path: inset(50% 0 0 0);
-            transform: translateY(-25%); /* 下半分を上にずらして表示位置を調整 */
+            transform: translateY(-50vh); /* 下半分を上の枠まで持ち上げる */
+        }
+
+        /* 2つのパーツを横にずらす */
+        .shift-right {
+            margin-left: 1000px; /* 上半分の横幅分、右へずらして「後尾」にする */
         }
     </style>
 </head>
@@ -62,58 +64,50 @@
     const scroller = document.getElementById('scroller');
     const wrapper = document.getElementById('wrapper');
 
-    // 1. パーツの生成
-    // 「上段の右に下段が追従する」構造にするため、セットで並べる
+    // ループ用に「上・下のペア」を3セット作る
     for (let i = 0; i < 3; i++) {
-        const box = document.createElement('div');
-        box.className = 'item-box';
-        
-        // 上半分ユニット
+        // 上半分を表示する箱
+        const boxTop = document.createElement('div');
+        boxTop.className = 'item-box';
         const fTop = document.createElement('iframe');
         fTop.src = TARGET_URL;
         fTop.className = 'top-part';
-        
-        // 下半分ユニット
+        boxTop.appendChild(fTop);
+        scroller.appendChild(boxTop);
+
+        // 下半分を表示する箱（上半分の右隣に来る）
+        const boxBottom = document.createElement('div');
+        boxBottom.className = 'item-box';
         const fBottom = document.createElement('iframe');
         fBottom.src = TARGET_URL;
         fBottom.className = 'bottom-part';
-        fBottom.style.left = "1000px"; // 上半分の右側に配置
-
-        box.appendChild(fTop);
-        box.appendChild(fBottom);
-        scroller.appendChild(box);
+        boxBottom.appendChild(fBottom);
+        scroller.appendChild(boxBottom);
     }
 
-    // 2. スクロールとUIのロジック
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.5; // 自動速度
+    let speed = -2;
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 無限ループ処理
-            if (posX <= -2000) posX = 0; 
+            // 画像2枚分（2000px）流れたらループ
+            if (posX <= -2000) posX = 0;
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    // 3. ドラッグUI（触った時に自由に動かせる）
     wrapper.addEventListener('mousedown', (e) => {
         isDragging = true;
         startX = e.pageX - posX;
     });
-
     window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        posX = e.pageX - startX;
+        if (isDragging) posX = e.pageX - startX;
     });
-
-    window.addEventListener('mouseup', () => {
-        isDragging = false;
-    });
+    window.addEventListener('mouseup', () => isDragging = false);
 
     animate();
 </script>
