@@ -5,7 +5,7 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦130px × 3段 = 390px の固定枠 */
+        /* 縦390px（130x3）の固定枠 */
         #viewport {
             width: 100vw;
             height: 390px;
@@ -14,15 +14,16 @@
             cursor: grab;
         }
 
+        /* 3つのブロックを横に並べる */
         #scroller {
             position: absolute;
             display: flex;
             width: max-content;
             height: 390px;
             will-change: transform;
+            left: 0;
         }
 
-        /* 1ブロック（1200px幅 × 3段高） */
         .block {
             display: flex;
             flex-direction: column;
@@ -47,7 +48,7 @@
             transform-origin: 0 0;
         }
 
-        /* --- 抜き出し座標：全段定義 --- */
+        /* --- 抜き出し座標 --- */
         .r1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
         .r2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
         .r3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
@@ -70,17 +71,14 @@
     function init() {
         scroller.innerHTML = '';
         
-        // 🔴 3交代の優先順位設定
-        // 1番目(Primary): 1-3段目
-        // 2番目(Secondary): 4-6段目
-        // 3番目(Tertiary): 7-9段目（もしあれば。ここでは再度1-3を流すか、空白を避ける設定）
+        // 3交代のセット：[上][中][下]
         const groups = [
-            [1, 2, 3], // Primary
-            [4, 5, 6], // Secondary
-            [1, 2, 3]  // 次のループへ繋ぐための交代枠
+            [1, 2, 3], // 1段目ユニット
+            [4, 5, 6], // 2段目ユニット
+            [1, 2, 3]  // 3段目（ループ接続用）
         ];
 
-        // ループを安定させるため2サイクル分生成
+        // 余裕を持って2セット（計6ブロック）並べる
         for (let i = 0; i < 2; i++) {
             groups.forEach(rows => {
                 const block = document.createElement('div');
@@ -89,8 +87,8 @@
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
-                    // キャッシュ回避
-                    f.src = `${BASE_URL}?v=${Date.now()}_${Math.random()}_r${n}`;
+                    // 徹底したキャッシュ対策
+                    f.src = `${BASE_URL}?cache=${Date.now()}_${Math.random()}_r${n}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
                     block.appendChild(lane);
@@ -103,29 +101,30 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.5; // 右から左(←)
+    let speed = -1.8; // 右から左へ流れる
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 3交代分(1200px * 3 = 3600px)進んだらループ
-            const fullCycle = W * 3;
-            if (posX <= -fullCycle) {
-                posX += fullCycle;
+            
+            // 3ブロック分(3600px)進んだらリセット
+            // ここを確実に通すことで3段目が飛ばされるのを防ぎます
+            const resetPoint = -(W * 3);
+            if (posX <= resetPoint) {
+                posX += Math.abs(resetPoint);
             }
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    // UI操作
     const vp = document.getElementById('viewport');
     vp.onmousedown = (e) => { isDragging = true; startX = e.pageX - posX; };
     window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
 
-    // 10分ごとにiframeをリフレッシュ
-    setInterval(init, 600000);
+    // 5分おきにリフレッシュ
+    setInterval(init, 300000);
 
     init();
     animate();
