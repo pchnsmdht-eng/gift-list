@@ -5,23 +5,23 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
+        /* 縦131px × 3段 = 393px に拡張 */
         #viewport {
             width: 100vw;
-            height: 390px;
+            height: 393px;
             position: relative;
             overflow: hidden;
             cursor: grab;
         }
 
-        /* 各段の枠 */
+        /* 各段の枠を131pxに */
         .lane {
             width: 100vw;
-            height: 130px;
+            height: 131px;
             position: relative;
             overflow: hidden;
         }
 
-        /* iframeは各段1枚だけ！ */
         iframe {
             position: absolute;
             width: 1200px;
@@ -43,9 +43,9 @@
 <script>
     const BASE_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1200;
+    const H = 131; // 1段の高さを131に変更
     const iframes = [document.getElementById('f1'), document.getElementById('f2'), document.getElementById('f3')];
 
-    // 初回読み込み（キャッシュ回避）
     function loadIframes() {
         iframes.forEach((f, i) => {
             f.src = `${BASE_URL}?v=${Date.now()}_${i}`;
@@ -60,25 +60,22 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 3セット分(3600px)のループ
             if (posX <= -(W * 3)) posX += (W * 3);
         }
 
-        // 現在どのセット(0:1-3段目, 1:4-6段目, 2:7-9段目)を表示すべきか計算
         const scrollX = posX % W;
         const setIndex = Math.floor(Math.abs(posX) / W) % 3;
 
         iframes.forEach((f, i) => {
-            // 表示する段（row）をセットに合わせて変更
             const rowOffset = setIndex * 3;
-            const targetY = -( (i + rowOffset) * 130 );
+            // 縦位置の計算を131px基準に修正
+            const targetY = -( (i + rowOffset) * H );
             
-            // GPUで動かすことでCPU負荷を軽減
             f.style.transform = `translate3d(${scrollX}px, ${targetY}px, 0)`;
             
-            // クリップ範囲も動的に更新（全9段分をカバー）
-            const top = (i + rowOffset) * 130;
-            f.style.clipPath = `inset(${top}px 0px ${1500 - (top + 130)}px 0px)`;
+            // クリップ範囲も131pxに合わせて1pxずつ拡張
+            const top = (i + rowOffset) * H;
+            f.style.clipPath = `inset(${top}px 0px ${1500 - (top + H)}px 0px)`;
         });
 
         requestAnimationFrame(animate);
@@ -89,9 +86,7 @@
     window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
 
-    // 10分おきにリフレッシュ（CPUに優しい頻度）
     setInterval(loadIframes, 600000);
-
     loadIframes();
     animate();
 </script>
