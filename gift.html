@@ -5,7 +5,7 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦130pxを3段（合計390px） */
+        /* 縦130pxを3段（390px）積み上げた全体の枠 */
         #main-container {
             display: flex;
             flex-direction: column;
@@ -13,6 +13,7 @@
             height: 390px;
         }
 
+        /* 各段（レーン） */
         .lane {
             width: 100vw;
             height: 130px;
@@ -20,7 +21,7 @@
             overflow: hidden;
         }
 
-        /* 🔴 改善点：1つのレーンにつき、長いiframeを2枚だけ並べてループさせる */
+        /* 🔴 データの「列」そのもの。細かく刻まず、1200pxのまま流す */
         .scroller {
             position: absolute;
             display: flex;
@@ -29,9 +30,10 @@
             will-change: transform;
         }
 
-        .gift-strip {
+        /* 1200pxあるデータの塊（これを2つ並べて無限ループにする） */
+        .data-strip {
             position: relative;
-            width: 1200px; /* 元のサイトの横幅 */
+            width: 1200px; 
             height: 130px;
             flex-shrink: 0;
             overflow: hidden;
@@ -43,9 +45,11 @@
             height: 1200px;
             border: none;
             pointer-events: none;
+            /* 🔴 スケールをいじらず、データの元の大きさを維持 */
+            transform: scale(1.0); 
         }
 
-        /* 各段の抜き出し位置を固定 */
+        /* 各段で、元のサイトの1・2・3段目をそのまま「窓」に映す */
         .row-1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
         .row-2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
         .row-3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
@@ -61,17 +65,17 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const STRIP_W = 1200; // 元のサイトの幅
+    const DATA_WIDTH = 1200; // 元のデータの横幅
     let positions = [0, 0, 0];
     let isDragging = false;
     let startX = 0;
 
-    // 各段に「長いベルト」を2枚ずつ配置（これで無限ループさせる）
+    // 各段に、1200pxの「データの帯」を2枚ずつ繋げて無限ループを作る
     [1, 2, 3].forEach(n => {
         const scroller = document.getElementById(`l${n}`);
         for (let i = 0; i < 2; i++) {
             const div = document.createElement('div');
-            div.className = 'gift-strip';
+            div.className = 'data-strip';
             const f = document.createElement('iframe');
             f.src = URL;
             f.className = `row-${n}`;
@@ -83,15 +87,16 @@
     function animate() {
         if (!isDragging) {
             for (let i = 0; i < 3; i++) {
-                positions[i] -= 1.5;
-                // ベルト1枚分（1200px）進んだら戻す
-                if (positions[i] <= -STRIP_W) positions[i] += STRIP_W;
+                positions[i] -= 1.5; // スピード
+                // 1200px（データの末尾）まで行ったら先頭に戻して無限に見せる
+                if (positions[i] <= -DATA_WIDTH) positions[i] += DATA_WIDTH;
                 document.getElementById(`l${i+1}`).style.transform = `translateX(${positions[i]}px)`;
             }
         }
         requestAnimationFrame(animate);
     }
 
+    // ドラッグUI：左右に振って確認できる
     const container = document.getElementById('main-container');
     container.onmousedown = (e) => { isDragging = true; startX = e.pageX; this.oldP = [...positions]; };
     window.onmousemove = (e) => {
