@@ -27,16 +27,17 @@
         .block {
             display: flex;
             flex-direction: column;
-            /* 🔴 絵柄幅1174px + 隙間4px = 1178px に設定 */
-            width: 1178px; 
+            /* 🔴 1108pxからさらに4px詰め、1104pxで隙間を完全に潰す */
+            width: 1104px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
             padding: 0;
+            overflow: visible;
         }
 
         .lane {
-            /* 抜き出し幅は維持 */
+            /* 抜き出し幅1174pxに対し、70px分を隣と重ねる計算 */
             width: 1174px; 
             height: 131px;
             position: relative;
@@ -72,7 +73,7 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1178; // 🔴 さらに2px追加した合計1178px
+    const W = 1104; // 🔴 隙間をゼロにする精密送り幅
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
