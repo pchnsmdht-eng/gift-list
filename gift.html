@@ -5,7 +5,7 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; }
         
-        /* 縦130px × 3段 = 390px */
+        /* 縦130px × 3段 = 390px の固定枠 */
         #viewport {
             width: 100vw;
             height: 390px;
@@ -22,7 +22,7 @@
             will-change: transform;
         }
 
-        /* データの1セット */
+        /* 1ブロック（1200px幅 × 3段高） */
         .block {
             display: flex;
             flex-direction: column;
@@ -47,12 +47,10 @@
             transform-origin: 0 0;
         }
 
-        /* --- 抜き出し位置：全6段を定義 --- */
-        /* 上半分ブロック用 */
+        /* --- 抜き出し座標：全段定義 --- */
         .r1 { top: 0; clip-path: inset(0px 0px 1070px 0px); }
         .r2 { top: 0; clip-path: inset(130px 0px 940px 0px); transform: translateY(-130px); }
         .r3 { top: 0; clip-path: inset(260px 0px 810px 0px); transform: translateY(-260px); }
-        /* 下半分ブロック用 */
         .r4 { top: 0; clip-path: inset(390px 0px 680px 0px); transform: translateY(-390px); }
         .r5 { top: 0; clip-path: inset(520px 0px 550px 0px); transform: translateY(-520px); }
         .r6 { top: 0; clip-path: inset(650px 0px 420px 0px); transform: translateY(-650px); }
@@ -65,27 +63,34 @@
 </div>
 
 <script>
-    // 🔴 常に最新のデータを取るためのタイムスタンプ
     const BASE_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1200;
     const scroller = document.getElementById('scroller');
 
     function init() {
         scroller.innerHTML = '';
-        // データの流れ：[1-3段目] -> [4-6段目] -> [最初に戻る]
-        const sequences = [[1, 2, 3], [4, 5, 6]];
         
-        // ループをシームレスにするため2周分(計4ブロック)作成
+        // 🔴 3交代の優先順位設定
+        // 1番目(Primary): 1-3段目
+        // 2番目(Secondary): 4-6段目
+        // 3番目(Tertiary): 7-9段目（もしあれば。ここでは再度1-3を流すか、空白を避ける設定）
+        const groups = [
+            [1, 2, 3], // Primary
+            [4, 5, 6], // Secondary
+            [1, 2, 3]  // 次のループへ繋ぐための交代枠
+        ];
+
+        // ループを安定させるため2サイクル分生成
         for (let i = 0; i < 2; i++) {
-            sequences.forEach(rows => {
+            groups.forEach(rows => {
                 const block = document.createElement('div');
                 block.className = 'block';
                 rows.forEach(n => {
                     const lane = document.createElement('div');
                     lane.className = 'lane';
                     const f = document.createElement('iframe');
-                    // 🔴 iframeごとに個別のキャッシュ回避キーを付与
-                    f.src = `${BASE_URL}?nocache=${Date.now()}_${Math.random()}_row${n}`;
+                    // キャッシュ回避
+                    f.src = `${BASE_URL}?v=${Date.now()}_${Math.random()}_r${n}`;
                     f.className = `r${n}`;
                     lane.appendChild(f);
                     block.appendChild(lane);
@@ -98,30 +103,29 @@
     let posX = 0;
     let isDragging = false;
     let startX = 0;
-    let speed = -1.5; // 🔴 右から左(←)へ流れる
+    let speed = -1.5; // 右から左(←)
 
     function animate() {
         if (!isDragging) {
             posX += speed;
-            // 2ブロック(1200x2=2400px)進んだら、見た目を変えずに位置をリセット
-            if (posX <= -(W * 2)) {
-                posX += (W * 2);
+            // 3交代分(1200px * 3 = 3600px)進んだらループ
+            const fullCycle = W * 3;
+            if (posX <= -fullCycle) {
+                posX += fullCycle;
             }
         }
         scroller.style.transform = `translateX(${posX}px)`;
         requestAnimationFrame(animate);
     }
 
-    // UIドラッグ操作
+    // UI操作
     const vp = document.getElementById('viewport');
     vp.onmousedown = (e) => { isDragging = true; startX = e.pageX - posX; };
     window.onmousemove = (e) => { if (isDragging) posX = e.pageX - startX; };
     window.onmouseup = () => isDragging = false;
 
-    // 🔴 5分ごとにページ全体をリフレッシュして最新データを強制取得
-    setInterval(() => {
-        if (!isDragging) init();
-    }, 300000);
+    // 10分ごとにiframeをリフレッシュ
+    setInterval(init, 600000);
 
     init();
     animate();
