@@ -3,12 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; }
-        #viewport { width: 100vw; height: 396px; position: relative; overflow: hidden; }
-        #lane-container { position: absolute; display: flex; width: max-content; height: 393px; top: 3px; will-change: transform; }
+        /* 背景を軽くし、GPU加速を有効にする */
+        body { margin: 0; background: transparent; overflow: hidden; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        
+        #viewport { 
+            width: 100vw; 
+            height: 396px; 
+            position: relative; 
+            overflow: hidden; 
+            transform: translateZ(0); /* GPU加速 */
+        }
+
+        #lane-container { 
+            position: absolute; 
+            display: flex; 
+            width: max-content; 
+            height: 393px; 
+            top: 3px; 
+            will-change: transform; /* ブラウザにアニメーションを準備させる */
+            transform: translate3d(0, 0, 0); 
+        }
+
         .block { display: flex; flex-direction: column; width: 1115px; height: 393px; flex-shrink: 0; }
         .lane { width: 1174px; height: 131px; position: relative; overflow: hidden; }
-        iframe { position: absolute; width: 1200px; height: 1500px; border: none; pointer-events: none; }
+        
+        /* iframeの負荷を最小限にする */
+        iframe { 
+            position: absolute; 
+            width: 1200px; 
+            height: 1500px; 
+            border: none; 
+            pointer-events: none; 
+            visibility: visible;
+        }
+
+        /* クリップ位置 */
         .r1 { top: 0; clip-path: inset(0px 26px 1369px 0px); }
         .r2 { top: 0; clip-path: inset(131px 26px 1238px 0px); transform: translateY(-131px); }
         .r3 { top: 0; clip-path: inset(262px 26px 1107px 0px); transform: translateY(-262px); }
@@ -23,41 +52,39 @@
 <body>
 <div id="viewport"><div id="lane-container"></div></div>
 <script>
-    // 🔴 自分のユーザー名とリポジトリ名に書き換えてください
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
-
-    const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1115;
     const container = document.getElementById('lane-container');
+    
     let posX = 0;
     let speed = -1.0;
+    let lastTime = 0;
 
-    // スピードを取得する際、末尾にデタラメな数字を付けて常に最新版を強制的に読み込ませます
+    // スピード同期
     async function syncSpeed() {
         try {
-            const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?nocache=${Math.random()}`;
+            const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`;
             const res = await fetch(rawUrl);
             const text = await res.text();
-            if(!isNaN(text) && text.trim() !== "") {
-                speed = parseFloat(text);
-                console.log("現在のスピード:", speed);
-            }
+            if(!isNaN(text) && text.trim() !== "") speed = parseFloat(text);
         } catch (e) {}
     }
-
-    // 🔴 監視を「3秒おき」に短縮しました
-    setInterval(syncSpeed, 3000);
+    setInterval(syncSpeed, 5000);
 
     function init() {
         container.innerHTML = '';
-        for (let i = 0; i < 4; i++) {
+        // 描画負荷を考え、必要最小限の3ブロック（ループ用）に設定
+        for (let i = 0; i < 3; i++) {
             [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
                 const b = document.createElement('div'); b.className = 'block';
                 rows.forEach(n => {
                     const l = document.createElement('div'); l.className = 'lane';
-                    const f = document.createElement('iframe'); f.className = `r${n}`;
-                    f.src = `${URL}?lane=${n}&t=${Date.now()}`;
+                    const f = document.createElement('iframe'); 
+                    f.className = `r${n}`;
+                    // 読み込み負荷分散のため少し遅延させてロード
+                    setTimeout(() => { f.src = `${SRC}?lane=${n}`; }, (i * 9 + n) * 50);
                     l.appendChild(f); b.appendChild(l);
                 });
                 container.appendChild(b);
@@ -65,16 +92,27 @@
         }
     }
 
-    function animate() {
-        posX += speed;
+    // 高性能なアニメーションループ
+    function animate(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        const deltaTime = timestamp - lastTime;
+        lastTime = timestamp;
+
+        // 前回の描画からの経過時間に基づいて移動量を計算（カクつき防止）
+        posX += speed * (deltaTime / 16.6); 
+
         const totalW = W * 3;
         if (posX <= -totalW) posX += totalW;
         if (posX > 0) posX -= totalW;
-        container.style.transform = `translateX(${posX}px)`;
+
+        // translate3dを使うことでハードウェア加速を効かせる
+        container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
 
-    init(); syncSpeed(); animate();
+    init();
+    syncSpeed();
+    requestAnimationFrame(animate);
 </script>
 </body>
 </html>
