@@ -12,32 +12,17 @@
             will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none;
         }
 
-        /* 重なりを防ぐための安定幅 1115px */
         .block { display: flex; flex-direction: column; width: 1115px; height: 396px; flex-shrink: 0; }
-        
-        .lane { 
-            width: 1115px; 
-            height: 132px; 
-            position: relative; 
-            overflow: hidden; 
-            margin: 0 !important; 
-            padding: 0 !important;
-        }
-        
-        iframe { 
-            position: absolute; width: 1200px; height: 1500px; border: none; 
-            background: transparent; transform-origin: top left;
-        }
+        .lane { width: 1115px; height: 132px; position: relative; overflow: hidden; margin: 0 !important; padding: 0 !important; }
+        iframe { position: absolute; width: 1200px; height: 1500px; border: none; background: transparent; transform-origin: top left; }
 
-        /* 安定したclip-path設定 */
+        /* clip-path 設定（安定版） */
         .r1 { top: 0; clip-path: inset(0px 26px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 26px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 26px 1104px 0px); transform: translateY(-264px); }
-        
         .r4 { top: 0; clip-path: inset(396px 26px 972px 0px); transform: translateY(-396px); }
         .r5 { top: 0; clip-path: inset(528px 26px 840px 0px); transform: translateY(-528px); }
         .r6 { top: 0; clip-path: inset(660px 26px 708px 0px); transform: translateY(-660px); }
-        
         .r7 { top: 0; clip-path: inset(792px 26px 576px 0px); transform: translateY(-792px); }
         .r8 { top: 0; clip-path: inset(924px 26px 444px 0px); transform: translateY(-924px); }
         .r9 { top: 0; clip-path: inset(1056px 26px 312px 0px); transform: translateY(-1056px); }
@@ -46,39 +31,32 @@
     </style>
 </head>
 <body>
-<div id="viewport">
-    <div id="touch-overlay"></div>
-    <div id="lane-container"></div>
-</div>
+<div id="viewport"><div id="touch-overlay"></div><div id="lane-container"></div></div>
 <script>
-    // 🔴 ユーザー名とリポジトリ名が正しいか念のため確認してください
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const W = 1115; 
     const container = document.getElementById('lane-container');
     const overlay = document.getElementById('touch-overlay');
+    
     let posX = 0; 
-    let speed = -1.0; 
+    let speed = -1.0; // デフォルト：右から左
     let isDragging = false; 
     let startX = 0;
 
-    // 🔴 コントローラー（speed.txt）の読み込み機能を復活
+    // 🔴 向き（プラス・マイナス）を含めてspeed.txtを同期
     async function syncSpeed() {
         try {
             const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`;
             const res = await fetch(rawUrl);
             const text = await res.text();
-            // 数字が正しく読み込めた場合のみ更新
-            if(!isNaN(text) && text.trim() !== "") {
-                speed = parseFloat(text);
-                console.log("Speed updated:", speed);
+            const newSpeed = parseFloat(text.trim());
+            if(!isNaN(newSpeed)) {
+                speed = newSpeed; 
             }
-        } catch (e) {
-            console.error("Sync failed:", e);
-        }
+        } catch (e) {}
     }
-    // 3秒おきにチェック
     setInterval(syncSpeed, 3000);
 
     function init() {
@@ -98,23 +76,21 @@
         }
     }
 
-    // ドラッグ操作
     overlay.onpointerdown = (e) => { 
         isDragging = true; 
         startX = e.clientX - posX; 
         overlay.setPointerCapture(e.pointerId); 
     };
-    window.onpointermove = (e) => { 
-        if (isDragging) {
-            posX = e.clientX - startX; 
-        }
-    };
+    window.onpointermove = (e) => { if (isDragging) posX = e.clientX - startX; };
     window.onpointerup = () => { isDragging = false; };
 
     function animate() {
         if (!isDragging) {
+            // 🔴 speedの値（正負）に従って移動
             posX += speed;
-            const totalW = W * 3;
+
+            const totalW = W * 3; // 1セット1115px × 3
+            // ループ処理
             if (posX <= -totalW) posX += totalW;
             if (posX > 0) posX -= totalW;
         }
@@ -123,7 +99,7 @@
     }
 
     init(); 
-    syncSpeed(); // 初回実行
+    syncSpeed();
     animate();
 </script>
 </body>
