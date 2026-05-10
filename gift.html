@@ -27,8 +27,8 @@
         .block {
             display: flex;
             flex-direction: column;
-            /* 🔴 さらに5px詰め、1143pxで境界線を完全に飲み込む */
-            width: 1143px; 
+            /* 🔴 さらに10px詰め、1133pxで完全に重なりを強化 */
+            width: 1133px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
@@ -37,7 +37,7 @@
         }
 
         .lane {
-            /* 絵柄の表示幅1174pxに対し、31px分を隣と重ねる計算 */
+            /* 1174pxの抜き出しに対し、41px分が隣と重なります */
             width: 1174px; 
             height: 131px;
             position: relative;
@@ -73,7 +73,7 @@
 
 <script>
     const URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 1143; // 🔴 追い込み後の精密送り幅
+    const W = 1133; // 🔴 10pxさらに縮めた送り幅
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
