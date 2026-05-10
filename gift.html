@@ -28,8 +28,8 @@
         .block {
             display: flex;
             flex-direction: column;
-            /* 🔴 黒い帯を完全に消し去るため、幅を240pxまで極限に絞る */
-            width: 240px; 
+            /* 🔴 被りを防ぐため、幅を420pxに調整（ボタン1個分の適正幅） */
+            width: 420px; 
             height: 393px;
             flex-shrink: 0;
             margin: 0;
@@ -37,7 +37,7 @@
         }
 
         .lane {
-            width: 240px;
+            width: 420px;
             height: 131px;
             position: relative;
             overflow: hidden;
@@ -49,22 +49,22 @@
             height: 1500px;
             border: none;
             pointer-events: none;
-            /* 🔴 ボタンの芯（中心）だけを捉えるために左に大きく寄せる */
-            left: -480px; 
+            /* 🔴 ボタンを中央に配置するため -390px 調整 */
+            left: -390px; 
         }
 
-        /* 🔴 左右を480pxずつ豪快にカット。黒い帯は画面の外に消えます */
-        .r1 { top: 0; clip-path: inset(0px 480px 1369px 480px); }
-        .r2 { top: 0; clip-path: inset(131px 480px 1238px 480px); transform: translateY(-131px); }
-        .r3 { top: 0; clip-path: inset(262px 480px 1107px 480px); transform: translateY(-262px); }
+        /* 🔴 左右を390pxずつ精密カット。これでボタンの絵柄を壊さず黒帯だけ消えます */
+        .r1 { top: 0; clip-path: inset(0px 390px 1369px 390px); }
+        .r2 { top: 0; clip-path: inset(131px 390px 1238px 390px); transform: translateY(-131px); }
+        .r3 { top: 0; clip-path: inset(262px 390px 1107px 390px); transform: translateY(-262px); }
         
-        .r4 { top: 0; clip-path: inset(393px 480px 976px 480px); transform: translateY(-393px); }
-        .r5 { top: 0; clip-path: inset(524px 480px 845px 480px); transform: translateY(-524px); }
-        .r6 { top: 0; clip-path: inset(655px 480px 714px 480px); transform: translateY(-655px); }
+        .r4 { top: 0; clip-path: inset(393px 390px 976px 390px); transform: translateY(-393px); }
+        .r5 { top: 0; clip-path: inset(524px 390px 845px 390px); transform: translateY(-524px); }
+        .r6 { top: 0; clip-path: inset(655px 390px 714px 390px); transform: translateY(-655px); }
         
-        .r7 { top: 0; clip-path: inset(786px 480px 583px 480px); transform: translateY(-786px); }
-        .r8 { top: 0; clip-path: inset(917px 480px 452px 480px); transform: translateY(-917px); }
-        .r9 { top: 0; clip-path: inset(1048px 480px 321px 480px); transform: translateY(-1048px); }
+        .r7 { top: 0; clip-path: inset(786px 390px 583px 390px); transform: translateY(-786px); }
+        .r8 { top: 0; clip-path: inset(917px 390px 452px 390px); transform: translateY(-917px); }
+        .r9 { top: 0; clip-path: inset(1048px 390px 321px 390px); transform: translateY(-1048px); }
     </style>
 </head>
 <body>
@@ -75,7 +75,7 @@
 
 <script>
     const BASE_URL = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const W = 240; // 🔴 1ブロックの幅を240pxに（ボタンが隙間なく並ぶ幅）
+    const W = 420; // 🔴 ボタンが重ならず、隙間もできない最適な表示幅
     const container = document.getElementById('lane-container');
 
     const groups = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
@@ -108,7 +108,7 @@
     function animate() {
         if (!isDragging) {
             posX += speed;
-            const cycleWidth = W * 3; // 240px * 3セット
+            const cycleWidth = W * 3;
             if (posX <= -cycleWidth) {
                 posX += cycleWidth;
             }
