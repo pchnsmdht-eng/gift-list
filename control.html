@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Gift Remote</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #111; color: white; }
+        button { width: 150px; height: 60px; margin: 10px; font-size: 16px; cursor: pointer; border-radius: 10px; border: none; }
+        .fast { background: #ff4757; color: white; }
+        .slow { background: #2ed573; color: white; }
+        .stop { background: #3742fa; color: white; }
+    </style>
+</head>
+<body>
+    <h2>🚀 配信画面コントロール</h2>
+    <button class="fast" onclick="updateSpeed('-3.0')">速くする</button>
+    <button class="slow" onclick="updateSpeed('-1.0')">標準</button><br>
+    <button class="stop" onclick="updateSpeed('0')">一時停止</button>
+    <button class="fast" onclick="updateSpeed('1.8')">逆走</button>
+
+    <script>
+        const GITHUB_USER = "あなたのユーザー名";
+        const REPO_NAME = "tiktok-gift";
+        const FILE_PATH = "speed.txt";
+        const TOKEN = "ここにメモしたghp_...を貼る"; // ⚠️他人に教えないでください
+
+        async function updateSpeed(newSpeed) {
+            // 1. 現在のファイルの情報を取得（SHAコードが必要なため）
+            const url = `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents/${FILE_PATH}`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            // 2. 書き換え実行
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: { "Authorization": `token ${TOKEN}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: "Update speed via Remote",
+                    content: btoa(newSpeed), // 文字列をBase64変換
+                    sha: data.sha
+                })
+            });
+
+            if(updateRes.ok) alert("反映命令を送りました！反映まで1分ほどお待ちください。");
+        }
+    </script>
+</body>
+</html>
