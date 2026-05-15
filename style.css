@@ -1,0 +1,51 @@
+body { 
+    margin: 0; 
+    background: transparent; 
+    overflow: hidden; 
+    touch-action: none; 
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#viewport { 
+    width: 100vw; 
+    height: 400px; 
+    position: relative; 
+    overflow: hidden; 
+    pointer-events: auto !important; 
+}
+
+#lane-container { 
+    position: absolute; 
+    display: flex; 
+    width: max-content; 
+    top: 2px; 
+    will-change: transform; 
+    transform: translate3d(0, 0, 0); 
+    pointer-events: none !important; 
+}
+
+.block { display: flex; flex-direction: column; width: 1115px; flex-shrink: 0; }
+.lane { width: 1115px; height: 132px; position: relative; overflow: hidden; }
+iframe { position: absolute; width: 1200px; height: 1500px; border: none; transform-origin: top left; }
+
+#touch-shield { 
+    position: absolute; 
+    top: 0; left: 0; width: 100%; height: 100%; 
+    z-index: 9999; 
+    background: rgba(0,0,0,0); 
+    touch-action: none;
+    pointer-events: auto !important;
+    cursor: grab;
+}
+
+/* clip-path 安定設定 */
+.r1 { top: 0; clip-path: inset(0px 26px 1368px 0px); }
+.r2 { top: 0; clip-path: inset(132px 26px 1236px 0px); transform: translateY(-132px); }
+.r3 { top: 0; clip-path: inset(264px 26px 1104px 0px); transform: translateY(-264px); }
+.r4 { top: 0; clip-path: inset(396px 26px 972px 0px); transform: translateY(-393px); }
+.r5 { top: 0; clip-path: inset(528px 26px 840px 0px); transform: translateY(-528px); }
+.r6 { top: 0; clip-path: inset(660px 26px 708px 0px); transform: translateY(-660px); }
+.r7 { top: 0; clip-path: inset(792px 26px 576px 0px); transform: translateY(-792px); }
+.r8 { top: 0; clip-path: inset(924px 26px 444px 0px); transform: translateY(-917px); }
+.r9 { top: 0; clip-path: inset(1056px 26px 312px 0px); transform: translateY(-1056px); }
