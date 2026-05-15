@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* 🔴 すべてのCSSをここに統合しました */
         body { 
             margin: 0; 
             background: transparent; 
@@ -14,12 +13,14 @@
             -webkit-user-select: none;
         }
 
+        /* 初期状態は4段分(530px)。3段に落ちた時はJSで400pxに上書きします */
         #viewport { 
             width: 100vw; 
-            height: 400px; 
+            height: 530px; 
             position: relative; 
             overflow: hidden; 
             pointer-events: auto !important; 
+            transition: height 0.3s ease; /* 切り替わりをスムーズに */
         }
         
         #lane-container { 
@@ -46,16 +47,27 @@
             cursor: grab;
         }
 
-        /* clip-path 安定設定 */
+        /* 4段目が無効な時、4段目のブロックごと非表示にするためのクラス */
+        .hide-4th .lane-4th {
+            display: none !important;
+        }
+
+        /* 各段の切り抜き設定 */
         .r1 { top: 0; clip-path: inset(0px 26px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 26px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 26px 1104px 0px); transform: translateY(-264px); }
-        .r4 { top: 0; clip-path: inset(396px 26px 972px 0px); transform: translateY(-393px); }
+        
+        .r4 { top: 0; clip-path: inset(396px 26px 972px 0px); transform: translateY(-396px); }
         .r5 { top: 0; clip-path: inset(528px 26px 840px 0px); transform: translateY(-528px); }
         .r6 { top: 0; clip-path: inset(660px 26px 708px 0px); transform: translateY(-660px); }
+        
         .r7 { top: 0; clip-path: inset(792px 26px 576px 0px); transform: translateY(-792px); }
-        .r8 { top: 0; clip-path: inset(924px 26px 444px 0px); transform: translateY(-917px); }
+        .r8 { top: 0; clip-path: inset(924px 26px 444px 0px); transform: translateY(-924px); }
         .r9 { top: 0; clip-path: inset(1056px 26px 312px 0px); transform: translateY(-1056px); }
+
+        .r10 { top: 0; clip-path: inset(1188px 26px 180px 0px); transform: translateY(-1188px); }
+        .r11 { top: 0; clip-path: inset(132px 26px 48px 0px); transform: translateY(-1320px); }
+        .r12 { top: 0; clip-path: inset(1452px 26px 0px 0px); transform: translateY(-1452px); }
     </style>
 </head>
 <body>
@@ -68,8 +80,10 @@
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
+    const viewport = document.getElementById('viewport');
     
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
+    let is4thValid = true; // 4段目が有効かどうか
 
     async function syncSpeed() {
         try {
@@ -81,18 +95,16 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // スワイプ操作（配信ソフトのガードを無視するpointerイベント）
+    // スワイプイベント
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
         shield.setPointerCapture(e.pointerId);
     };
-
     const handleMove = (e) => {
         if (!isTouching) return;
         posX = e.clientX - startX;
     };
-
     const handleEnd = () => { isTouching = false; };
 
     shield.addEventListener('pointerdown', handleStart);
@@ -102,14 +114,52 @@
 
     function init() {
         container.innerHTML = '';
+        let checkCount = 0;
+        let failedCount = 0;
+
         for (let i = 0; i < 4; i++) {
-            [[1,2,3],[4,5,6],[7,8,9]].forEach(rows => {
-                const b = document.createElement('div'); b.className = 'block';
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12]].forEach((rows, blockIdx) => {
+                const b = document.createElement('div'); 
+                b.className = 'block';
+                
+                // 4段目のブロック（rowsが10,11,12の時）に識別用のクラスをつける
+                if (blockIdx === 3) {
+                    b.classList.add('lane-4th');
+                }
+
                 rows.forEach(n => {
                     const l = document.createElement('div'); l.className = 'lane';
                     const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
                     f.className = `r${n}`;
+
+                    // 🔴 4段目のインラインフレームだけ読み込みチェックを行う
+                    if (n >= 10) {
+                        checkCount++;
+                        
+                        // 読み込み完了時の判定
+                        f.onload = () => {
+                            try {
+                                // クロスドメイン制限で中身が完全に読めない、またはブランクの場合を検知
+                                if (!f.contentWindow || f.contentWindow.length === 0) {
+                                    throw new Error("Empty or Unreachable");
+                                }
+                            } catch (err) {
+                                // 読み込み失敗、またはデータがない場合
+                                failedCount++;
+                                if (failedCount > 0 && is4thValid) {
+                                    switchTo3Lanes();
+                                }
+                            }
+                        };
+
+                        // 通信エラー等でそもそも開けなかった場合
+                        f.onerror = () => {
+                            failedCount++;
+                            if (is4thValid) switchTo3Lanes();
+                        };
+                    }
+
                     l.appendChild(f); b.appendChild(l);
                 });
                 container.appendChild(b);
@@ -117,11 +167,23 @@
         }
     }
 
+    // 🔴 4段目を諦めて3段表示に強制切り替えする処理
+    function switchTo3Lanes() {
+        is4thValid = false;
+        viewport.style.height = "400px"; // 高さを3段分(400px)に縮める
+        document.body.classList.add('hide-4th'); // CSSで4段目を非表示にする
+        console.log("4段目のデータが確認できないため、3段表示に切り替えました。");
+    }
+
     function animate() {
         if (!isTouching) {
             posX += speed;
         }
-        const unitW = W * 3; 
+        
+        // 4段目が有効なら全4ブロック、無効（3段表示）なら3ブロック分でループ計算を変える
+        const activeBlocks = is4thValid ? 4 : 3;
+        const unitW = W * activeBlocks; 
+
         if (posX <= -unitW) posX += unitW;
         else if (posX >= 0) posX -= unitW;
         
