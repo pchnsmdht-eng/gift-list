@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
+        /* ウィジェット枠にぴったり収めるためのCSS設定 */
         body { 
             margin: 0; 
             background: transparent; 
@@ -13,12 +14,13 @@
             -webkit-user-select: none;
         }
 
+        /* ウィジェット領域：4段分が綺麗に収まる高さ */
         #viewport { 
             width: 100vw; 
             height: 530px; 
             position: relative; 
             overflow: hidden; 
-            pointer-events: auto !important; 
+            pointer-events: auto !important; /* ウィジェット枠の操作権限を強制取得 */
             transition: height 0.3s ease;
         }
         
@@ -32,7 +34,7 @@
             pointer-events: none !important; 
         }
 
-        /* 🔴 ズレ防止：幅を1115pxから「1122px」に調整し、余白（margin: 0）を徹底固定 */
+        /* ズレを完全に修正した1122px幅 */
         .block { 
             display: flex; 
             flex-direction: column; 
@@ -52,7 +54,6 @@
             padding: 0 !important;
         }
         
-        /* 🔴 元画面の読み込み幅も微調整して、ハミ出しを吸収します */
         iframe { 
             position: absolute; 
             width: 1200px; 
@@ -61,6 +62,7 @@
             transform-origin: top left; 
         }
 
+        /* 指でのスワイプやマウスを認識させるための透明な膜 */
         #touch-shield { 
             position: absolute; 
             top: 0; left: 0; width: 100%; height: 100%; 
@@ -71,11 +73,12 @@
             cursor: grab;
         }
 
+        /* 4段目のデータがない時に非表示にする設定 */
         .hide-4th .lane-4th {
             display: none !important;
         }
 
-        /* 🔴 clip-path の右側の切り抜き幅（26pxだった部分）を「5px」に広げて、右端のアイコンまで綺麗に表示させます */
+        /* 先ほどのスクショの右端ズレをピタッと直した抽出幅 (5px) */
         .r1 { top: 0; clip-path: inset(0px 5px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 5px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 5px 1104px 0px); transform: translateY(-264px); }
@@ -99,7 +102,6 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    // 🔴 計算用の幅の基準も 1122 に変更
     const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
@@ -109,6 +111,7 @@
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
     let is4thValid = true;
 
+    // リモコン（speed.txt）との同期（1秒ごと）
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -119,6 +122,7 @@
     }
     setInterval(syncSpeed, 1000);
 
+    // ウィジェット上でのスワイプ・ドラッグ検知
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -135,6 +139,7 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
+    // データ読み込み＆4段目の存在チェック
     function init() {
         container.innerHTML = '';
         let failedCount = 0;
@@ -151,6 +156,7 @@
                     f.src = `${SRC}?lane=${n}`;
                     f.className = `r${n}`;
 
+                    // 4段目の自動認識
                     if (n >= 10) {
                         f.onload = () => {
                             try {
@@ -175,12 +181,14 @@
         }
     }
 
+    // 4段目が未実装なら3段に自動縮小する安全装置
     function switchTo3Lanes() {
         is4thValid = false;
         viewport.style.height = "400px";
         document.body.classList.add('hide-4th');
     }
 
+    // 無限ループアニメーション
     function animate() {
         if (!isTouching) {
             posX += speed;
