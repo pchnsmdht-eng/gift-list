@@ -32,9 +32,14 @@
     const container = document.getElementById('lane-container');
     const viewport = document.getElementById('viewport');
     
-    // 🔴 ご自身の環境名に書き換えてください
-    const USER = "【あなたのGitHubユーザー名】";
-    const REPO = "【あなたのリポジトリ名】";
+    // ==========================================
+    // ⚠️ ここをご自身の環境に書き換えてください
+    // ==========================================
+    const RAW_USER = "あなたのGitHubユーザー名";
+    const RAW_REPO = "あなたのリポジトリ名";
+
+    const USER = RAW_USER.replace(/[【】\s\u3000]/g, "").trim();
+    const REPO = RAW_REPO.replace(/[【】\s\u3000]/g, "").trim();
     
     let posX = 0, speed = 0, is4thValid = true;
 
