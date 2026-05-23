@@ -14,7 +14,7 @@
             -webkit-user-select: none;
         }
 
-        /* 成功事例のピクセル数をそのまま1段分追加（132px × 4段 = 528px、全体の余白用で530px） */
+        /* 縦4段分（132px × 4段 = 528px）が綺麗に収まる高さ */
         #viewport { 
             width: 100vw; 
             height: 530px; 
@@ -34,18 +34,7 @@
             pointer-events: none !important; 
         }
 
-        /* 🪛【ここを修正】4段分（132px × 4 = 528px）の枠をしっかり確保して潰れないようにしました */
-        .block { 
-            display: flex; 
-            flex-direction: column; 
-            width: 1122px; 
-            height: 528px; 
-            flex-shrink: 0; 
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        /* 成功事例の1122px幅のトラック */
+        /* 1つの段（行）。横に7個のマスが隙間なく並ぶトラック */
         .row-track {
             display: flex;
             flex-direction: row;
@@ -55,7 +44,7 @@
             padding: 0 !important;
         }
         
-        /* 成功事例の1マスのサイズ */
+        /* 成功事例の最も見やすかった1マスのサイズ */
         .gift-frame-wrapper { 
             width: 374px; 
             height: 132px; 
@@ -74,7 +63,7 @@
             transform-origin: top left; 
         }
 
-        /* 🖐️ 指でのスワイプやマウスを認識させるための透明な膜 */
+        /* 指でのスワイプやマウスを認識させるための透明な膜 */
         #touch-shield { 
             position: absolute; 
             top: 0; left: 0; width: 100%; height: 100%; 
@@ -85,7 +74,7 @@
             cursor: grab;
         }
 
-        /* ✨【アイコンサイズ統一】文字まで綺麗によめる均一なサイズ（60px）に強制統一 */
+        /* ✨【アイコンサイズ統一】文字まで綺麗によめる均一なサイズ（60px） */
         iframe { --gift-icon-size: 60px !important; }
         iframe[src*="streamtoearn"] img, 
         iframe[src*="streamtoearn"] .gift-icon, 
@@ -112,7 +101,7 @@
 <script>
     const USER = "pchnsmdht-eng", REPO = "gift-list";
     const FRAME_W = 374; // 1マスの横幅
-    const COLUMNS_PER_ROW = 3; // 成功事例と同じ横3列（1122px幅）
+    const COLUMNS_PER_ROW = 7; // 【横に7列】
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     
     const container = document.getElementById('lane-container');
@@ -131,7 +120,7 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // スワイプ・ドラッグ検知（成功事例を完全維持）
+    // スワイプ・ドラッグ検知（完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -148,16 +137,16 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // 4本の段トラックに、重複なく lane=1 〜 lane=12 を綺麗に配置
+    // 4本の段トラックに、被りなく lane=1 〜 lane=28 を綺麗に横に並べる
     function init() {
         for (let r = 1; r <= 4; r++) {
             const track = document.getElementById(`row-${r}`);
             track.innerHTML = '';
 
-            // スライドがループした際に途切れないよう、横に4枚分（4ループ）連結
-            for (let loop = 0; loop < 4; loop++) {
+            // スライドがループした際に途切れないよう、7マスのセットを3ループ分横に連結
+            for (let loop = 0; loop < 3; loop++) {
                 for (let c = 1; c <= COLUMNS_PER_ROW; c++) {
-                    // 1行目:1~3、2行目:4~6、3行目:7~9、4行目:10~12
+                    // 1行目:1~7、2行目:8~14、3行目:15~21、4行目:22~28 と綺麗にバラけさせます
                     const laneNumber = ((r - 1) * COLUMNS_PER_ROW) + c;
 
                     const wrapper = document.createElement('div');
@@ -180,11 +169,13 @@
             posX += speed;
         }
         
-        const maxTrackW = FRAME_W * COLUMNS_PER_ROW; // 3個分の総横幅 = 1122px
+        const maxTrackW = FRAME_W * COLUMNS_PER_ROW; // 7個分の総横幅 = 2618px
 
+        // 端まで流れたら滑らかに先頭へループ（追従が被らず綺麗に連なる）
         if (posX <= -maxTrackW) posX += maxTrackW;
         else if (posX >= 0) posX -= maxTrackW;
         
+        // 4つの行をすべて一斉に同じ速度で横スクロール
         const tracks = document.querySelectorAll('.row-track');
         tracks.forEach(t => { 
             t.style.transform = `translate3d(${posX}px, 0, 0)`; 
