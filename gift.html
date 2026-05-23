@@ -4,63 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            margin: 0; 
-            background: transparent; 
-            overflow: hidden; 
-            touch-action: none; 
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        #viewport { 
-            width: 100vw; 
-            height: 530px; 
-            position: relative; 
-            overflow: hidden; 
-            transition: height 0.3s ease;
-        }
-        
-        #lane-container { 
-            position: absolute; 
-            display: flex; 
-            width: max-content; 
-            top: 2px; 
-            will-change: transform; 
-            transform: translate3d(0, 0, 0); 
-            pointer-events: none !important; 
-        }
-
-        .block { 
-            display: flex; 
-            flex-direction: column; 
-            width: 1122px; 
-            height: 528px; 
-            flex-shrink: 0; 
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        .lane { 
-            width: 1122px; 
-            height: 132px; 
-            position: relative; 
-            overflow: hidden; 
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        iframe { 
-            position: absolute; 
-            width: 1200px; 
-            height: 1500px; 
-            border: none; 
-            transform-origin: top left; 
-        }
-
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+        #viewport { width: 100vw; height: 530px; position: relative; overflow: hidden; transition: height 0.3s ease; }
+        #lane-container { position: absolute; display: flex; width: max-content; top: 2px; will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none !important; }
+        .block { display: flex; flex-direction: column; width: 1122px; height: 528px; flex-shrink: 0; margin: 0 !important; padding: 0 !important; }
+        .lane { width: 1122px; height: 132px; position: relative; overflow: hidden; margin: 0 !important; padding: 0 !important; }
+        iframe { position: absolute; width: 1200px; height: 1500px; border: none; transform-origin: top left; }
         .hide-4th .lane-4th { display: none !important; }
-
-        /* 右端ズレ完全補正 */
         .r1 { top: 0; clip-path: inset(0px 5px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 5px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 5px 1104px 0px); transform: translateY(-264px); }
@@ -76,26 +26,20 @@
     </style>
 </head>
 <body>
-<div id="viewport">
-    <div id="lane-container"></div>
-</div>
+<div id="viewport"><div id="lane-container"></div></div>
 <script>
     const W = 1122, SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
     const viewport = document.getElementById('viewport');
     
-    // 🔴 ご自身のGitHubユーザー名とリポジトリ名を設定してください
+    // 🔴 ご自身の環境名に書き換えてください
     const USER = "【あなたのGitHubユーザー名】";
     const REPO = "【あなたのリポジトリ名】";
     
-    let posX = 0;
-    let baseSpeed = 0;      // ボタンから指示されたベースの常時移動速度
-    let swipeVelocity = 0;  // スワイプによる瞬間的な加速速度
-    let is4thValid = true;
+    let posX = 0, speed = 0, is4thValid = true;
 
     function init() {
-        container.innerHTML = '';
-        let failedCount = 0;
+        container.innerHTML = ''; let failedCount = 0;
         for (let i = 0; i < 4; i++) {
             [[1,2,3],[4,5,6],[7,8,9],[10,11,12]].forEach((rows, blockIdx) => {
                 const b = document.createElement('div'); b.className = 'block';
@@ -114,57 +58,24 @@
         }
     }
 
-    function switchTo3Lanes() {
-        is4thValid = false;
-        viewport.style.height = "400px";
-        document.body.classList.add('hide-4th');
-    }
+    function switchTo3Lanes() { is4thValid = false; viewport.style.height = "400px"; document.body.classList.add('hide-4th'); }
 
-    // 🔴 GitHubから速度またはスワイプ命令を読み込む（キャッシュ回避付き1秒ごと）
     async function checkSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
-            if (res.ok) {
-                const text = (await res.text()).trim();
-                
-                if (text.startsWith("swipe:")) {
-                    // スワイプ命令が来たら、現在の慣性速度にその移動量をプラスして「ズサッ」と動かす
-                    let swipeValue = parseInt(text.split(":")[1], 10);
-                    if (!isNaN(swipeValue)) {
-                        swipeVelocity += swipeValue * 0.3; // 動きが激しすぎないよう適度に調整
-                    }
-                } else {
-                    // 通常の数値ならベース速度を上書き
-                    let num = parseFloat(text);
-                    if (!isNaN(num)) baseSpeed = num;
-                }
-            }
+            if (res.ok) { const num = parseFloat(await res.text()); if (!isNaN(num)) speed = num; }
         } catch (e) {}
     }
 
-    // アニメーションループ（物理計算）
     function animate() {
-        const activeBlocks = is4thValid ? 4 : 3;
-        const unitW = W * activeBlocks; 
-
-        // スワイプの勢いは、摩擦（0.85）で徐々に減速して自然に止まるようにする
-        swipeVelocity *= 0.85;
-        
-        // 通常の巡航速度 ＋ スワイプの慣性速度 を足して動かす
-        posX += (baseSpeed + swipeVelocity);
-
-        if (posX <= -unitW) posX += unitW;
-        else if (posX >= 0) posX -= unitW;
-        
+        const activeBlocks = is4thValid ? 4 : 3; const unitW = W * activeBlocks;
+        posX += speed;
+        if (posX <= -unitW) posX += unitW; else if (posX >= 0) posX -= unitW;
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
 
-    // 1秒ごとにリモコンの指示を確認に行く（いつもの仕様）
-    setInterval(checkSpeed, 1000);
-
-    init(); 
-    animate();
+    setInterval(checkSpeed, 1000); init(); animate();
 </script>
 </body>
 </html>
