@@ -14,20 +14,19 @@
             -webkit-user-select: none;
         }
 
-        /* 4段分（528px）が綺麗に収まる高さに固定 */
+        /* ウィジェット領域：4段分が綺麗に収まる高さ */
         #viewport { 
             width: 100vw; 
             height: 530px; 
             position: relative; 
             overflow: hidden; 
-            pointer-events: auto !important;
+            pointer-events: auto !important; /* ウィジェット枠の操作権限を強制取得 */
+            transition: height 0.3s ease;
         }
         
-        /* 巨大なギフトシートの塊が、横（Row方向）にスムーズに流れるコンテナ */
         #lane-container { 
             position: absolute; 
             display: flex; 
-            flex-direction: row; 
             width: max-content; 
             top: 2px; 
             will-change: transform; 
@@ -35,50 +34,35 @@
             pointer-events: none !important; 
         }
 
-        /* 横7列 × 縦4段 = 28個のギフトが入る巨大な1つの塊（ブロック） */
-        .gift-block { 
+        /* ズレを完全に修正した1122px幅 */
+        .block { 
             display: flex; 
             flex-direction: column; 
-            width: 2618px; /* 374px × 7列 = 2618px幅 */
+            width: 1122px; 
             height: 528px; 
             flex-shrink: 0; 
             margin: 0 !important;
-            /* ✨【被り防止】次のループとの間隔をしっかり空けるため、右側に1マス分の空白を設置 */
-            margin-right: 374px !important; 
-            padding: 0 !important;
-        }
-
-        /* ブロック内の各段（行）のトラック */
-        .row-track {
-            display: flex;
-            flex-direction: row;
-            width: 2618px;
-            height: 132px;
-            margin: 0 !important;
             padding: 0 !important;
         }
         
-        /* 成功事例の最も見やすかった1マスのサイズ */
-        .gift-frame-wrapper { 
-            width: 374px; 
+        .lane { 
+            width: 1122px; 
             height: 132px; 
             position: relative; 
             overflow: hidden; 
-            flex-shrink: 0;
             margin: 0 !important;
             padding: 0 !important;
         }
         
-        /* 元の3列縦長シート（最大4000px高）をすべて受け止めるサイズ設定 */
         iframe { 
             position: absolute; 
-            width: 2000px; 
-            height: 4000px; 
+            width: 1200px; 
+            height: 1500px; 
             border: none; 
             transform-origin: top left; 
         }
 
-        /* 指でのスワイプやマウスを認識させるための透明な膜（完全維持） */
+        /* 指でのスワイプやマウスを認識させるための透明な膜 */
         #touch-shield { 
             position: absolute; 
             top: 0; left: 0; width: 100%; height: 100%; 
@@ -89,7 +73,7 @@
             cursor: grab;
         }
 
-        /* ✨【アイコンサイズ統一】文字まで綺麗によめる均一なサイズ（60px） */
+        /* ✨【アイコンサイズ統一】文字まで綺麗によめる均一なサイズ（60px）に強制統一 */
         iframe { --gift-icon-size: 60px !important; }
         iframe[src*="streamtoearn"] img, 
         iframe[src*="streamtoearn"] .gift-icon, 
@@ -98,6 +82,29 @@
             height: 60px !important; 
             object-fit: contain !important;
         }
+
+        /* 4段目のデータがない時に非表示にする設定（成功事例維持） */
+        .hide-4th .lane-4th {
+            display: none !important;
+        }
+
+        /* 👁️‍🗨️【灰色い枠線のズレ修正】右端の切り取り範囲（insetの2番目）を0pxから5pxへ変更 */
+        /* これにより、URL側のグリッドにピタッと合い、隣のマにはみ出さなくなります */
+        .r1 { top: 0; clip-path: inset(0px 5px 1368px 0px); }
+        .r2 { top: 0; clip-path: inset(132px 5px 1236px 0px); transform: translateY(-132px); }
+        .r3 { top: 0; clip-path: inset(264px 5px 1104px 0px); transform: translateY(-264px); }
+        
+        .r4 { top: 0; clip-path: inset(396px 5px 972px 0px); transform: translateY(-396px); }
+        .r5 { top: 0; clip-path: inset(528px 5px 840px 0px); transform: translateY(-528px); }
+        .r6 { top: 0; clip-path: inset(660px 5px 708px 0px); transform: translateY(-660px); }
+        
+        .r7 { top: 0; clip-path: inset(792px 5px 576px 0px); transform: translateY(-792px); }
+        .r8 { top: 0; clip-path: inset(924px 5px 444px 0px); transform: translateY(-924px); }
+        .r9 { top: 0; clip-path: inset(1056px 5px 312px 0px); transform: translateY(-1056px); }
+
+        .r10 { top: 0; clip-path: inset(1188px 5px 180px 0px); transform: translateY(-1188px); }
+        .r11 { top: 0; clip-path: inset(1320px 5px 48px 0px); transform: translateY(-1320px); }
+        .r12 { top: 0; clip-path: inset(1452px 5px 0px 0px); transform: translateY(-1452px); }
     </style>
 </head>
 <body>
@@ -106,20 +113,16 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list";
-    const FRAME_W = 374; 
-    const COLS = 7; // 横に7列
-    const ROWS = 4; // 縦に4段
-    const BLOCK_W = FRAME_W * COLS; // 2618px
-    const MARGIN_W = 374; // 右に離す隙間の幅
+    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
+    const viewport = document.getElementById('viewport');
     
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
+    let is4thValid = true;
 
-    // リモコン（speed.txt）との同期
+    // リモコン（speed.txt）との同期（1秒ごと）
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -130,7 +133,7 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // スワイプ・ドラッグ検知（成功事例を完全維持）
+    // ウィジェット上でのスワイプ・ドラッグ検知（成功事例を完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -147,47 +150,58 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // データの再構築：元の3列縦長シートから28個の異なるギフトを綺麗に切り出す
+    // データ読み込み＆4段目の存在チェック（成功事例のロジック維持）
     function init() {
         container.innerHTML = '';
+        let failedCount = 0;
 
-        // スライドがループした際に途切れないよう、塊を3つ横に連結
+        // スライドが途切れないよう、3ブロック分を横に連結
         for (let loop = 0; loop < 3; loop++) {
-            const block = document.createElement('div');
-            block.className = 'gift-block';
+            // [r1-r3],[r4-r6],[r7-r9],[r10-r12] の4本の縦箱ブロックを生成
+            [[1,2,3],[4,5,6],[7,8,9],[10,11,12]].forEach((rows, blockIdx) => {
+                const b = document.createElement('div'); 
+                b.className = 'block';
+                // 4段目のブロックであることを示すクラスを追加
+                if (blockIdx === 3) b.classList.add('lane-4th');
 
-            for (let r = 1; r <= ROWS; r++) {
-                const rowTrack = document.createElement('div');
-                rowTrack.className = 'row-track';
+                rows.forEach(n => {
+                    const l = document.createElement('div'); l.className = 'lane';
+                    const f = document.createElement('iframe');
+                    f.src = `${SRC}?lane=${n}`;
+                    f.className = `r${n}`;
 
-                for (let c = 1; c <= COLS; c++) {
-                    // 横7個で綺麗に折り返す連番インデックス（1〜28番）
-                    const giftIndex = ((r - 1) * COLS) + c;
+                    // 4段目の自動認識
+                    if (n >= 10) {
+                        f.onload = () => {
+                            try {
+                                // iframeの中身が空（データがない）ならエラーにする
+                                if (!f.contentWindow || f.contentWindow.length === 0) {
+                                    throw new Error("Empty");
+                                }
+                            } catch (err) {
+                                failedCount++;
+                                // 1枚でもデータがなければ自動的に3段（400px）に縮める
+                                if (failedCount > 0 && is4thValid) switchTo3Lanes();
+                            }
+                        };
+                        f.onerror = () => {
+                            failedCount++;
+                            if (is4thValid) switchTo3Lanes();
+                        };
+                    }
 
-                    // 🪛【元の3列出力シートから、該当ギフトの位置を正確に逆算】
-                    const origRow = Math.ceil(giftIndex / 3);
-                    const origCol = (giftIndex - 1) % 3;
-                    
-                    const topPx = (origRow - 1) * 132;
-                    const leftPx = origCol * 374;
-
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'gift-frame-wrapper';
-
-                    const iframe = document.createElement('iframe');
-                    iframe.src = SRC; // 元のURLから直接データを取得
-                    
-                    // 1つずつのギフト枠を寸分の狂いもなくクリッピングして抽出
-                    iframe.style.clipPath = `inset(${topPx}px ${2000 - (leftPx + 374)}px ${4000 - (topPx + 132)}px ${leftPx}px)`;
-                    iframe.style.transform = `translate3d(-${leftPx}px, -${topPx}px, 0)`;
-
-                    wrapper.appendChild(iframe);
-                    rowTrack.appendChild(wrapper);
-                }
-                block.appendChild(rowTrack);
-            }
-            container.appendChild(block);
+                    l.appendChild(f); b.appendChild(l);
+                });
+                container.appendChild(b);
+            });
         }
+    }
+
+    // 4段目が未実装なら3段に自動縮小する安全装置
+    function switchTo3Lanes() {
+        is4thValid = false;
+        viewport.style.height = "400px";
+        document.body.classList.add('hide-4th');
     }
 
     // 無限ループアニメーション
@@ -196,12 +210,11 @@
             posX += speed;
         }
         
-        // 1つの塊 ＋ 右マージン分の総横幅 = 2992px
-        const totalUnitW = BLOCK_W + MARGIN_W; 
+        // 4つの縦箱ブロック（1122px×4）が横に並んだ総横幅でループ
+        const unitW = W * 4; 
 
-        // 端まで流れたら滑らかに先頭へループ（被らず綺麗に無限に連なる）
-        if (posX <= -totalUnitW) posX += totalUnitW;
-        else if (posX >= 0) posX -= totalUnitW;
+        if (posX <= -unitW) posX += unitW;
+        else if (posX >= 0) posX -= unitW;
         
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
