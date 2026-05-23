@@ -23,7 +23,7 @@
             <button class="btn" onclick="setCount(this, 100)">100</button>
             <button class="btn" onclick="setCount(this, 150)">150</button>
         </div>
-        <div id="log">ログ待ち...</div>
+        <div id="log">準備完了</div>
     </div>
 
     <script>
@@ -35,12 +35,11 @@
         
         async function update(s, c) {
             try {
-                // 1. SHA取得 (認証付)
-                const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN, "Cache-Control": "no-cache" } });
+                // 修正点: "Cache-Control": "no-cache" を削除しました
+                const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN } });
                 const data = await get.json();
-                if (!data.sha) throw new Error("通信エラー");
+                if (!data.sha) throw new Error("SHA取得不可");
                 
-                // 2. 更新実行
                 const res = await fetch(G_URL, {
                     method: "PUT",
                     headers: { "Authorization": "token " + G_TOKEN, "Content-Type": "application/json" },
@@ -49,7 +48,7 @@
                 
                 if(res.ok) log(`成功: 速度${s} / 個数${c}`); 
                 else log("失敗: 権限を確認してください");
-            } catch(e) { log("エラー: 通信設定を確認してください"); }
+            } catch(e) { log("エラー: " + e.message); }
         }
 
         document.getElementById('range').oninput = (e) => {
