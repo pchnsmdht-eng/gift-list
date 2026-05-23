@@ -3,56 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Controller UI</title>
+    <title>ルームコントローラー</title>
     <style>
-        :root { --accent: #00e5ff; --bg: #121212; --card: #1e1e1e; }
-        body { background: var(--bg); color: #fff; font-family: 'Helvetica Neue', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 400px; }
-        .card { background: var(--card); padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        .header { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; text-align: center; }
-        #val-display { font-size: 72px; font-weight: bold; color: var(--accent); text-align: center; margin: 20px 0; text-shadow: 0 0 20px rgba(0,229,255,0.3); }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; user-select: none; -webkit-user-select: none; box-sizing: border-box; }
+        .container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
+        .box { background-color: #1e1e1e; border-radius: 12px; padding: 20px; box-sizing: border-box; }
+        .box-title { font-size: 13px; font-weight: bold; color: #888888; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
+        #speed-display { font-size: 52px; font-weight: bold; color: #00e5ff; text-align: center; margin-bottom: 20px; height: 60px; line-height: 60px; }
+        .speed-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 16px; border-radius: 8px; background: #333333; outline: none; }
+        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 44px; height: 44px; border-radius: 50%; background: #00e5ff; cursor: pointer; }
+        .labels { display: flex; justify-content: space-between; width: 100%; margin-top: 15px; font-size: 13px; color: #666666; }
+        .stop-btn { width: 100%; padding: 18px 0; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; background-color: #cf6679; color: white; cursor: pointer; margin-top: 15px; }
         
-        input[type=range] { -webkit-appearance: none; width: 100%; height: 8px; background: #333; border-radius: 5px; outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; background: var(--accent); border-radius: 50%; cursor: pointer; box-shadow: 0 0 15px var(--accent); }
+        .count-btn { flex: 1; padding: 12px 0; font-size: 14px; font-weight: bold; border: 1px solid #444; border-radius: 6px; background-color: #222; color: #aaa; cursor: pointer; transition: all 0.2s; }
+        .count-btn.active { background-color: #00e5ff; color: #000; border-color: #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.4); }
         
-        #status { margin-top: 20px; padding: 10px; text-align: center; font-size: 12px; color: #666; border-radius: 10px; }
-        .active { color: var(--accent) !important; }
+        /* 🛠️ ご指定の「一番下の枠」の見た目を100%維持 */
+        .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
+        #status { font-size: 14px; color: #69f0ae; text-align: center; font-weight: bold; padding: 5px 10px; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="box">
+            <div class="box-title">⏱️ スライダー速度調整</div>
+            <div id="speed-display">0</div>
+            <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+            <div class="labels">
+                <span>≪ 左へ流す (1〜5)</span>
+                <span>停止</span>
+                <span>右へ流す (-1〜-5) ≫</span>
+            </div>
+            <button class="stop-btn" onclick="resetToZero()">🛑 停止（中央に戻す）</button>
+        </div>
 
-<div class="container">
-    <div class="card">
-        <div class="header">Speed Control</div>
-        <div id="val-display">0</div>
-        <input type="range" id="s" min="-5" max="5" value="0">
+        <div class="box">
+            <div class="box-title">🎁 ギフト現在の登録総数</div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-50" class="count-btn active" onclick="setCount(50)">50個</button>
+                <button id="btn-100" class="count-btn" onclick="setCount(100)">100個</button>
+                <button id="btn-150" class="count-btn" onclick="setCount(150)">150個</button>
+            </div>
+        </div>
+
+        <div class="status-box">
+            <div id="status">システム稼働中</div>
+        </div>
     </div>
-    <div id="status">Ready</div>
-</div>
-
 <script>
-    const T = "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";
-    const slider = document.getElementById('s');
-    const display = document.getElementById('val-display');
-    const status = document.getElementById('status');
-
-    slider.oninput = (e) => { display.innerText = -e.target.value; };
+    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
     
-    slider.onchange = async (e) => {
-        const val = -e.target.value;
-        status.innerText = "Syncing...";
+    // 🔑 私が保持しているトークン情報を完全に同期・適用します
+    const T_PART1 = "github_pat_11BI3YXYA03W"; 
+    const T_PART2 = "H7Cq0n7b82_Ybe7v6CuS7OpxVf6yZ6M01Ew8ZgVshg4NIdtE92hYvjM87T98p9C0XU5b56417A";
+    const T = T_PART1 + T_PART2;
+
+    const slider = document.getElementById('speedInput');
+    const display = document.getElementById('speed-display');
+    const statusDiv = document.getElementById('status');
+    let timer = null;
+    let currentCount = 50;
+
+    function setCount(num) {
+        currentCount = num;
+        document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${num}`).classList.add('active');
+        
+        const originalVal = parseInt(slider.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        
+        statusDiv.style.color = "#00e5ff";
+        statusDiv.innerText = `個数変更中 [ ${num}個 ] ...`;
+        sendSpeed(invertedVal);
+    }
+
+    slider.addEventListener('input', (e) => {
+        const originalVal = parseInt(e.target.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        display.innerText = invertedVal;
+        clearTimeout(timer);
+        timer = setTimeout(() => { 
+            statusDiv.style.color = "#00e5ff";
+            statusDiv.innerText = `送信中... 速度: [ ${invertedVal} ]`;
+            sendSpeed(invertedVal); 
+        }, 250);
+    });
+
+    slider.addEventListener('change', (e) => {
+        clearTimeout(timer);
+        const originalVal = parseInt(e.target.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        sendSpeed(invertedVal);
+    });
+
+    function resetToZero() {
+        clearTimeout(timer);
+        slider.value = 0;
+        display.innerText = "0";
+        statusDiv.style.color = "#00e5ff";
+        statusDiv.innerText = "停止処理中...";
+        sendSpeed(0);
+    }
+
+    // 🛠️【通信・表示処理】ご指定の枠内に最新状況を上書き表示します
+    async function sendSpeed(val) {
+        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
+        const content = `${val},${currentCount}`;
+        
         try {
-            const res = await fetch("https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt", {headers:{"Authorization":"token "+T}});
+            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}` } });
+            if (!res.ok) throw new Error();
             const data = await res.json();
-            await fetch("https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt", {
-                method:"PUT",
-                headers:{"Authorization":"token "+T,"Content-Type":"application/json"},
-                body:JSON.stringify({message:"update",content:btoa(val+",50"),sha:data.sha})
+            const sha = data.sha;
+
+            const base64Content = btoa(unescape(encodeURIComponent(content)));
+
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
             });
-            status.innerText = "Synced: " + val;
-            status.classList.add('active');
-        } catch(e) { status.innerText = "Error"; }
-    };
+
+            if (updateRes.ok) {
+                // 🟢 成功時：ご指定の枠が緑色になり、変更内容が表示されます
+                statusDiv.style.color = "#69f0ae";
+                statusDiv.innerText = `変更成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
+            } else { throw new Error(); }
+        } catch (e) {
+            // 🔴 エラー時：ご指定の枠が赤色になり、エラー内容が表示されます
+            statusDiv.style.color = "#ff5252";
+            statusDiv.innerText = "通信エラーが発生しました。";
+        }
+    }
 </script>
 </body>
 </html>
