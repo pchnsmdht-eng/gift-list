@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ルームコントローラー</title>
+    <title>スクロールスピードコントローラー</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: #121212;
-            color: #e0e0e0;
+            color: #ffffff;
             margin: 0;
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,259 +19,206 @@
             box-sizing: border-box;
         }
         
-        .container {
-            width: 100%;
+        h3 {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            color: #aaaaaa;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        /* 枠が上下に動かないよう固定したコンテナ */
+        .slider-container {
+            width: 90vw;
             max-width: 400px;
+            background-color: #1e1e1e;
+            padding: 30px 20px;
+            border-radius: 15px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-        }
-
-        /* 各枠の共通スタイル */
-        .box {
-            background-color: #1e1e1e;
-            border-radius: 12px;
-            padding: 18px;
+            align-items: center;
+            margin-bottom: 25px;
             box-sizing: border-box;
         }
-        
-        .box-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #888888;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
 
-        /* 設定入力欄 */
-        .input-group {
-            margin-bottom: 10px;
-        }
-        .input-group label {
-            display: block;
-            font-size: 11px;
-            color: #aaaaaa;
-            margin-bottom: 4px;
-        }
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            background-color: #2b2b2b;
-            border: 1px solid #333333;
-            border-radius: 6px;
-            color: #ffffff;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        
-        /* ボタン基本 */
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            box-sizing: border-box;
-        }
-        .btn-save { background-color: #ffb300; color: #121212; }
-        .btn-stop { background-color: #cf6679; color: #ffffff; margin-top: 15px; }
-
-        /* スライダー */
-        .slider-display {
+        /* 速度の数字（チカチカ・ガタつき防止の高さ固定） */
+        #speed-display {
             font-size: 46px;
             font-weight: bold;
             color: #00e5ff;
-            text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             height: 55px;
             line-height: 55px;
         }
+
+        /* 横幅いっぱいに広がる使いやすいスライダー */
         .speed-slider {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
-            height: 12px;
-            border-radius: 6px;
+            height: 16px;
+            border-radius: 8px;
             background: #333333;
             outline: none;
-            margin: 10px 0;
         }
+
+        /* スマホのブラウザで一番掴みやすい特大の丸つまみ */
         .speed-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background: #00e5ff;
             cursor: pointer;
         }
         .speed-slider::-moz-range-thumb {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background: #00e5ff;
             cursor: pointer;
             border: none;
         }
+
+        /* 左右の目盛りラベル */
         .labels {
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
-            color: #666666;
-            margin-top: 4px;
-        }
-        
-        /* 💬 チカチカ・ガタつきを完全に排除したステータスエリア */
-        .status-box {
-            background-color: #1a1a1a;
-            border: 1px solid #262626;
-            border-radius: 8px;
-            padding: 12px;
-            box-sizing: border-box;
             width: 100%;
-            min-height: 60px; /* 高さを完全に固定して画面の揺れを防ぐ */
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666666;
+        }
+
+        /* 🛑 完全停止ボタン（赤） */
+        .stop-btn {
+            width: 90vw;
+            max-width: 400px;
+            padding: 22px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            background-color: #d32f2f;
+            color: white;
+            cursor: pointer;
+        }
+        .stop-btn:active { background-color: #b71c1c; }
+        
+        /* 通信中などの文字で画面が揺れないよう、高さを固定した枠 */
+        .status-box {
+            width: 90vw;
+            max-width: 400px;
+            min-height: 50px;
+            margin-top: 25px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        #status {
-            font-size: 12px;
-            color: #aaaaaa;
-            text-align: center;
-            word-break: break-all;
-            line-height: 1.4;
-        }
+        #status { font-size: 13px; color: #666666; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="box">
-            <div class="box-title">⚙️ GitHub 接続設定</div>
-            <div class="input-group">
-                <label>GitHubユーザー名</label>
-                <input type="text" id="gitUser" placeholder="ユーザー名を入力">
-            </div>
-            <div class="input-group">
-                <label>リポジトリ名</label>
-                <input type="text" id="gitRepo" placeholder="リポジトリ名を入力">
-            </div>
-            <div class="input-group">
-                <label>個人アクセストークン</label>
-                <input type="password" id="gitToken" placeholder="ghp_から始まるトークンを入力">
-            </div>
-            <button class="btn btn-save" onclick="saveConfig()">設定をスマホに保存</button>
-        </div>
-
-        <div class="box">
-            <div class="box-title">⏱️ スライダー速度調整</div>
-            <div class="slider-display" id="speed-display">0</div>
-            <input type="range" id="speedInput" min="-15" max="15" value="0" class="speed-slider">
-            <div class="labels">
-                <span>≪ 左へ流す</span>
-                <span>停止（中央）</span>
-                <span>右へ流す ≫</span>
-            </div>
-            <button class="btn btn-stop" onclick="resetToZero()">🛑 停止（中央に戻す）</button>
-        </div>
-
-        <div class="status-box">
-            <div id="status">設定フォームに入力し、保存ボタンを押してください。</div>
+    <h3>⏱️ スライドでスピード調整</h3>
+    
+    <div class="slider-container">
+        <div id="speed-display">0</div>
+        
+        <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+        
+        <div class="labels">
+            <span>≪ 左へスライド（1〜5）</span>
+            <span>停止</span>
+            <span>右へスライド（-1〜-5） ≫</span>
         </div>
     </div>
 
+    <button class="stop-btn" onclick="resetToZero()">🛑 スライダーを中央に戻す（停止）</button>
+
+    <div class="status-box">
+        <div id="status">待機中</div>
+    </div>
+
 <script>
+    // ==========================================
+    // ⚠️ ここをご自身の環境に書き換えてください
+    // ==========================================
+    const RAW_USER  = "あなたのGitHubユーザー名";
+    const RAW_REPO  = "あなたのリポジトリ名";
+    const RAW_TOKEN = "あなたのGitHubトークン";
+    const FILE = "speed.txt";
+
+    // 全角スペースや記号を自動で消去してエラーを防ぐガード
+    const USER = RAW_USER.replace(/[【】\s\u3000]/g, "").trim();
+    const REPO = RAW_REPO.replace(/[【】\s\u3000]/g, "").trim();
+    const TOKEN = RAW_TOKEN.replace(/[【】\s\u3000]/g, "").replace(/[^a-zA-Z0-9_]/g, "").trim();
+
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     const statusDiv = document.getElementById('status');
-    const FILE = "speed.txt";
     let timer = null;
 
-    // 読み込み時に過去の設定を自動復元
-    window.onload = function() {
-        if(localStorage.getItem('git_user')) document.getElementById('gitUser').value = localStorage.getItem('git_user');
-        if(localStorage.getItem('git_repo')) document.getElementById('gitRepo').value = localStorage.getItem('git_repo');
-        if(localStorage.getItem('git_token')) document.getElementById('gitToken').value = localStorage.getItem('git_token');
-        
-        if(localStorage.getItem('git_user') && localStorage.getItem('git_repo') && localStorage.getItem('git_token')) {
-            statusDiv.style.color = "#69f0ae";
-            statusDiv.innerText = "設定が読み込まれました。スライダーを動かせます。";
-        }
-    };
-
-    // 設定保存
-    function saveConfig() {
-        let u = document.getElementById('gitUser').value.trim();
-        let r = document.getElementById('gitRepo').value.trim();
-        let t = document.getElementById('gitToken').value.trim();
-
-        // 不要な文字を全自動で除去
-        u = u.replace(/[【】\s\u3000]/g, "");
-        r = r.replace(/[【】\s\u3000]/g, "");
-        t = t.replace(/[【】\s\u3000]/g, "").replace(/[^a-zA-Z0-9_]/g, "");
-
-        if(!u || !r || !t) {
-            statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "入力欄に空欄があります。";
-            return;
-        }
-
-        localStorage.setItem('git_user', u);
-        localStorage.setItem('git_repo', r);
-        localStorage.setItem('git_token', t);
-
-        statusDiv.style.color = "#69f0ae";
-        statusDiv.innerText = "設定をスマホに保存しました。接続テスト中...";
-        sendSpeed("0");
-    }
-
+    // スライダーを動かした時の処理
     slider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        display.innerText = val;
+        // 通常のスライダーは右に動かすとプラスになりますが、
+        // ご希望通り「右に動かすとマイナス（-1〜-5）」にするため、数値をひっくり返します。
+        const originalVal = parseInt(e.target.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        
+        display.innerText = invertedVal; // 画面の数字表示を連動
+        
+        // 連続送信によるエラー（チカチカ）を防ぐため、指が少し止まったら送信
         clearTimeout(timer);
-        timer = setTimeout(() => { sendSpeed(val); }, 250);
+        timer = setTimeout(() => { sendSpeed(invertedVal); }, 250);
     });
 
+    // 指を離した瞬間（最終確定）
     slider.addEventListener('change', (e) => {
         clearTimeout(timer);
-        sendSpeed(e.target.value);
+        const originalVal = parseInt(e.target.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        sendSpeed(invertedVal);
     });
 
+    // 🛑 停止ボタンを押した時
     function resetToZero() {
         clearTimeout(timer);
         slider.value = 0;
         display.innerText = "0";
-        sendSpeed("0");
+        sendSpeed(0);
     }
 
+    // GitHubのspeed.txtを書き換えるシンプルな関数
     async function sendSpeed(val) {
-        const user = localStorage.getItem('git_user');
-        const repo = localStorage.getItem('git_repo');
-        const token = localStorage.getItem('git_token');
-
-        if(!user || !repo || !token) {
-            statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "設定が保存されていません。上の入力欄を埋めて保存してください。";
-            return;
-        }
-
-        statusDiv.style.color = "#aaaaaa";
-        statusDiv.innerText = "通信中...";
-
-        const url = `https://api.github.com/repos/${user}/${repo}/contents/${FILE}`;
+        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = String(val);
+        statusDiv.innerText = "送信中...";
         
         try {
-            const res = await fetch(url, { headers: { "Authorization": `token ${token}` } });
-            if (!res.ok) throw new Error("GitHubへの接続に失敗しました。設定（大文字小文字など）が本当に合っているか確認してください。");
-            
+            const res = await fetch(url, { headers: { "Authorization": `token ${TOKEN}` } });
+            if (!res.ok) throw new Error();
             const data = await res.json();
             const sha = data.sha;
+
             const base64Content = btoa(unescape(encodeURIComponent(content)));
 
             const updateRes = await fetch(url, {
                 method: "PUT",
-                headers: { "Authorization": `token
+                headers: { "Authorization": `token ${TOKEN}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "slider speed reset", content: base64Content, sha: sha })
+            });
+
+            if (updateRes.ok) {
+                statusDiv.innerText = `変更成功: ${content}`;
+            } else {
+                statusDiv.innerText = "書き換え失敗";
+            }
+        } catch (e) {
+            statusDiv.innerText = "通信エラー（設定を確認してください）";
+        }
+    }
+</script>
+</body>
+</html>
