@@ -43,13 +43,12 @@
         </div>
 
         <div class="status-box">
-            <div id="status">リモコンシステム同期中...</div>
+            <div id="status">リモコンシステム稼働中（トークン不要）</div>
         </div>
     </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
-    const _0x4f12=["github_pat_11BI3YXYA03W","H7Cq0n7b82_Ybe7v6C","uS7OpxVf6yZ6M01Ew8","ZgVshg4NIdtE92hYvj","M87T98p9C0XU5b56417A"];
-    const T = _0x4f12.join("");
+    // GitHubを一切介さない、完全に独立した安全なデータ中継URL
+    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     const statusDiv = document.getElementById('status');
@@ -81,31 +80,18 @@
     }
 
     async function sendSpeed(val) {
-        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = `${val},${currentCount}`;
-        statusDiv.style.color = "#aaaaaa";
-        statusDiv.innerText = "通信中...";
         
         try {
-            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}` } });
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            const sha = data.sha;
-            const base64Content = btoa(unescape(encodeURIComponent(content)));
-
-            const updateRes = await fetch(url, {
-                method: "PUT",
-                headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
+            await fetch(API_URL, {
+                method: "POST",
+                body: content
             });
-
-            if (updateRes.ok) {
-                statusDiv.style.color = "#69f0ae";
-                statusDiv.innerText = `同期成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
-            } else { throw new Error(); }
+            statusDiv.style.color = "#69f0ae";
+            statusDiv.innerText = `送信成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
         } catch (e) {
             statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "通信エラーが発生しました。再読込してください。";
+            statusDiv.innerText = "中継サーバーとの接続に失敗しました。";
         }
     }
 
