@@ -4,56 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { margin: 0; background: #0a0a0a; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 10px; }
-        .control-panel { width: 100%; max-width: 320px; background: #161616; padding: 15px; border-radius: 12px; border: 1px solid #333; }
-        .speed-val { font-size: 32px; color: #00e5ff; text-align: center; margin-bottom: 10px; font-weight: bold; }
-        .slider { width: 100%; height: 6px; background: #333; border-radius: 3px; -webkit-appearance: none; }
-        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #00e5ff; border-radius: 50%; cursor: pointer; }
-        .btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 15px; }
-        .btn { padding: 8px; font-size: 11px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; cursor: pointer; }
-        .log-area { width: 100%; max-width: 320px; height: 80px; background: #000; color: #69f0ae; font-size: 9px; padding: 5px; border-radius: 4px; margin-top: 10px; overflow-y: scroll; font-family: monospace; }
+        body { background: #0a0a0a; color: #fff; font-family: sans-serif; padding: 15px; }
+        .val { font-size: 28px; color: #00e5ff; text-align: center; margin-bottom: 10px; }
+        .slider { width: 100%; height: 4px; background: #222; -webkit-appearance: none; margin-bottom: 15px; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00e5ff; border-radius: 50%; cursor: pointer; }
+        .btns { display: flex; gap: 5px; margin-bottom: 15px; }
+        .btn { flex: 1; padding: 6px; font-size: 11px; background: #1a1a1a; border: 1px solid #333; color: #777; cursor: pointer; }
+        .btn.active { background: #00e5ff; color: #000; border: none; }
+        #log { height: 60px; overflow-y: auto; font-size: 9px; color: #444; border-top: 1px solid #222; padding-top: 5px; }
     </style>
 </head>
 <body>
-    <div class="control-panel">
-        <div id="val" class="speed-val">0</div>
-        <input type="range" id="range" class="slider" min="-5" max="5" value="0">
-        <div class="btns">
-            <button class="btn" onclick="setCount(50)">50個</button>
-            <button class="btn" onclick="setCount(100)">100個</button>
-            <button class="btn" onclick="setCount(150)">150個</button>
-        </div>
+    <div id="val" class="val">0</div>
+    <input type="range" id="range" class="slider" min="-5" max="5" value="0">
+    <div class="btns">
+        <button class="btn" onclick="setCount(this, 50)">50</button>
+        <button class="btn" onclick="setCount(this, 100)">100</button>
+        <button class="btn" onclick="setCount(this, 150)">150</button>
     </div>
-    <div id="log" class="log-area"></div>
+    <div id="log"></div>
 
 <script>
     const G_TOKEN = "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";
     const G_URL = "https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt";
+    let curCount = 50;
 
     function log(m) { const l = document.getElementById('log'); l.innerHTML = `> ${m}<br>${l.innerHTML}`; }
     
-    function setCount(c) {
-        log(`個数:${c}送信中`);
+    function setCount(el, c) {
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        curCount = c;
         update(document.getElementById('range').value * -1, c);
     }
 
     async function update(s, c) {
         try {
-            const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN } });
+            const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN, "Cache-Control": "no-cache" } });
             const data = await get.json();
+            if (!data.sha) throw new Error("SHA取得失敗: " + (data.message || "不明"));
+            
             const res = await fetch(G_URL, {
                 method: "PUT",
                 headers: { "Authorization": "token " + G_TOKEN, "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "u", content: btoa(`${s},${c}`), sha: data.sha })
             });
-            if(res.ok) log("成功"); else log("通信エラー: " + res.status);
+            if(res.ok) log(`送信成功: ${s}, ${c}`); 
+            else { const err = await res.json(); log("失敗: " + err.message); }
         } catch(e) { log("エラー: " + e.message); }
     }
 
     document.getElementById('range').oninput = (e) => {
         const v = e.target.value * -1;
         document.getElementById('val').innerText = v;
-        update(v, 50);
+        update(v, curCount);
     };
 </script>
 </body>
