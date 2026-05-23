@@ -1,38 +1,77 @@
-async function send(val, count) {
-    const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
-    try {
-        // 1. GETリクエストを送り、最新のSHAを取得
-        const res = await fetch(`${url}?t=${Date.now()}`, { 
-            headers: { "Authorization": `token ${T}`, "Accept": "application/vnd.github.v3+json" } 
-        });
-        
-        if (!res.ok) {
-            addLog(`❌ 取得失敗: ${res.status}`);
-            return;
-        }
-        const data = await res.json();
-        
-        // 2. 更新実行 (Bodyの内容をシンプルに)
-        const updateRes = await fetch(url, {
-            method: "PUT",
-            headers: { 
-                "Authorization": `token ${T}`, 
-                "Content-Type": "application/json" 
-            },
-            body: JSON.stringify({ 
-                message: "update speed", 
-                content: btoa(`${val},${count}`), 
-                sha: data.sha 
-            })
-        });
-        
-        const result = await updateRes.json();
-        if (updateRes.ok) {
-            addLog(`✅ 送信成功: 速度[${val}]`);
-        } else {
-            addLog(`❌ 失敗: ${result.message}`); // ここにGitHubからの拒否理由が出る
-        }
-    } catch (e) { 
-        addLog(`❌ システムエラー: ${e.message}`); 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; background: #0a0a0a; color: #fff; padding: 10px; margin: 0; }
+        .box { background: #161616; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+        #speed-display { font-size: 32px; color: #00e5ff; text-align: center; font-weight: bold; }
+        .speed-slider { width: 100%; height: 5px; background: #333; }
+        .btn-group { display: flex; gap: 5px; margin-top: 10px; }
+        .count-btn { flex: 1; padding: 8px; font-size: 12px; border-radius: 6px; border: none; background: #333; color: #fff; cursor: pointer; }
+        .count-btn.active { background: #00e5ff; color: #000; }
+        #debug-log { height: 80px; overflow-y: auto; background: #000; font-size: 10px; color: #69f0ae; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div id="speed-display">0</div>
+        <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+        <div class="btn-group">
+            <button class="count-btn" onclick="setCount(50)">50個</button>
+            <button class="count-btn" onclick="setCount(100)">100個</button>
+            <button class="count-btn" onclick="setCount(150)">150個</button>
+        </div>
+    </div>
+    <div class="box">
+        <div id="debug-log"></div>
+    </div>
+
+<script>
+    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
+    const T = "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";
+    let currentCount = 50;
+
+    function addLog(msg) {
+        const log = document.getElementById('debug-log');
+        log.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + log.innerHTML;
     }
-}
+
+    function setCount(num) {
+        currentCount = num;
+        document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        addLog(`個数変更: ${num}個`);
+        send(document.getElementById('speedInput').value * -1, num);
+    }
+
+    async function send(val, count) {
+        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
+        try {
+            // 取得と更新を一つにまとめ、エラー詳細をログへ
+            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}` } });
+            const data = await res.json();
+            
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    message: "update", 
+                    content: btoa(`${val},${count}`), 
+                    sha: data.sha 
+                })
+            });
+            if (updateRes.ok) addLog(`送信成功: 速度[${val}] 個数[${count}]`);
+            else addLog(`❌ 失敗: ${updateRes.statusText}`);
+        } catch (e) { addLog(`❌ エラー: ${e.message}`); }
+    }
+
+    document.getElementById('speedInput').addEventListener('change', (e) => {
+        const val = -e.target.value;
+        document.getElementById('speed-display').innerText = val;
+        send(val, currentCount);
+    });
+</script>
+</body>
+</html>
