@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>スクロールスピードコントローラー</title>
+    <title>ルームコントローラー</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #121212;
             color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -19,50 +19,54 @@
             box-sizing: border-box;
         }
         
-        h3 {
-            margin-top: 40px;
-            margin-bottom: 15px;
-            color: #aaaaaa;
-            font-size: 16px;
-            text-align: center;
-        }
-        
-        /* 枠が上下に動かないよう固定したコンテナ */
-        .slider-container {
-            width: 90vw;
+        .container {
+            width: 100%;
             max-width: 400px;
-            background-color: #1e1e1e;
-            padding: 30px 20px;
-            border-radius: 15px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .box {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
             box-sizing: border-box;
         }
-
-        /* 速度の数字（チカチカ・ガタつき防止の高さ固定） */
-        #speed-display {
-            font-size: 46px;
+        
+        .box-title {
+            font-size: 13px;
             font-weight: bold;
-            color: #00e5ff;
-            margin-bottom: 20px;
-            height: 55px;
-            line-height: 55px;
+            color: #888888;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        /* 横幅いっぱいに広がる使いやすいスライダー */
+        /* 速度の大きな数字表示（揺れ防止のため高さを固定） */
+        .slider-display {
+            font-size: 52px;
+            font-weight: bold;
+            color: #00e5ff;
+            text-align: center;
+            margin-bottom: 10px;
+            height: 60px;
+            line-height: 60px;
+        }
+
+        /* 横幅いっぱいのスライダーバー */
         .speed-slider {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
-            height: 16px;
-            border-radius: 8px;
+            height: 14px;
+            border-radius: 7px;
             background: #333333;
             outline: none;
+            margin: 15px 0;
         }
 
-        /* スマホのブラウザで一番掴みやすい特大の丸つまみ */
+        /* 操作しやすい特大の青いつまみ */
         .speed-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -81,64 +85,70 @@
             border: none;
         }
 
-        /* 左右の目盛りラベル */
         .labels {
             display: flex;
             justify-content: space-between;
-            width: 100%;
-            margin-top: 15px;
-            font-size: 13px;
+            font-size: 12px;
             color: #666666;
+            margin-top: 4px;
+        }
+        
+        /* 🛑 停止ボタン（ピンク） */
+        .btn-stop {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            box-sizing: border-box;
+            background-color: #cf6679;
+            color: #ffffff;
+            margin-top: 20px;
         }
 
-        /* 🛑 完全停止ボタン（赤） */
-        .stop-btn {
-            width: 90vw;
-            max-width: 400px;
-            padding: 22px 0;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            border-radius: 12px;
-            background-color: #d32f2f;
-            color: white;
-            cursor: pointer;
-        }
-        .stop-btn:active { background-color: #b71c1c; }
-        
-        /* 通信中などの文字で画面が揺れないよう、高さを固定した枠 */
+        /* 💬 背景が点滅しない・ガタガタ動かない固定メッセージ欄 */
         .status-box {
-            width: 90vw;
-            max-width: 400px;
+            background-color: #1a1a1a;
+            border: 1px solid #262626;
+            border-radius: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+            width: 100%;
             min-height: 50px;
-            margin-top: 25px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        #status { font-size: 13px; color: #666666; text-align: center; }
+        #status {
+            font-size: 13px;
+            color: #666666;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-    <h3>⏱️ スライドでスピード調整</h3>
-    
-    <div class="slider-container">
-        <div id="speed-display">0</div>
-        
-        <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
-        
-        <div class="labels">
-            <span>≪ 左へスライド（1〜5）</span>
-            <span>停止</span>
-            <span>右へスライド（-1〜-5） ≫</span>
+    <div class="container">
+        <div class="box">
+            <div class="box-title">🧭 スライダー速度調整</div>
+            <div class="slider-display" id="speed-display">0</div>
+            
+            <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+            
+            <div class="labels">
+                <span>≪ 左へ流す (1 〜 5)</span>
+                <span>停止</span>
+                <span>右へ流す (-1 〜 -5) ≫</span>
+            </div>
+            
+            <button class="btn-stop" onclick="resetToZero()">🛑 停止（中央に戻す）</button>
         </div>
-    </div>
 
-    <button class="stop-btn" onclick="resetToZero()">🛑 スライダーを中央に戻す（停止）</button>
-
-    <div class="status-box">
-        <div id="status">待機中</div>
+        <div class="status-box">
+            <div id="status">待機中</div>
+        </div>
     </div>
 
 <script>
@@ -150,7 +160,7 @@
     const RAW_TOKEN = "あなたのGitHubトークン";
     const FILE = "speed.txt";
 
-    // 全角スペースや記号を自動で消去してエラーを防ぐガード
+    // 全角スペースや【】記号を自動で除去してクラッシュを防ぐ安全処理
     const USER = RAW_USER.replace(/[【】\s\u3000]/g, "").trim();
     const REPO = RAW_REPO.replace(/[【】\s\u3000]/g, "").trim();
     const TOKEN = RAW_TOKEN.replace(/[【】\s\u3000]/g, "").replace(/[^a-zA-Z0-9_]/g, "").trim();
@@ -160,21 +170,20 @@
     const statusDiv = document.getElementById('status');
     let timer = null;
 
-    // スライダーを動かした時の処理
+    // スライダーを指で動かしている時の処理
     slider.addEventListener('input', (e) => {
-        // 通常のスライダーは右に動かすとプラスになりますが、
-        // ご希望通り「右に動かすとマイナス（-1〜-5）」にするため、数値をひっくり返します。
+        // 右に動かしたらマイナス、左に動かしたらプラスにするための反転処理
         const originalVal = parseInt(e.target.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         
-        display.innerText = invertedVal; // 画面の数字表示を連動
+        display.innerText = invertedVal; // 数字を連動表示
         
-        // 連続送信によるエラー（チカチカ）を防ぐため、指が少し止まったら送信
+        // 通信がパンクしてチカチカするのを防ぐため、指が少し止まったら送信
         clearTimeout(timer);
         timer = setTimeout(() => { sendSpeed(invertedVal); }, 250);
     });
 
-    // 指を離した瞬間（最終確定）
+    // つまみから指を離した瞬間
     slider.addEventListener('change', (e) => {
         clearTimeout(timer);
         const originalVal = parseInt(e.target.value, 10);
@@ -182,7 +191,7 @@
         sendSpeed(invertedVal);
     });
 
-    // 🛑 停止ボタンを押した時
+    // 🛑 停止ボタン
     function resetToZero() {
         clearTimeout(timer);
         slider.value = 0;
@@ -190,7 +199,7 @@
         sendSpeed(0);
     }
 
-    // GitHubのspeed.txtを書き換えるシンプルな関数
+    // GitHubへ速度を上書き保存する関数
     async function sendSpeed(val) {
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = String(val);
@@ -207,7 +216,7 @@
             const updateRes = await fetch(url, {
                 method: "PUT",
                 headers: { "Authorization": `token ${TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "slider speed reset", content: base64Content, sha: sha })
+                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
             });
 
             if (updateRes.ok) {
