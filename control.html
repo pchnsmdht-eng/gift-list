@@ -1,64 +1,30 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { background: #0a0a0a; color: #fff; font-family: sans-serif; padding: 15px; }
-        .val { font-size: 28px; color: #00e5ff; text-align: center; margin-bottom: 10px; }
-        .slider { width: 100%; height: 4px; background: #222; -webkit-appearance: none; margin-bottom: 15px; }
-        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00e5ff; border-radius: 50%; cursor: pointer; }
-        .btns { display: flex; gap: 5px; margin-bottom: 15px; }
-        .btn { flex: 1; padding: 6px; font-size: 11px; background: #1a1a1a; border: 1px solid #333; color: #777; cursor: pointer; }
-        .btn.active { background: #00e5ff; color: #000; border: none; }
-        #log { height: 60px; overflow-y: auto; font-size: 9px; color: #444; border-top: 1px solid #222; padding-top: 5px; }
-    </style>
-</head>
-<body>
-    <div id="val" class="val">0</div>
-    <input type="range" id="range" class="slider" min="-5" max="5" value="0">
-    <div class="btns">
-        <button class="btn" onclick="setCount(this, 50)">50</button>
-        <button class="btn" onclick="setCount(this, 100)">100</button>
-        <button class="btn" onclick="setCount(this, 150)">150</button>
-    </div>
-    <div id="log"></div>
-
-<script>
-    const G_TOKEN = "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";
-    const G_URL = "https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt";
-    let curCount = 50;
-
-    function log(m) { const l = document.getElementById('log'); l.innerHTML = `> ${m}<br>${l.innerHTML}`; }
-    
-    function setCount(el, c) {
-        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        curCount = c;
-        update(document.getElementById('range').value * -1, c);
+<style>
+    body { 
+        background: #0a0a0a; color: #fff; font-family: sans-serif; 
+        display: flex; flex-direction: column; align-items: center; 
+        padding: 10px; margin: 0; 
     }
-
-    async function update(s, c) {
-        try {
-            const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN, "Cache-Control": "no-cache" } });
-            const data = await get.json();
-            if (!data.sha) throw new Error("SHA取得失敗: " + (data.message || "不明"));
-            
-            const res = await fetch(G_URL, {
-                method: "PUT",
-                headers: { "Authorization": "token " + G_TOKEN, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "u", content: btoa(`${s},${c}`), sha: data.sha })
-            });
-            if(res.ok) log(`送信成功: ${s}, ${c}`); 
-            else { const err = await res.json(); log("失敗: " + err.message); }
-        } catch(e) { log("エラー: " + e.message); }
+    /* コンテナの幅を300pxに固定 */
+    .control-panel { 
+        width: 300px; 
     }
-
-    document.getElementById('range').oninput = (e) => {
-        const v = e.target.value * -1;
-        document.getElementById('val').innerText = v;
-        update(v, curCount);
-    };
-</script>
-</body>
-</html>
+    .val { font-size: 24px; color: #00e5ff; text-align: center; margin-bottom: 5px; }
+    .slider { 
+        width: 300px; height: 4px; background: #222; 
+        -webkit-appearance: none; margin-bottom: 10px; 
+    }
+    .slider::-webkit-slider-thumb { 
+        -webkit-appearance: none; width: 12px; height: 12px; 
+        background: #00e5ff; border-radius: 50%; cursor: pointer; 
+    }
+    .btns { display: flex; gap: 4px; width: 300px; }
+    .btn { 
+        flex: 1; padding: 4px; font-size: 10px; background: #1a1a1a; 
+        border: 1px solid #333; color: #777; cursor: pointer; 
+    }
+    .btn.active { background: #00e5ff; color: #000; border: none; }
+    #log { 
+        width: 300px; height: 40px; overflow-y: auto; 
+        font-size: 8px; color: #444; margin-top: 10px; 
+    }
+</style>
