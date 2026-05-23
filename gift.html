@@ -78,17 +78,35 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const W = 1122;
+    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
     
-    // スマホ連動なしでも、自動でちょうど良い「左へ流れる速度（-1.0）」で完全固定します
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
-    const currentGiftCount = 50; // 現在の実際の登録数で固定
+    let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // スワイプ・ドラッグ検知（完全維持）
+    // 元の安全なGitHub直接通信で同期
+    async function syncSpeed() {
+        try {
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            const text = await res.text();
+            const parts = text.trim().split(',');
+            
+            const s = parseFloat(parts[0]);
+            if(!isNaN(s)) speed = s;
+            
+            const c = parts[1] ? parseInt(parts[1], 10) : 50;
+            if(!isNaN(c) && currentGiftCount !== c) {
+                currentGiftCount = c;
+                init(); 
+            }
+        } catch (e) {}
+    }
+    setInterval(syncSpeed, 1000);
+
+    // スワイプ・ドラッグ検知
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -157,7 +175,7 @@
         
         const unitW = W * totalBlocksCount; 
 
-        // チラつきの原因だった構文エラー（文字の抜け落ち）を完全に修正
+        // 🛠️ チラつきの元凶だった箇所の記述を完全に修正
         if (posX <= -unitW) {
             posX += unitW;
         } else if (posX >= 0) {
@@ -168,7 +186,7 @@
         requestAnimationFrame(animate);
     }
 
-    init(); animate();
+    init(); syncSpeed(); animate();
 </script>
 </body>
 </html>
