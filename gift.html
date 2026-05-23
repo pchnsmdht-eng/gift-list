@@ -2,38 +2,101 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: #000; color: #0f0; font-family: monospace; }
-        #debug { position: absolute; top: 0; left: 0; z-index: 9999; }
-        #viewport { width: 1870px; height: 400px; position: relative; overflow: hidden; }
-        #lane-container { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); width: 100%; height: 100%; }
-        .lane { width: 100%; height: 100%; overflow: hidden; border: 1px solid #333; }
-        iframe { width: 1200px; height: 4000px; border: none; }
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+        #viewport { width: 1870px; height: 400px; position: relative; overflow: hidden; pointer-events: auto !important; }
+        #lane-container { position: absolute; display: flex; flex-direction: row; width: max-content; top: 2px; will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none !important; }
+        .block { display: flex; flex-direction: column; width: 1122px; height: 396px; flex-shrink: 0; margin: 0 !important; padding: 0 !important; }
+        .lane { width: 1122px; height: 132px; position: relative; overflow: hidden; margin: 0 !important; padding: 0 !important; }
+        iframe { position: absolute; width: 1200px; height: 4000px; border: none; transform-origin: top left; }
+        #touch-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0); touch-action: none; pointer-events: auto !important; cursor: grab; }
+        iframe { --gift-icon-size: 60px !important; }
+        iframe[src*="streamtoearn"] img, iframe[src*="streamtoearn"] .gift-icon, iframe[src*="streamtoearn"] svg { width: 60px !important; height: 60px !important; object-fit: contain !important; }
     </style>
 </head>
 <body>
-    <div id="debug">初期化開始...</div>
-    <div id="viewport"><div id="lane-container"></div></div>
-    <script>
-        const debug = document.getElementById('debug');
-        window.onerror = (m) => debug.innerHTML += `<br>エラー: ${m}`;
-        
+<div id="viewport">
+    <div id="touch-shield"></div>
+    <div id="lane-container"></div>
+</div>
+<script>
+    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
+    const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const container = document.getElementById('lane-container');
+    const shield = document.getElementById('touch-shield');
+    
+    let posX = 0, speed = -1.0, isTouching = false, startX = 0;
+    let currentGiftCount = 50; 
+    let totalBlocksCount = 0;
+
+    async function syncSpeed() {
         try {
-            const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-            const container = document.getElementById('lane-container');
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            if (!res.ok) return;
+            const text = await res.text();
+            const parts = text.trim().split(',');
             
-            for (let n = 1; n <= 50; n++) {
-                const l = document.createElement('div');
-                l.className = 'lane';
-                const f = document.createElement('iframe');
-                f.src = `${SRC}?lane=${n}`;
-                l.appendChild(f);
-                container.appendChild(l);
+            const s = parseFloat(parts[0]);
+            if(!isNaN(s)) speed = s;
+            
+            const c = parts[1] ? parseInt(parts[1], 10) : 50;
+            if(!isNaN(c) && currentGiftCount !== c) {
+                currentGiftCount = c;
+                init(); 
             }
-            debug.innerText = "生成完了";
-        } catch(e) {
-            debug.innerText = "スクリプト失敗: " + e;
+        } catch (e) {}
+    }
+    setInterval(syncSpeed, 1000);
+
+    const handleStart = (e) => { isTouching = true; startX = e.clientX - posX; shield.setPointerCapture(e.pointerId); };
+    const handleMove = (e) => { if (!isTouching) return; posX = e.clientX - startX; };
+    const handleEnd = () => { isTouching = false; };
+    shield.addEventListener('pointerdown', handleStart);
+    shield.addEventListener('pointermove', handleMove);
+    shield.addEventListener('pointerup', handleEnd);
+    shield.addEventListener('pointercancel', handleEnd);
+
+    function init() {
+        container.innerHTML = '';
+        const totalLanes = Math.ceil(currentGiftCount / 3);
+        const requiredLanes = Math.ceil(totalLanes / 3) * 3;
+        const lanesArray = [];
+        for (let i = 1; i <= requiredLanes; i++) {
+            if (i <= totalLanes) lanesArray.push(i);
+            else lanesArray.push((i - totalLanes - 1) % totalLanes + 1);
         }
-    </script>
+        const blocksData = [];
+        for (let i = 0; i < lanesArray.length; i += 3) {
+            blocksData.push([lanesArray[i], lanesArray[i+1], lanesArray[i+2]]);
+        }
+        totalBlocksCount = blocksData.length;
+        for (let loop = 0; loop < 3; loop++) {
+            blocksData.forEach((rows) => {
+                const b = document.createElement('div'); b.className = 'block';
+                rows.forEach(n => {
+                    const l = document.createElement('div'); l.className = 'lane';
+                    const f = document.createElement('iframe'); f.src = `${SRC}?lane=${n}`;
+                    const topPx = (n - 1) * 132;
+                    f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 132)}px 0px)`;
+                    f.style.transform = `translate3d(0, -${topPx}px, 0)`;
+                    l.appendChild(f); b.appendChild(l);
+                });
+                container.appendChild(b);
+            });
+        }
+    }
+
+    function animate() {
+        if (!isTouching) posX += speed;
+        const unitW = W * totalBlocksCount; 
+        if (posX <= -unitW) posX += unitW;
+        else if (posX >= 0) posX -= unitW;
+        container.style.transform = `translate3d(${posX}px, 0, 0)`;
+        requestAnimationFrame(animate);
+    }
+
+    init(); syncSpeed(); animate();
+</script>
 </body>
 </html>
