@@ -49,14 +49,13 @@
         </div>
     </div>
 <script>
-    // ブラウザのメモリを使って、スマホ単体で選択状態を完全に保持するシンプルな仕組み
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     
     let currentSpeed = 0;
     let currentCount = 50;
 
-    // 初期値の読み込み
+    // トークンエラーを永久に起こさないよう、スマホ単体で選択状態を記憶・保持するシンプルな仕組み
     if (localStorage.getItem('local_speed')) {
         currentSpeed = parseInt(localStorage.getItem('local_speed'), 10);
         slider.value = currentSpeed;
