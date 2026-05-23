@@ -3,36 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ルームコントローラー</title>
+    <title>コントローラー</title>
     <style>
-        body { font-family: sans-serif; background-color: #121212; color: white; padding: 20px; }
-        .box { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 10px; }
-        #status { background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; color: #69f0ae; font-weight: bold; }
+        body { background: #121212; color: #fff; padding: 20px; font-family: sans-serif; }
+        .box { background: #1e1e1e; padding: 20px; border-radius: 12px; }
+        #status { margin-top: 10px; text-align: center; color: #69f0ae; }
     </style>
 </head>
 <body>
     <div class="box">
-        <input type="range" id="speedInput" min="-5" max="5" value="0" style="width:100%">
+        <input type="range" id="speed" min="-5" max="5" value="0" style="width:100%">
     </div>
-    <div id="status">接続待機中...</div>
+    <div id="status">システム稼働中</div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-    const firebaseConfig = { databaseURL: "https://stream-control-default-rtdb.firebaseio.com/" };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const statusDiv = document.getElementById('status');
-
-    document.getElementById('speedInput').oninput = (e) => {
-        const val = -parseInt(e.target.value);
-        set(ref(db, 'speed'), val).then(() => {
-            statusDiv.innerText = `変更成功: 速度 ${val}`;
-        }).catch(() => {
-            statusDiv.innerText = "通信エラー";
-        });
-    };
-</script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        
+        const app = initializeApp({ databaseURL: "https://stream-control-default-rtdb.firebaseio.com/" });
+        const db = getDatabase(app);
+        
+        document.getElementById('speed').oninput = (e) => {
+            set(ref(db, 'speed'), -e.target.value);
+            document.getElementById('status').innerText = "送信成功";
+        };
+    </script>
 </body>
 </html>
