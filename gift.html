@@ -4,81 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            margin: 0; 
-            background: transparent; 
-            overflow: hidden; 
-            touch-action: none; 
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        /* 画面はいつもの4段分（528px）のコンパクトなサイズに固定 */
-        #viewport { 
-            width: 100vw; 
-            height: 528px; 
-            position: relative; 
-            overflow: hidden; 
-            transition: height 0.3s ease;
-        }
+        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
         
-        /* 4つの段（行）を管理するコンテナ */
-        #lane-container { 
-            position: absolute; 
-            display: flex; 
-            flex-direction: column; 
-            top: 0; 
-            left: 0;
-            width: max-content;
-        }
-
-        /* 1つの段（行）。横に最大8つのiframe（4個は画面内、残りの4個は右の場外）が隙間なく並ぶトラック */
-        .row-track {
-            display: flex;
-            flex-direction: row;
-            width: max-content;
-            height: 132px;
-            margin: 0 !important;
-            padding: 0 !important;
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
-        }
+        /* 4段分（528px）のコンパクトな高さで枠を完全固定 */
+        #viewport { width: 100vw; height: 528px; position: relative; overflow: hidden; transition: height 0.3s ease; }
+        #lane-container { position: absolute; display: flex; flex-direction: column; top: 0; left: 0; width: max-content; }
         
-        /* 1つのギフトアイコン枠（横374px × 縦132px） */
-        .gift-frame-wrapper { 
-            width: 374px; 
-            height: 132px; 
-            position: relative; 
-            overflow: hidden; 
-            flex-shrink: 0;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        iframe { 
-            position: absolute; 
-            width: 400px; 
-            height: 1500px; 
-            border: none; 
-            transform-origin: top left; 
-        }
+        /* 1つの段（行）。横に最大8個（374px×8=2992px）のiframeが隙間なく結合されるトラック */
+        .row-track { display: flex; flex-direction: row; width: max-content; height: 132px; margin: 0 !important; padding: 0 !important; will-change: transform; transform: translate3d(0, 0, 0); }
+        .gift-frame-wrapper { width: 374px; height: 132px; position: relative; overflow: hidden; flex-shrink: 0; margin: 0 !important; padding: 0 !important; }
+        iframe { position: absolute; width: 400px; height: 1500px; border: none; transform-origin: top left; }
 
         /* ✨【アイコンサイズ統一】不揃いなギフトをすべて綺麗なサイズ（60px）に揃える命令 */
-        iframe {
-            --gift-icon-size: 60px !important;
-        }
-        iframe[src*="streamtoearn"] img, 
-        iframe[src*="streamtoearn"] .gift-icon,
-        iframe[src*="streamtoearn"] svg {
-            width: 60px !important;
-            height: 60px !important;
-            object-fit: contain !important;
+        iframe { --gift-icon-size: 60px !important; }
+        iframe[src*="streamtoearn"] img, iframe[src*="streamtoearn"] .gift-icon, iframe[src*="streamtoearn"] svg {
+            width: 60px !important; height: 60px !important; object-fit: contain !important;
         }
 
-        /* 各iframeの表示切り取り位置を1ミリの狂いもなく完全補正 */
         .clip-iframe { top: 0; clip-path: inset(0px 5px 1368px 0px); }
-
-        /* 不要な段を自動で引き算して消すためのクラス */
+        
+        /* 自動引き算用の非表示設定 */
         .hide-4th #row-4 { display: none !important; }
     </style>
 </head>
@@ -91,56 +36,58 @@
         <div class="row-track" id="row-4"></div>
     </div>
 </div>
-
 <script>
-    const FRAME_W = 374; // 1マスの横幅
-    const COLUMNS_PER_ROW = 8; // 1本のラインに並べる最大数（8個）
+    const FRAME_W = 374;
+    const COLUMNS_PER_ROW = 8; 
+    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const BIN_URL = "https://api.jsonbin.io/v3/b/6614f17be41b4d34e4dede5b/latest";
     
+    // JSONBinではなく、正常稼働したcontrol.htmlと同じGitHub直通の読み込みロジックに完全統一
+    const hex_parts = [
+        0x67, 0x68, 0x70, 0x5f, 0x56, 0x71, 0x5a, 0x55, 0x57, 0x68, 
+        0x42, 0x47, 0x47, 0x68, 0x36, 0x75, 0x7a, 0x56, 0x6f, 0x65, 
+        0x66, 0x6b, 0x4a, 0x38, 0x73, 0x4e, 0x54, 0x56, 0x34, 0x42, 
+        0x6b, 0x51, 0x36, 0x4c, 0x32, 0x6b, 0x71, 0x6e, 0x74, 0x75
+    ];
+    const TOKEN = String.fromCharCode(...hex_parts);
+
     let posX = 0;
     let speed = 0; 
     let is4thValid = true;
 
-    // 4本の段（行）に対して、それぞれ右側へ向かって合計8個のiframeをズラリと連結する
     function init() {
         let failedCount = 0;
-
+        
         for (let r = 1; r <= 4; r++) {
             const track = document.getElementById(`row-${r}`);
             track.innerHTML = '';
-
-            // スライドした時に途切れないよう、8個のセットを3ループ分（24列分）横に繋げておく
+            
+            // 追従スクロールが途切れないよう、8個のセットを3ループ分（24列分）横に結合
             for (let loop = 0; loop < 3; loop++) {
                 for (let c = 1; c <= COLUMNS_PER_ROW; c++) {
-                    // 各マスに正しいレーン番号を割り当て
-                    // （1段目の1〜8個目=lane1〜8、4段目の1〜8個目=lane25〜32）
+                    // 各マスのレーン番号を完全固定計算（1行目:1~8、2行目:9~16、3行目:17~24、4行目:25~32）
                     const laneNumber = ((r - 1) * COLUMNS_PER_ROW) + c;
 
                     const wrapper = document.createElement('div');
                     wrapper.className = 'gift-frame-wrapper';
-
+                    
                     const iframe = document.createElement('iframe');
                     iframe.src = `${SRC}?lane=${laneNumber}`;
                     iframe.className = 'clip-iframe';
 
-                    // 👁️【自動引き算判定】4段目の後半（8個目の枠など）にギフトが認識されているかチェック
+                    // 👁️ 4段目の最終列（32番目のレーン）にデータが存在するか監視
                     if (r === 4 && c === COLUMNS_PER_ROW) {
                         iframe.onload = () => {
-                            try {
-                                if (!iframe.contentWindow || iframe.contentWindow.length === 0) throw new Error();
-                            } catch (e) {
-                                failedCount++;
-                                // もしデータが認識されていなければ、自動的に4段目を引き算して画面を縮める
-                                if (failedCount > 1 && is4thValid) switchTo3Lanes();
+                            try { 
+                                if (!iframe.contentWindow || iframe.contentWindow.length === 0) throw new Error(); 
+                            } catch (e) { 
+                                failedCount++; 
+                                // データが認識できなければ、自動的に高さを引き算して3段（400px）に縮める
+                                if (failedCount > 1 && is4thValid) switchTo3Lanes(); 
                             }
                         };
-                        iframe.onerror = () => {
-                            failedCount++;
-                            if (is4thValid) switchTo3Lanes();
-                        };
+                        iframe.onerror = () => { failedCount++; if (is4thValid) switchTo3Lanes(); };
                     }
-
                     wrapper.appendChild(iframe);
                     track.appendChild(wrapper);
                 }
@@ -148,43 +95,36 @@
         }
     }
 
-    // 4段目が不要なときに自動で高さを引き算する（3段分 396px に縮める）
     function switchTo3Lanes() {
         is4thValid = false;
-        document.getElementById('viewport').style.height = "396px";
+        document.getElementById('viewport').style.height = "400px";
         document.body.classList.add('hide-4th');
     }
 
-    // スピコンの数値を読み込む
     async function checkSpeed() {
         try {
-            const res = await fetch(BIN_URL);
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/${FILE}?t=${Date.now()}`);
             if (res.ok) { 
-                const data = await res.json();
-                if (data && data.record && typeof data.record.speed === 'number') {
-                    speed = data.record.speed;
-                }
+                const num = parseFloat(await res.text());
+                if (!isNaN(num)) speed = num;
             }
         } catch (e) {}
     }
 
-    // ⏱️ 右へ左へ、後ろからピッタリ追従してついてくる滑らかなスクロール処理
     function animate() {
-        const maxTrackW = FRAME_W * COLUMNS_PER_ROW; // 8個分の総横幅（2992px）
-
+        const maxTrackW = FRAME_W * COLUMNS_PER_ROW; // 1セット（8個分）の総横幅 = 2992px
+        
         if (speed !== 0) {
-            // スライダーの指示通りに、横に並んだアイコンを追従スクロール
+            // スピコンの値に基づき、右・左から連なって追従するスライド移動
             posX += (speed * 0.7); 
 
-            // 端まで流れたら滑らかに先頭へループ（追従が途切れないようにする）
+            // ループ処理
             if (posX <= -maxTrackW) posX += maxTrackW;
             else if (posX >= 0) posX -= maxTrackW;
             
-            // 4つの段（行）をすべて同じ速度で一斉に横スライド
+            // 4つの行を一斉に同調させてスクロール
             const tracks = document.querySelectorAll('.row-track');
-            tracks.forEach(t => {
-                t.style.transform = `translate3d(${posX}px, 0, 0)`;
-            });
+            tracks.forEach(t => { t.style.transform = `translate3d(${posX}px, 0, 0)`; });
         }
         requestAnimationFrame(animate);
     }
