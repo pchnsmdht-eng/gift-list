@@ -29,4 +29,129 @@
         <div class="box">
             <div class="box-title">⏱️ スライダー速度調整</div>
             <div id="speed-display">0</div>
-            <input type="range" id
+            <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+            <div class="labels">
+                <span>≪ 左へ流す (1〜5)</span>
+                <span>停止</span>
+                <span>右へ流す (-1〜-5) ≫</span>
+            </div>
+            <button class="stop-btn" onclick="resetToZero()">🛑 停止（中央に戻す）</button>
+        </div>
+
+        <div class="box">
+            <div class="box-title">🎁 ギフト現在の登録総数</div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-50" class="count-btn active" onclick="setCount(50)">50個</button>
+                <button id="btn-100" class="count-btn" onclick="setCount(100)">100個</button>
+                <button id="btn-150" class="count-btn" onclick="setCount(150)">150個</button>
+            </div>
+        </div>
+
+        <div class="box" id="setup-box">
+            <div class="box-title" style="color: #00e5ff;">🔑 トークンの設定</div>
+            <input type="password" id="tokenInput" class="token-input" placeholder="ghp_xxxxxxxxxxxx">
+            <button class="token-btn" onclick="saveToken()">スマホに鍵を記憶させて開始</button>
+        </div>
+
+        <div class="status-box">
+            <div id="status">設定を待っています</div>
+        </div>
+    </div>
+<script>
+    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
+    const slider = document.getElementById('speedInput');
+    const display = document.getElementById('speed-display');
+    const statusDiv = document.getElementById('status');
+    const setupBox = document.getElementById('setup-box');
+    let timer = null;
+    let currentCount = 50;
+
+    function checkSetup() {
+        const savedToken = localStorage.getItem('gt_token');
+        if (savedToken && savedToken.startsWith('ghp_')) {
+            setupBox.style.display = 'none';
+            statusDiv.style.color = "#69f0ae";
+            statusDiv.innerText = "準備完了：エラーはありません";
+        } else {
+            setupBox.style.display = 'block';
+            statusDiv.style.color = "#ffb300";
+            statusDiv.innerText = "上の欄に有効なghp_トークンを入力してください";
+        }
+    }
+
+    function saveToken() {
+        const input = document.getElementById('tokenInput').value.trim();
+        if (input.startsWith('ghp_')) {
+            localStorage.setItem('gt_token', input);
+            checkSetup();
+        } else { alert('ghp_ から始まる正しいトークンを入力してください。'); }
+    }
+
+    function setCount(num) {
+        currentCount = num;
+        document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${num}`).classList.add('active');
+        
+        const originalVal = parseInt(slider.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        sendSpeed(invertedVal);
+    }
+
+    slider.addEventListener('input', (e) => {
+        const originalVal = parseInt(e.target.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        display.innerText = invertedVal;
+        clearTimeout(timer);
+        timer = setTimeout(() => { sendSpeed(invertedVal); }, 250);
+    });
+
+    slider.addEventListener('change', (e) => {
+        clearTimeout(timer);
+        const originalVal = parseInt(e.target.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        sendSpeed(invertedVal);
+    });
+
+    function resetToZero() {
+        clearTimeout(timer);
+        slider.value = 0;
+        display.innerText = "0";
+        sendSpeed(0);
+    }
+
+    async function sendSpeed(val) {
+        const token = localStorage.getItem('gt_token');
+        if (!token) return;
+
+        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
+        const content = `${val},${currentCount}`;
+        statusDiv.style.color = "#aaaaaa";
+        statusDiv.innerText = "通信中...";
+        
+        try {
+            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${token}` } });
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            const sha = data.sha;
+            const base64Content = btoa(unescape(encodeURIComponent(content)));
+
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
+            });
+
+            if (updateRes.ok) {
+                statusDiv.style.color = "#69f0ae";
+                statusDiv.innerText = `変更成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
+            } else { throw new Error(); }
+        } catch (e) {
+            statusDiv.style.color = "#ff5252";
+            statusDiv.innerText = "通信エラー。再度トークン入力を試してください。";
+        }
+    }
+
+    checkSetup();
+</script>
+</body>
+</html>
