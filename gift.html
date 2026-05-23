@@ -11,3 +11,40 @@
         console.log("現在の速度:", speed);
     });
 </script>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; background: transparent; overflow: hidden; }
+        #viewport { width: 1870px; height: 400px; position: relative; }
+        iframe { position: absolute; width: 1200px; height: 4000px; border: none; transform-origin: top left; }
+    </style>
+</head>
+<body>
+<div id="viewport">
+    <div id="lane-container"></div>
+</div>
+<script>
+    // GitHubを一切読みに行かず、ここに固定URLを記述します
+    const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const container = document.getElementById('lane-container');
+    
+    function init() {
+        container.innerHTML = '';
+        for (let n = 1; n <= 15; n++) {
+            const l = document.createElement('div');
+            const f = document.createElement('iframe');
+            f.src = `${SRC}?lane=${n}`;
+            const topPx = (n - 1) * 132;
+            f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 132)}px 0px)`;
+            f.style.transform = `translate3d(0, -${topPx}px, 0)`;
+            l.appendChild(f);
+            container.appendChild(l);
+        }
+    }
+    init();
+</script>
+</body>
+</html>
