@@ -14,10 +14,10 @@
             -webkit-user-select: none;
         }
 
-        /* 実際のデータ（3段分）が1ミリの無駄もなく収まる高さ（132px × 3段 = 396px） */
+        /* 成功事例のピクセル数をそのまま1段分追加（132px × 4段 = 528px、枠は530px） */
         #viewport { 
             width: 100vw; 
-            height: 396px; 
+            height: 530px; 
             position: relative; 
             overflow: hidden; 
             pointer-events: auto !important;
@@ -26,7 +26,7 @@
         #lane-container { 
             position: absolute; 
             display: flex; 
-            flex-direction: column; /* 出力されている3つの行を縦に並べる */
+            flex-direction: column; /* 4つの段（行）を縦にきれいに整列 */
             width: max-content; 
             top: 2px; 
             will-change: transform; 
@@ -34,7 +34,7 @@
             pointer-events: none !important; 
         }
 
-        /* 1つの段（行）。横に1122px（3枚分）のiframeが並ぶトラック */
+        /* 成功事例の1122px幅のトラック */
         .row-track {
             display: flex;
             flex-direction: row;
@@ -44,7 +44,7 @@
             padding: 0 !important;
         }
         
-        /* 成功事例の1マスのサイズを完全維持 */
+        /* 成功事例の1マスのサイズ */
         .gift-frame-wrapper { 
             width: 374px; 
             height: 132px; 
@@ -84,7 +84,7 @@
             object-fit: contain !important;
         }
 
-        /* 成功事例のズレをピタッと直した抽出幅をそのまま適用 */
+        /* 成功事例のズレをピタッと直した抽出幅 (5px) */
         .clip-iframe { top: 0; clip-path: inset(0px 5px 1368px 0px); }
     </style>
 </head>
@@ -95,12 +95,13 @@
         <div class="row-track" id="row-1"></div>
         <div class="row-track" id="row-2"></div>
         <div class="row-track" id="row-3"></div>
+        <div class="row-track" id="row-4"></div>
     </div>
 </div>
 <script>
     const USER = "pchnsmdht-eng", REPO = "gift-list";
     const FRAME_W = 374; // 1マスの横幅
-    const COLUMNS_PER_ROW = 3; // 実データに合わせた1ラインのマス数（3列）
+    const COLUMNS_PER_ROW = 3; // 成功事例と同じ横3列（1122px幅）
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     
     const container = document.getElementById('lane-container');
@@ -108,7 +109,7 @@
     
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
 
-    // リモコン（speed.txt）との同期（1秒ごと）
+    // リモコン（speed.txt）との同期
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -119,7 +120,7 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // ウィジェット上でのスワイプ・ドラッグ検知（成功事例を完全維持）
+    // スワイプ・ドラッグ検知（成功事例を完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -136,16 +137,16 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // 実在する1〜9番目のレーンを、重複させずに3本の行トラックへ正しく配置
+    // 4本の段トラックに、重複なく lane=1 〜 lane=12 を綺麗に配置
     function init() {
-        for (let r = 1; r <= 3; r++) {
+        for (let r = 1; r <= 4; r++) {
             const track = document.getElementById(`row-${r}`);
             track.innerHTML = '';
 
-            // スライドや追従がループした際に途切れないよう、横に4枚分（4ループ）連結
+            // スライドがループした際に途切れないよう、横に4枚分（4ループ）連結
             for (let loop = 0; loop < 4; loop++) {
                 for (let c = 1; c <= COLUMNS_PER_ROW; c++) {
-                    // 正確なレーン番号の割り当て計算（1行目:1~3、2行目:4~6、3行目:7~9）
+                    // 1行目:1~3、2行目:4~6、3行目:7~9、4行目:10~12
                     const laneNumber = ((r - 1) * COLUMNS_PER_ROW) + c;
 
                     const wrapper = document.createElement('div');
@@ -162,7 +163,7 @@
         }
     }
 
-    // 無限ループ追従アニメーション（すべての行を同じ速度で一斉に横スクロール）
+    // 無限ループアニメーション
     function animate() {
         if (!isTouching) {
             posX += speed;
@@ -170,7 +171,6 @@
         
         const maxTrackW = FRAME_W * COLUMNS_PER_ROW; // 3個分の総横幅 = 1122px
 
-        // 端まで流れたら滑らかに先頭へループ
         if (posX <= -maxTrackW) posX += maxTrackW;
         else if (posX >= 0) posX -= maxTrackW;
         
