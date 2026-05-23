@@ -83,12 +83,12 @@
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
     
-    // トークン不要：最も視認性が高く滑らかな「左へ流れる速度（-1.0）」で完全自動固定
+    // 完全に独立動作：最も綺麗に見える「左へ流れる速度（-1.0）」で自動固定
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
     const currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // スワイプ・ドラッグ検知（完全維持）
+    // スワイプ・ドラッグ検知
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -149,7 +149,7 @@
         }
     }
 
-    // 無限ループアニメーション（チラつきバグ完全修正版）
+    // 無限ループアニメーション（構文エラーを完全排除版）
     function animate() {
         if (!isTouching) {
             posX += speed;
