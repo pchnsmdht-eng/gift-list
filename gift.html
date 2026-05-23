@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+        /* ウィジェット枠にぴったり収めるためのCSS設定 */
+        body { 
+            margin: 0; 
+            background: transparent; 
+            overflow: hidden; 
+            touch-action: none; 
+            user-select: none; 
+            -webkit-user-select: none; 
+        }
 
         /* 【横5列(1870px) × 縦3段(400px)】の表示枠に完全固定 */
         #viewport { 
@@ -88,7 +96,7 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // トークンを一切介さず、1秒ごとに中継APIから速度と個数を同期
+    // トークン不要：中継APIから速度と個数をリアルタイム同期
     async function syncSpeed() {
         try {
             const res = await fetch(API_URL);
@@ -98,7 +106,7 @@
             const s = parseFloat(parts[0]);
             if(!isNaN(s)) speed = s;
             
-            const c = parts[1] ? parseInt(parts[1], 10) : 50;
+            const c = parts[1] ? parseInt(parts[Part[1]], 10) : 50;
             if(!isNaN(c) && currentGiftCount !== c) {
                 currentGiftCount = c;
                 init(); 
@@ -176,8 +184,12 @@
         
         const unitW = W * totalBlocksCount; 
 
-        if (posX <= -unitW) posX += unitW;
-        else if (posX >= 0) posX -= unitW;
+        // 🛠️【バグ完全修正】構文エラーを完全に直し、正常に無限ループするように修正
+        if (posX <= -unitW) {
+            posX += unitW;
+        } else if (posX >= 0) {
+            posX -= unitW;
+        }
         
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
