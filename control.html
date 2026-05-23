@@ -1,38 +1,67 @@
-async function send(val, count) {
-    const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
-    try {
-        // 1. まず現在のファイル情報を取得
-        const res = await fetch(`${url}?t=${Date.now()}`, { 
-            headers: { "Authorization": `token ${T}`, "Cache-Control": "no-cache" } 
-        });
-        
-        // ファイルが存在しない場合は処理を止める（手動で空のspeed.txtを作成しておく必要があります）
-        if (!res.ok) throw new Error("ファイルが見つかりません");
-        const data = await res.json();
-        
-        // 2. 文字列をBase64に正しく変換
-        const contentStr = `${val},${count}`;
-        const encodedContent = btoa(unescape(encodeURIComponent(contentStr)));
-        
-        // 3. 更新実行
-        const updateRes = await fetch(url, {
-            method: "PUT",
-            headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                message: "update speed", 
-                content: encodedContent, 
-                sha: data.sha 
-            })
-        });
-        
-        if (updateRes.ok) {
-            addLog(`送信成功: 速度[${val}]`);
-        } else {
-            const err = await updateRes.json();
-            // ここで表示されるエラーメッセージが原因を特定する鍵です
-            addLog(`❌ 失敗: ${err.message || '権限エラーの可能性'}`);
-        }
-    } catch (e) { 
-        addLog(`❌ 通信エラー: ${e.message}`); 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ルームコントローラー</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background-color: #0a0a0a; color: #fff; padding: 20px; }
+        .box { background-color: #161616; border: 1px solid #333; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        #speed-display { font-size: 48px; font-weight: 800; color: #00e5ff; text-align: center; margin-bottom: 10px; }
+        .speed-slider { -webkit-appearance: none; width: 100%; height: 6px; background: #333; border-radius: 3px; outline: none; }
+        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #00e5ff; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
+        #debug-log { height: 100px; overflow-y: auto; background: #000; padding: 12px; font-family: monospace; font-size: 11px; color: #69f0ae; border-radius: 8px; border: 1px solid #222; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div id="speed-display">0</div>
+        <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+    </div>
+    <div class="box">
+        <div id="debug-log"></div>
+    </div>
+
+<script>
+    const USER = "pchnsmdht-eng";
+    const REPO = "gift-list";
+    const FILE = "speed.txt";
+    const T = "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";
+
+    function addLog(msg) {
+        const log = document.getElementById('debug-log');
+        const entry = document.createElement('div');
+        entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        log.prepend(entry);
     }
-}
+
+    async function send(val, count) {
+        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
+        try {
+            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}`, "Cache-Control": "no-cache" } });
+            if (!res.ok) throw new Error("取得失敗");
+            const data = await res.json();
+            
+            const encodedContent = btoa(unescape(encodeURIComponent(`${val},${count}`)));
+            
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "update speed", content: encodedContent, sha: data.sha })
+            });
+            
+            if (updateRes.ok) addLog(`送信成功: 速度[${val}]`);
+            else {
+                const err = await updateRes.json();
+                addLog(`❌ 失敗: ${err.message}`);
+            }
+        } catch (e) { addLog(`❌ 通信エラー: ${e.message}`); }
+    }
+
+    document.getElementById('speedInput').addEventListener('change', (e) => {
+        const val = -parseInt(e.target.value, 10);
+        document.getElementById('speed-display').innerText = val;
+        send(val, 50);
+    });
+</script>
+</body>
+</html>
