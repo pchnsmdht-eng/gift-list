@@ -5,56 +5,215 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ルームコントローラー</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; user-select: none; -webkit-user-select: none; box-sizing: border-box; }
-        .container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
-        .box { background-color: #1e1e1e; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-        .box-title { font-size: 13px; font-weight: bold; color: #888888; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
-        #speed-display { font-size: 52px; font-weight: bold; color: #00e5ff; text-align: center; margin-bottom: 20px; height: 60px; line-height: 60px; }
-        .speed-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 16px; border-radius: 8px; background: #333333; outline: none; }
-        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 44px; height: 44px; border-radius: 50%; background: #00e5ff; cursor: pointer; }
-        .labels { display: flex; justify-content: space-between; width: 100%; margin-top: 15px; font-size: 13px; color: #666666; }
-        .stop-btn { width: 100%; padding: 18px 0; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; background-color: #cf6679; color: white; cursor: pointer; margin-top: 15px; }
-        .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
-        #status { font-size: 13px; color: #888888; text-align: center; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .box {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .box-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #888888;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        #speed-display {
+            font-size: 52px;
+            font-weight: bold;
+            color: #00e5ff;
+            text-align: center;
+            margin-bottom: 20px;
+            height: 60px;
+            line-height: 60px;
+        }
+
+        .speed-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 16px;
+            border-radius: 8px;
+            background: #333333;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #00e5ff;
+            cursor: pointer;
+        }
+
+        .labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666666;
+        }
+
+        .stop-btn {
+            width: 100%;
+            padding: 18px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            background-color: #cf6679;
+            color: white;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        /* 🔑 トークンをスマホに直接記憶させるための入力ボックス（最初の1回だけ出ます） */
+        .token-setup-box {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            background-color: #222;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+        }
+        .token-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #00e5ff;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        
+        .status-box {
+            width: 100%;
+            min-height: 50px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+        }
+        #status { font-size: 13px; color: #888888; text-align: center; padding: 5px 10px; }
     </style>
 </head>
 <body>
+
     <div class="container">
         <div class="box">
             <div class="box-title">⏱️ スライダー速度調整</div>
             <div id="speed-display">0</div>
+            
             <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+            
             <div class="labels">
                 <span>≪ 左へ流す (1〜5)</span>
                 <span>停止</span>
                 <span>右へ流す (-1〜-5) ≫</span>
             </div>
+            
             <button class="stop-btn" onclick="resetToZero()">🛑 停止（中央に戻す）</button>
         </div>
+
+        <div class="box" id="setup-box">
+            <div class="box-title" style="color: #00e5ff;">🔑 新しいトークンの設定</div>
+            <p style="font-size: 11px; color: #aaa; margin: 0 0 10px 0; text-align: center;">新しく作った ghp_ から始まるトークンをここに貼り付けてボタンを押してください。</p>
+            <input type="password" id="tokenInput" class="token-input" placeholder="ghp_xxxxxxxxxxxx">
+            <button class="token-btn" onclick="saveToken()">スマホに鍵を記憶させて開始</button>
+        </div>
+
         <div class="status-box">
-            <div id="status">システム起動完了</div>
+            <div id="status">設定を待っています</div>
         </div>
     </div>
+
 <script>
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     const FILE = "speed.txt";
 
-    // 🔒 セキュリティによる無効化を100%回避する特殊な結合（新しい正しいトークン）
-    const t_parts = ["ghp", "VqZU", "WhBG", "Gh6u", "zVoe", "fkJ8", "sNTV", "4BkQ", "6L2k", "qntu"];
-    const TOKEN = t_parts.join("_").replace(/_/g, "");
-
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     const statusDiv = document.getElementById('status');
+    const setupBox = document.getElementById('setup-box');
     let timer = null;
+
+    // スマホが鍵を覚えているかチェック
+    function checkSetup() {
+        const savedToken = localStorage.getItem('gt_token');
+        if (savedToken && savedToken.startsWith('ghp_')) {
+            setupBox.style.display = 'none'; // 覚えているなら入力欄は非表示
+            statusDiv.style.color = "#69f0ae";
+            statusDiv.innerText = "準備完了：エラーはありません";
+        } else {
+            setupBox.style.display = 'block';
+            statusDiv.style.color = "#ffb300";
+            statusDiv.innerText = "上の欄に新しく発行したghp_トークンを入力してください";
+        }
+    }
+
+    // スマホのブラウザに直接トークンを保存（GitHubのAI検知を100%回避）
+    function saveToken() {
+        const input = document.getElementById('tokenInput').value.trim();
+        if (input.startsWith('ghp_')) {
+            localStorage.setItem('gt_token', input);
+            checkSetup();
+        } else {
+            alert('トークンは ghp_ から始まる正しい文字を入力してください。');
+        }
+    }
 
     slider.addEventListener('input', (e) => {
         const originalVal = parseInt(e.target.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         display.innerText = invertedVal;
+        
         clearTimeout(timer);
-        timer = setTimeout(() => { sendSpeed(invertedVal); }, 150);
+        timer = setTimeout(() => { sendSpeed(invertedVal); }, 250);
     });
 
     slider.addEventListener('change', (e) => {
@@ -72,33 +231,48 @@
     }
 
     async function sendSpeed(val) {
+        const token = localStorage.getItem('gt_token');
+        if (!token) {
+            statusDiv.style.color = "#ff5252";
+            statusDiv.innerText = "❌ トークンが設定されていません。";
+            return;
+        }
+
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = String(val);
         statusDiv.style.color = "#aaaaaa";
         statusDiv.innerText = "通信中...";
         
         try {
-            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${TOKEN}` } });
+            const res = await fetch(`${url}?t=${Date.now()}`, { 
+                headers: { "Authorization": `token ${token}` } 
+            });
             if (!res.ok) throw new Error();
+            
             const data = await res.json();
             const sha = data.sha;
             const base64Content = btoa(unescape(encodeURIComponent(content)));
 
             const updateRes = await fetch(url, {
                 method: "PUT",
-                headers: { "Authorization": `token ${TOKEN}`, "Content-Type": "application/json" },
+                headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
             });
 
             if (updateRes.ok) {
                 statusDiv.style.color = "#69f0ae";
                 statusDiv.innerText = `変更成功: 速度 [ ${content} ]`;
+            } else {
+                throw new Error();
             }
         } catch (e) {
             statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "通信エラー。スマホの画面を再読み込みしてください。";
+            statusDiv.innerText = "通信エラー。トークンが無効化された可能性があります。";
         }
     }
+
+    // 起動処理
+    checkSetup();
 </script>
 </body>
 </html>
