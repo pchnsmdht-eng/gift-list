@@ -3,33 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Controller</title>
-    <style>
-        body { background: #121212; color: white; padding: 20px; font-family: sans-serif; }
-        input { width: 100%; padding: 10px; }
-    </style>
 </head>
 <body>
-    <input type="range" id="s" min="-5" max="5" value="0">
+    <input type="range" id="s" min="-5" max="5" value="0" style="width:100%">
     <div id="m">待機中</div>
     <script>
-        // REPLACE THIS TOKEN IF 401 PERSISTS
+        // GitHub APIトークンが失効している場合は更新してください
         const T = "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";
-        const USER = "pchnsmdht-eng";
-        const REPO = "gift-list";
-
         document.getElementById('s').onchange = async (e) => {
             const val = -e.target.value;
-            const url = `https://api.github.com/repos/${USER}/${REPO}/contents/speed.txt`;
             try {
-                const res = await fetch(url, {headers:{"Authorization":"token "+T}});
+                const res = await fetch("https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt", {headers:{"Authorization":"token "+T}});
                 const data = await res.json();
-                await fetch(url, {
+                await fetch("https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt", {
                     method:"PUT",
                     headers:{"Authorization":"token "+T,"Content-Type":"application/json"},
                     body:JSON.stringify({message:"update",content:btoa(val+",50"),sha:data.sha})
                 });
                 document.getElementById('m').innerText = "完了: " + val;
-            } catch(e) { document.getElementById('m').innerText = "通信失敗 (401ならトークンを確認)"; }
+            } catch(e) { document.getElementById('m').innerText = "失敗 (401エラーの場合はトークンを確認)"; }
         };
     </script>
 </body>
