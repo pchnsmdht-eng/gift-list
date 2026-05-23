@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; background: transparent; overflow: hidden; }
-        #viewport { width: 1870px; height: 400px; position: relative; overflow: hidden; }
+        #viewport { width: 1870px; height: 400px; position: relative; }
+        /* 5列 4段 グリッド */
         #lane-container { 
             display: grid; 
             grid-template-columns: repeat(5, 1fr); 
             grid-template-rows: repeat(4, 1fr); 
             width: 1870px; height: 400px;
-            gap: 2px;
         }
         .lane { width: 100%; height: 100%; overflow: hidden; position: relative; }
         iframe { width: 1200px; height: 4000px; border: none; transform-origin: top left; }
@@ -22,42 +22,22 @@
         const USER = "pchnsmdht-eng", REPO = "gift-list";
         const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
         const container = document.getElementById('lane-container');
-        let currentSpeed = 0;
-        let position = 0;
 
-        async function init() {
+        function init() {
             container.innerHTML = '';
-            // 50個のギフトを表示するために50回ループ
             for (let n = 1; n <= 50; n++) {
                 const l = document.createElement('div');
                 l.className = 'lane';
                 const f = document.createElement('iframe');
                 f.src = `${SRC}?lane=${n}`;
-                const topPx = (n - 1) * 100; // 必要に応じて調整
+                const topPx = (n - 1) * 100;
                 f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 100)}px 0px)`;
                 f.style.transform = `translate3d(0, -${topPx}px, 0)`;
                 l.appendChild(f);
                 container.appendChild(l);
             }
         }
-
-        async function sync() {
-            try {
-                const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
-                const text = await res.text();
-                currentSpeed = parseFloat(text.split(',')[0]) || 0;
-            } catch(e) {}
-        }
-
-        function animate() {
-            position += currentSpeed;
-            container.style.transform = `translateX(${position}px)`;
-            requestAnimationFrame(animate);
-        }
-
         init();
-        setInterval(sync, 1000);
-        animate();
     </script>
 </body>
 </html>
