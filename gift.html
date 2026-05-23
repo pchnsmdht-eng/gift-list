@@ -3,45 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; }
-        /* 5列4段のグリッド設定 */
+        body { margin: 0; background: #000; color: #0f0; font-family: monospace; }
+        #debug { position: absolute; top: 0; left: 0; z-index: 9999; }
         #viewport { width: 1870px; height: 400px; position: relative; overflow: hidden; }
-        #lane-container { 
-            display: grid; 
-            grid-template-columns: repeat(5, 1fr); 
-            grid-template-rows: repeat(4, 1fr); 
-            width: 100%; height: 100%;
-            gap: 2px;
-        }
-        .lane { width: 100%; height: 100%; overflow: hidden; position: relative; }
-        iframe { width: 1200px; height: 4000px; border: none; transform-origin: top left; }
+        #lane-container { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); width: 100%; height: 100%; }
+        .lane { width: 100%; height: 100%; overflow: hidden; border: 1px solid #333; }
+        iframe { width: 1200px; height: 4000px; border: none; }
     </style>
 </head>
 <body>
+    <div id="debug">初期化開始...</div>
     <div id="viewport"><div id="lane-container"></div></div>
     <script>
-        const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-        const container = document.getElementById('lane-container');
-
-        // 50個のギフトを生成
-        function init() {
-            container.innerHTML = '';
+        const debug = document.getElementById('debug');
+        window.onerror = (m) => debug.innerHTML += `<br>エラー: ${m}`;
+        
+        try {
+            const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+            const container = document.getElementById('lane-container');
+            
             for (let n = 1; n <= 50; n++) {
                 const l = document.createElement('div');
                 l.className = 'lane';
                 const f = document.createElement('iframe');
                 f.src = `${SRC}?lane=${n}`;
-                
-                // アイコンのクリッピング設定
-                const topPx = (n - 1) * 100;
-                f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 100)}px 0px)`;
-                f.style.transform = `translate3d(0, -${topPx}px, 0)`;
-                
                 l.appendChild(f);
                 container.appendChild(l);
             }
+            debug.innerText = "生成完了";
+        } catch(e) {
+            debug.innerText = "スクリプト失敗: " + e;
         }
-        init();
     </script>
 </body>
 </html>
