@@ -13,36 +13,30 @@
             -webkit-user-select: none;
         }
 
+        /* 8段分の高さをきれいに収める枠（132px × 8段 = 1056px） */
         #viewport { 
             width: 100vw; 
-            height: 530px; 
+            height: 1060px; 
             position: relative; 
             overflow: hidden; 
-            transition: height 0.3s ease;
         }
         
-        /* メインのコンテナ（不快な明滅を無くすため常に背景は透明） */
-        .lane-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: max-content;
-            display: flex;
-            top: 2px;
-            will-change: transform, opacity;
-            transform: translate3d(0, 0, 0);
-            pointer-events: none !important;
+        #lane-container { 
+            position: absolute; 
+            display: flex; 
+            width: max-content; 
+            top: 2px; 
+            will-change: transform; 
+            transform: translate3d(0, 0, 0); 
+            pointer-events: none !important; 
         }
 
-        /* 2組のコンテナを完全に重ね合わせるための設定 */
-        #container-A { z-index: 10; opacity: 1; }
-        #container-B { z-index: 20; opacity: 0; } /* 最初は透明 */
-
+        /* 1ブロック（塊）の中に8つのレーンを縦に並べる */
         .block { 
             display: flex; 
             flex-direction: column; 
             width: 1122px; 
-            height: 528px; 
+            height: 1056px; 
             flex-shrink: 0; 
             margin: 0 !important;
             padding: 0 !important;
@@ -60,145 +54,105 @@
         iframe { 
             position: absolute; 
             width: 1200px; 
-            height: 1500px; 
+            height: 2000px; 
             border: none; 
             transform-origin: top left; 
         }
 
-        .hide-4th .lane-4th { display: none !important; }
+        /* ✨【重要】不揃いなギフトアイコンをすべて綺麗なサイズに統一する魔法の命令 */
+        iframe {
+            --gift-icon-size: 60px !important; /* サイズを好みに応じてここで一括調整できます */
+        }
+        
+        /* iframeの内部にある画像やアイコン要素のサイズを強制的に統一 */
+        iframe[src*="streamtoearn"] img, 
+        iframe[src*="streamtoearn"] .gift-icon,
+        iframe[src*="streamtoearn"] svg {
+            width: 60px !important;
+            height: 60px !important;
+            object-fit: contain !important;
+        }
 
-        /* 右端ズレ完全補正 */
-        .r1 { top: 0; clip-path: inset(0px 5px 1368px 0px); }
-        .r2 { top: 0; clip-path: inset(132px 5px 1236px 0px); transform: translateY(-132px); }
-        .r3 { top: 0; clip-path: inset(264px 5px 1104px 0px); transform: translateY(-264px); }
-        .r4 { top: 0; clip-path: inset(396px 5px 972px 0px); transform: translateY(-396px); }
-        .r5 { top: 0; clip-path: inset(528px 5px 840px 0px); transform: translateY(-528px); }
-        .r6 { top: 0; clip-path: inset(660px 5px 708px 0px); transform: translateY(-660px); }
-        .r7 { top: 0; clip-path: inset(792px 5px 576px 0px); transform: translateY(-792px); }
-        .r8 { top: 0; clip-path: inset(924px 5px 444px 0px); transform: translateY(-924px); }
-        .r9 { top: 0; clip-path: inset(1056px 5px 312px 0px); transform: translateY(-1056px); }
-        .r10 { top: 0; clip-path: inset(1188px 5px 180px 0px); transform: translateY(-1188px); }
-        .r11 { top: 0; clip-path: inset(1320px 5px 48px 0px); transform: translateY(-1320px); }
-        .r12 { top: 0; clip-path: inset(1452px 5px 0px 0px); transform: translateY(-1452px); }
+        /* 1段目〜8段目までの表示切り取り位置（clip-path）を1ミリの狂いもなく完全補正 */
+        .r1 { top: 0; clip-path: inset(0px 5px 1868px 0px); }
+        .r2 { top: 0; clip-path: inset(132px 5px 1736px 0px); transform: translateY(-132px); }
+        .r3 { top: 0; clip-path: inset(264px 5px 1604px 0px); transform: translateY(-264px); }
+        .r4 { top: 0; clip-path: inset(396px 5px 1472px 0px); transform: translateY(-396px); }
+        .r5 { top: 0; clip-path: inset(528px 5px 1340px 0px); transform: translateY(-528px); }
+        .r6 { top: 0; clip-path: inset(660px 5px 1208px 0px); transform: translateY(-660px); }
+        .r7 { top: 0; clip-path: inset(792px 5px 1076px 0px); transform: translateY(-792px); }
+        .r8 { top: 0; clip-path: inset(924px 5px 944px 0px); transform: translateY(-924px); }
     </style>
 </head>
 <body>
 <div id="viewport">
-    <div id="container-A" class="lane-wrapper"></div>
-    <div id="container-B" class="lane-wrapper"></div>
+    <div id="lane-container"></div>
 </div>
 
 <script>
     const W = 1122, SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const containerA = document.getElementById('container-A');
-    const containerB = document.getElementById('container-B');
-    const viewport = document.getElementById('viewport');
-    
-    const USER = "pchnsmdht-eng";
-    const REPO = "gift-list";
+    const BIN_URL = "https://api.jsonbin.io/v3/b/6614f17be41b4d34e4dede5b/latest";
+    const container = document.getElementById('lane-container');
     
     let posX = 0;
     let speed = 0; 
-    let is4thValid = true;
-    let lastFlashTime = 0;
-    
-    // 現在どちらが表を向いているかのフラグ
-    let isCurrentA = true;
 
-    function buildLanes(targetContainer) {
-        targetContainer.innerHTML = ''; let failedCount = 0;
+    // 8段のレーンを初期化して綺麗に組み立てる
+    function init() {
+        container.innerHTML = '';
+        // ループしても途切れないように4つ分のブロックを横に並べる
         for (let i = 0; i < 4; i++) {
-            [[1,2,3],[4,5,6],[7,8,9],[10,11,12]].forEach((rows, blockIdx) => {
-                const b = document.createElement('div'); b.className = 'block';
-                if (blockIdx === 3) b.classList.add('lane-4th');
-                rows.forEach(n => {
-                    const l = document.createElement('div'); l.className = 'lane';
-                    const f = document.createElement('iframe'); f.src = `${SRC}?lane=${n}`; f.className = `r${n}`;
-                    if (n >= 10) {
-                        f.onload = () => { try { if (!f.contentWindow || f.contentWindow.length === 0) throw new Error(); } catch (e) { failedCount++; if (failedCount > 0 && is4thValid) switchTo3Lanes(); } };
-                        f.onerror = () => { failedCount++; if (is4thValid) switchTo3Lanes(); };
-                    }
-                    l.appendChild(f); b.appendChild(l);
-                });
-                targetContainer.appendChild(b);
+            const b = document.createElement('div'); 
+            b.className = 'block';
+            
+            // 1〜8番目のレーンを1つのブロックの中に生成
+            [1, 2, 3, 4, 5, 6, 7, 8].forEach(n => {
+                const l = document.createElement('div'); 
+                l.className = 'lane';
+                
+                const f = document.createElement('iframe'); 
+                f.src = `${SRC}?lane=${n}`; 
+                f.className = `r${n}`;
+                
+                l.appendChild(f); 
+                b.appendChild(l);
             });
+            container.appendChild(b);
         }
     }
 
-    function switchTo3Lanes() { is4thValid = false; viewport.style.height = "400px"; document.body.classList.add('hide-4th'); }
-
+    // スピコンの数値をJSONBinから安全に読み込む（1秒ごと）
     async function checkSpeed() {
         try {
-            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            const res = await fetch(BIN_URL);
             if (res.ok) { 
-                const num = parseFloat(await res.text()); 
-                if (!isNaN(num)) speed = num; 
+                const data = await res.json();
+                if (data && data.record && typeof data.record.speed === 'number') {
+                    speed = data.record.speed;
+                }
             }
         } catch (e) {}
     }
 
-    // 👁️ チカチカを100%排除した、裏側クロスフェード瞬間すり替えループ
+    // ⏱️ チカチカを一切起こさず、スーッと滑らかに流すスクロールアニメーション
     function animate() {
-        const activeBlocks = is4thValid ? 4 : 3; 
-        const unitW = W * activeBlocks;
-        const currentTime = Date.now();
+        const unitW = W * 4; // 4ブロック分の総横幅
 
         if (speed !== 0) {
-            const flashInterval = 1600 / Math.abs(speed); // スピードに応じた切り替え間隔
+            // スピコンの数値（1〜5、-1〜-5）に応じて左右に移動
+            posX += (speed * 0.7); 
 
-            if (currentTime - lastFlashTime > flashInterval) {
-                
-                // 次のワープ先位置を計算
-                if (speed < 0) {
-                    posX -= W; // 右ワープ
-                } else {
-                    posX += W; // 左ワープ
-                }
-
-                if (posX <= -unitW) posX += unitW;
-                else if (posX >= 0) posX -= unitW;
-
-                // Aが表のとき ➔ 裏のBを次の位置へ先にワープさせ、フワッと浮かび上がらせる
-                if (isCurrentA) {
-                    containerB.style.transition = "none";
-                    containerB.style.transform = `translate3d(${posX}px, 0, 0)`; // 裏でこっそり移動
-                    
-                    // じわーっと上塗り（クロスフェード）
-                    setTimeout(() => {
-                        containerB.style.transition = "opacity 0.25s ease-in-out";
-                        containerB.style.opacity = "1";
-                        containerA.style.transition = "opacity 0.25s ease-in-out";
-                        containerA.style.opacity = "0";
-                    }, 20);
-                    
-                    isCurrentA = false;
-                } 
-                // Bが表のとき ➔ 裏のAを次の位置へ先にワープさせ、フワッと浮かび上がらせる
-                else {
-                    containerA.style.transition = "none";
-                    containerA.style.transform = `translate3d(${posX}px, 0, 0)`; // 裏でこっそり移動
-                    
-                    // じわーっと上塗り（クロスフェード）
-                    setTimeout(() => {
-                        containerA.style.transition = "opacity 0.25s ease-in-out";
-                        containerA.style.opacity = "1";
-                        containerB.style.transition = "opacity 0.25s ease-in-out";
-                        containerB.style.opacity = "0";
-                    }, 20);
-                    
-                    isCurrentA = true;
-                }
-
-                lastFlashTime = currentTime;
-            }
+            // 端まで行ったら滑らかにループさせる処理
+            if (posX <= -unitW) posX += unitW;
+            else if (posX >= 0) posX -= unitW;
+            
+            container.style.transform = `translate3d(${posX}px, 0, 0)`;
         }
-
         requestAnimationFrame(animate);
     }
 
     setInterval(checkSpeed, 1000); 
-    buildLanes(containerA);
-    buildLanes(containerB);
+    init(); 
     animate();
 </script>
 </body>
