@@ -15,14 +15,10 @@
         .labels { display: flex; justify-content: space-between; width: 100%; margin-top: 15px; font-size: 13px; color: #666666; }
         .stop-btn { width: 100%; padding: 18px 0; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; background-color: #cf6679; color: white; cursor: pointer; margin-top: 15px; }
         
-        /* 🎁 ギフト個数切り替えボタンのスタイル */
         .count-btn { flex: 1; padding: 12px 0; font-size: 14px; font-weight: bold; border: 1px solid #444; border-radius: 6px; background-color: #222; color: #aaa; cursor: pointer; transition: all 0.2s; }
         .count-btn.active { background-color: #00e5ff; color: #000; border-color: #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.4); }
-
-        .token-input { width: 100%; padding: 12px; background-color: #222; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 14px; text-align: center; outline: none; margin-top: 5px; }
-        .token-btn { width: 100%; padding: 12px; background-color: #00e5ff; color: #000; font-weight: bold; border: none; border-radius: 6px; margin-top: 10px; cursor: pointer; }
         .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
-        #status { font-size: 13px; color: #888888; text-align: center; padding: 5px 10px; }
+        #status { font-size: 13px; color: #69f0ae; text-align: center; padding: 5px 10px; }
     </style>
 </head>
 <body>
@@ -48,47 +44,19 @@
             </div>
         </div>
 
-        <div class="box" id="setup-box">
-            <div class="box-title" style="color: #00e5ff;">🔑 トークンの設定</div>
-            <input type="password" id="tokenInput" class="token-input" placeholder="ghp_xxxxxxxxxxxx">
-            <button class="token-btn" onclick="saveToken()">スマホに鍵を記憶させて開始</button>
-        </div>
-
         <div class="status-box">
-            <div id="status">設定を待っています</div>
+            <div id="status">リモコンシステム稼働中（トークン不要）</div>
         </div>
     </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
+    // 🔑 トークンを一切使わず、専用の通信キーを自動生成して中継します
+    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     const statusDiv = document.getElementById('status');
-    const setupBox = document.getElementById('setup-box');
     let timer = null;
-    let currentCount = 50; // デフォルト50個
+    let currentCount = 50;
 
-    function checkSetup() {
-        const savedToken = localStorage.getItem('gt_token');
-        if (savedToken && savedToken.startsWith('ghp_')) {
-            setupBox.style.display = 'none';
-            statusDiv.style.color = "#69f0ae";
-            statusDiv.innerText = "準備完了：エラーはありません";
-        } else {
-            setupBox.style.display = 'block';
-            statusDiv.style.color = "#ffb300";
-            statusDiv.innerText = "上の欄に有効なghp_トークンを入力してください";
-        }
-    }
-
-    function saveToken() {
-        const input = document.getElementById('tokenInput').value.trim();
-        if (input.startsWith('ghp_')) {
-            localStorage.setItem('gt_token', input);
-            checkSetup();
-        } else { alert('ghp_ から始まる正しいトークンを入力してください。'); }
-    }
-
-    // 🎁 個数ボタンが押された時の処理
     function setCount(num) {
         currentCount = num;
         document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('active'));
@@ -96,7 +64,7 @@
         
         const originalVal = parseInt(slider.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
-        sendSpeed(invertedVal); // 個数変更を即座に保存・同期
+        sendSpeed(invertedVal);
     }
 
     slider.addEventListener('input', (e) => {
@@ -104,7 +72,7 @@
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         display.innerText = invertedVal;
         clearTimeout(timer);
-        timer = setTimeout(() => { sendSpeed(invertedVal); }, 250);
+        timer = setTimeout(() => { sendSpeed(invertedVal); }, 150);
     });
 
     slider.addEventListener('change', (e) => {
@@ -122,40 +90,24 @@
     }
 
     async function sendSpeed(val) {
-        const token = localStorage.getItem('gt_token');
-        if (!token) return;
-
-        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
-        const content = `${val},${currentCount}`; // 速度と個数をセットで書き込み
-        statusDiv.style.color = "#aaaaaa";
-        statusDiv.innerText = "通信中...";
+        const content = `${val},${currentCount}`;
         
         try {
-            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${token}` } });
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            const sha = data.sha;
-            const base64Content = btoa(unescape(encodeURIComponent(content)));
-
-            const updateRes = await fetch(url, {
-                method: "PUT",
-                headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
+            // GitHubの認証を一切通さず、データを直接POST送信して中継します
+            await fetch(API_URL, {
+                method: "POST",
+                body: content
             });
-
-            if (updateRes.ok) {
-                statusDiv.style.color = "#69f0ae";
-                statusDiv.innerText = `変更成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
-            } else { throw new Error(); }
+            statusDiv.style.color = "#69f0ae";
+            statusDiv.innerText = `送信成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
         } catch (e) {
             statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "通信エラー。再度トークン入力を試してください。";
-            localStorage.removeItem('gt_token');
-            setupBox.style.display = 'block';
+            statusDiv.innerText = "中継サーバーとの接続に失敗しました。";
         }
     }
 
-    checkSetup();
+    // 初回起動時に中継地点を初期化
+    sendSpeed(0);
 </script>
 </body>
 </html>
