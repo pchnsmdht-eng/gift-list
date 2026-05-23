@@ -21,15 +21,22 @@
             transition: height 0.3s ease;
         }
         
-        #lane-container { 
-            position: absolute; 
-            display: flex; 
-            width: max-content; 
-            top: 2px; 
-            will-change: transform; 
-            transform: translate3d(0, 0, 0); 
-            pointer-events: none !important; 
+        /* メインのコンテナ（不快な明滅を無くすため常に背景は透明） */
+        .lane-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: max-content;
+            display: flex;
+            top: 2px;
+            will-change: transform, opacity;
+            transform: translate3d(0, 0, 0);
+            pointer-events: none !important;
         }
+
+        /* 2組のコンテナを完全に重ね合わせるための設定 */
+        #container-A { z-index: 10; opacity: 1; }
+        #container-B { z-index: 20; opacity: 0; } /* 最初は透明 */
 
         .block { 
             display: flex; 
@@ -73,35 +80,19 @@
         .r10 { top: 0; clip-path: inset(1188px 5px 180px 0px); transform: translateY(-1188px); }
         .r11 { top: 0; clip-path: inset(1320px 5px 48px 0px); transform: translateY(-1320px); }
         .r12 { top: 0; clip-path: inset(1452px 5px 0px 0px); transform: translateY(-1452px); }
-
-        /* 👁️ 上塗り用フェードレイヤー（黒くならず、じわっと重なる） */
-        #fade-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #121212; /* 現在の背景と同じ色 */
-            opacity: 0;
-            pointer-events: none;
-            z-index: 9999;
-            mix-blend-mode: normal;
-            transition: opacity 0.15s ease-in-out; /* じわっと上塗りする速度 */
-            will-change: opacity;
-        }
     </style>
 </head>
 <body>
 <div id="viewport">
-    <div id="lane-container"></div>
-    <div id="fade-overlay"></div>
+    <div id="container-A" class="lane-wrapper"></div>
+    <div id="container-B" class="lane-wrapper"></div>
 </div>
 
 <script>
     const W = 1122, SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const container = document.getElementById('lane-container');
+    const containerA = document.getElementById('container-A');
+    const containerB = document.getElementById('container-B');
     const viewport = document.getElementById('viewport');
-    const overlay = document.getElementById('fade-overlay');
     
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
@@ -110,9 +101,12 @@
     let speed = 0; 
     let is4thValid = true;
     let lastFlashTime = 0;
+    
+    // 現在どちらが表を向いているかのフラグ
+    let isCurrentA = true;
 
-    function init() {
-        container.innerHTML = ''; let failedCount = 0;
+    function buildLanes(targetContainer) {
+        targetContainer.innerHTML = ''; let failedCount = 0;
         for (let i = 0; i < 4; i++) {
             [[1,2,3],[4,5,6],[7,8,9],[10,11,12]].forEach((rows, blockIdx) => {
                 const b = document.createElement('div'); b.className = 'block';
@@ -126,14 +120,13 @@
                     }
                     l.appendChild(f); b.appendChild(l);
                 });
-                container.appendChild(b);
+                targetContainer.appendChild(b);
             });
         }
     }
 
     function switchTo3Lanes() { is4thValid = false; viewport.style.height = "400px"; document.body.classList.add('hide-4th'); }
 
-    // スピコンの数値を読み込む
     async function checkSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -144,39 +137,57 @@
         } catch (e) {}
     }
 
-    // チェンジ・ブラインドネス（上塗りクロスフェード瞬間移動）制御
+    // 👁️ チカチカを100%排除した、裏側クロスフェード瞬間すり替えループ
     function animate() {
         const activeBlocks = is4thValid ? 4 : 3; 
         const unitW = W * activeBlocks;
         const currentTime = Date.now();
 
         if (speed !== 0) {
-            // スピコンの数値に合わせて切り替わる間隔を変更（1400ms〜280ms）
-            const flashInterval = 1400 / Math.abs(speed); 
+            const flashInterval = 1600 / Math.abs(speed); // スピードに応じた切り替え間隔
 
             if (currentTime - lastFlashTime > flashInterval) {
-                // 1. 次の画面の残像を「じわっ」と上に重ね始める（不透明度0.6程度でブレンド）
-                overlay.style.opacity = "0.65";
+                
+                // 次のワープ先位置を計算
+                if (speed < 0) {
+                    posX -= W; // 右ワープ
+                } else {
+                    posX += W; // 左ワープ
+                }
 
-                // 2. 上塗りが一番濃くなった瞬間（0.12秒後）に、裏で位置をすり替える
-                setTimeout(() => {
-                    if (speed < 0) {
-                        posX -= W; // 右へワープ
-                    } else {
-                        posX += W; // 左へワープ
-                    }
+                if (posX <= -unitW) posX += unitW;
+                else if (posX >= 0) posX -= unitW;
 
-                    if (posX <= -unitW) posX += unitW;
-                    else if (posX >= 0) posX -= unitW;
+                // Aが表のとき ➔ 裏のBを次の位置へ先にワープさせ、フワッと浮かび上がらせる
+                if (isCurrentA) {
+                    containerB.style.transition = "none";
+                    containerB.style.transform = `translate3d(${posX}px, 0, 0)`; // 裏でこっそり移動
                     
-                    container.style.transform = `translate3d(${posX}px, 0, 0)`;
-
-                    // 3. すり替えが終わったら、重ねた上塗りをフワッと消す
+                    // じわーっと上塗り（クロスフェード）
                     setTimeout(() => {
-                        overlay.style.opacity = "0";
-                    }, 40);
-
-                }, 120);
+                        containerB.style.transition = "opacity 0.25s ease-in-out";
+                        containerB.style.opacity = "1";
+                        containerA.style.transition = "opacity 0.25s ease-in-out";
+                        containerA.style.opacity = "0";
+                    }, 20);
+                    
+                    isCurrentA = false;
+                } 
+                // Bが表のとき ➔ 裏のAを次の位置へ先にワープさせ、フワッと浮かび上がらせる
+                else {
+                    containerA.style.transition = "none";
+                    containerA.style.transform = `translate3d(${posX}px, 0, 0)`; // 裏でこっそり移動
+                    
+                    // じわーっと上塗り（クロスフェード）
+                    setTimeout(() => {
+                        containerA.style.transition = "opacity 0.25s ease-in-out";
+                        containerA.style.opacity = "1";
+                        containerB.style.transition = "opacity 0.25s ease-in-out";
+                        containerB.style.opacity = "0";
+                    }, 20);
+                    
+                    isCurrentA = true;
+                }
 
                 lastFlashTime = currentTime;
             }
@@ -186,7 +197,8 @@
     }
 
     setInterval(checkSpeed, 1000); 
-    init(); 
+    buildLanes(containerA);
+    buildLanes(containerB);
     animate();
 </script>
 </body>
