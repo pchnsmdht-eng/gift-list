@@ -33,7 +33,7 @@
             pointer-events: none !important; 
         }
 
-        /* 成功事例の構造をベース（高さは4段分の528px） */
+        /* 成功事例の1122px幅のブロック構造を1ミリも崩さず完全維持 */
         .block { 
             display: flex; 
             flex-direction: column; 
@@ -135,35 +135,24 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // データ読み込み：「横3個(左) ＋ 横2個(右) ＝ 横5個」、縦に4段のデータ構造
+    // データ読み込み：左右の枠幅をすべて成功事例の1122px（3個分）のままのびのび生成
     function init() {
         container.innerHTML = '';
 
-        // 成功事例のロジックをベースに横5個へ最適化
-        // 左ブロック（横3個分 = 1122px）、右ブロック（横2個分 = 748pxにクリップ）
         const blocksData = [
-            { type: 'left', rows: [1, 2, 3, 4] },  // 1〜3個目のギフト×縦4段
-            { type: 'right', rows: [5, 6, 7, 8] }  // 4〜5個目のギフト×縦4段（6個目は非表示）
+            [1, 2, 3, 4],   // 左側のブロック（1〜3個目のギフト×縦4段）
+            [5, 6, 7, 8]    // 右側のブロック（4〜6個目のギフト×縦4段）
         ];
 
         // スライドがループした際に途切れないよう、横に5ループ分連結
         for (let loop = 0; loop < 5; loop++) {
-            blocksData.forEach((bInfo) => {
+            blocksData.forEach((rows) => {
                 const b = document.createElement('div'); 
                 b.className = 'block';
-                
-                // 横5個に収めるための幅の上書き調整
-                if (bInfo.type === 'right') {
-                    b.style.width = '748px'; // 374px × 2個分
-                }
 
-                bInfo.rows.forEach(n => {
+                rows.forEach(n => {
                     const l = document.createElement('div'); 
                     l.className = 'lane';
-                    
-                    if (bInfo.type === 'right') {
-                        l.style.width = '748px';
-                    }
 
                     const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
@@ -183,4 +172,19 @@
             posX += speed;
         }
         
-        // 1セットの総横幅 ＝ 1122px + 748px = 1870px（ギフト5個分）で滑らか
+        // ✨【ここが最大の修正点】
+        // 右の箱の幅を狭めずに1122pxのまま広げておくことで、5個目が隠れるのを完全に防止。
+        // そしてループする折り返し地点だけを「ぴったり5個分の幅 ＝ 1870px」に指定します。
+        const unitW = 1870; 
+
+        if (posX <= -unitW) posX += unitW;
+        else if (posX >= 0) posX -= unitW;
+        
+        container.style.transform = `translate3d(${posX}px, 0, 0)`;
+        requestAnimationFrame(animate);
+    }
+
+    init(); syncSpeed(); animate();
+</script>
+</body>
+</html>
