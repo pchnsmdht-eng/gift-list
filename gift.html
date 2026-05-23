@@ -23,7 +23,6 @@
 <script>
     const W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    // コントローラーが書き込むのと同じデータスペースを読み込みに行く
     const DATA_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_stream_data_v2";
     
     const container = document.getElementById('lane-container');
@@ -33,7 +32,7 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // 🛠️ 別のデータ置き場から最新データを1秒ごとに直接取得して読み込む処理
+    // 1秒ごとにデータ置き場を見に行く同期処理
     async function syncSpeed() {
         try {
             const res = await fetch(`${DATA_URL}?t=${Date.now()}`);
