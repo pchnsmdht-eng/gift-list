@@ -16,7 +16,49 @@
     </style>
 </head>
 <body>
-<div id="viewport">
+<div id="viewport"><!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { margin: 0; overflow: hidden; background: transparent; }
+    #gift-container {
+        display: grid;
+        grid-template-rows: repeat(4, 1fr); /* 4行固定 */
+        grid-auto-flow: column; /* 50, 100, 150個増えても横に伸びる */
+        gap: 5px;
+        position: absolute;
+        height: 100vh;
+        animation: slide 20s linear infinite;
+        will-change: transform;
+    }
+    .gift-item { width: 40px; height: 40px; background: gold; border: 1px solid #fff; }
+    @keyframes slide { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+</style>
+</head>
+<body>
+    <div id="gift-container"></div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const firebaseConfig = { /* Firebase設定 */ };
+        const db = getDatabase(initializeApp(firebaseConfig));
+        
+        onValue(ref(db, 'settings'), (snapshot) => {
+            const { count, speed } = snapshot.val();
+            const container = document.getElementById('gift-container');
+            container.innerHTML = '';
+            for(let i=0; i<count; i++) {
+                const div = document.createElement('div');
+                div.className = 'gift-item';
+                container.appendChild(div);
+            }
+            container.style.animationDuration = (20 / Math.abs(speed)) + 's';
+            container.style.animationDirection = speed > 0 ? 'normal' : 'reverse';
+            container.style.animationPlayState = speed === 0 ? 'paused' : 'running';
+        });
+    </script>
+</body>
+</html>A
     <div id="touch-shield"></div>
     <div id="lane-container"></div>
 </div>
