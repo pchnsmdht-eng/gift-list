@@ -78,20 +78,19 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const W = 1122;
+    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
     
-    let posX = 0, speed = 0, isTouching = false, startX = 0;
+    let posX = 0, speed = -1.0, isTouching = false, startX = 0;
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // トークンを一切使わず、1秒ごとに安全にデータを同期
+    // 元の仕様：GitHubの speed.txt からデータを取り出す同期処理
     async function syncSpeed() {
         try {
-            const res = await fetch(API_URL);
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
             if (!res.ok) return;
             const text = await res.text();
             const parts = text.trim().split(',');
@@ -99,7 +98,7 @@
             const s = parseFloat(parts[0]);
             if(!isNaN(s)) speed = s;
             
-            // 🛠️【完全修正】タイポを100%修正しました
+            // 🛠️ クラッシュの原因だった箇所を parts[1] に完全に修復
             const c = parts[1] ? parseInt(parts[1], 10) : 50;
             if(!isNaN(c) && currentGiftCount !== c) {
                 currentGiftCount = c;
