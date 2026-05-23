@@ -1,1 +1,22 @@
+<style>
+    body { margin: 0; overflow: hidden; }
+    #lane-container { display: flex; width: max-content; }
+    .block { 
+        display: grid; 
+        grid-template-columns: repeat(5, 224.4px); /* 1122 / 5 */
+        grid-template-rows: repeat(4, 100px);     /* 400 / 4 */
+        width: 1122px; 
+        height: 400px;
+        flex-shrink: 0;
+    }
+    .lane { width: 224.4px; height: 100px; overflow: hidden; }
+    iframe { width: 1200px; height: 4000px; border: none; }
+</style>
 
+<script>
+    // 既存のlogicを維持しつつ、initで20個(5x4)のiframeを生成
+    function init() {
+        // 各iframeには {SRC}?lane=${n} を指定
+        // 5個並べた右側に隙間なく次のブロックを配置する構造
+    }
+</script>
