@@ -13,12 +13,13 @@
             -webkit-user-select: none;
         }
 
-        /* 8段分の高さをきれいに収める枠（132px × 8段 = 1056px） */
+        /* 画面は4段（530px）にきれいに収める枠のまま */
         #viewport { 
             width: 100vw; 
-            height: 1060px; 
+            height: 530px; 
             position: relative; 
             overflow: hidden; 
+            transition: height 0.3s ease; /* 3段に減るときに滑らかに縮む */
         }
         
         #lane-container { 
@@ -31,19 +32,19 @@
             pointer-events: none !important; 
         }
 
-        /* 1ブロック（塊）の中に8つのレーンを縦に並べる */
+        /* 1ブロック（塊）の横幅を「2992px（横8枚分）」へ拡張 */
         .block { 
             display: flex; 
             flex-direction: column; 
-            width: 1122px; 
-            height: 1056px; 
+            width: 2992px; /* 横8枚分（374px × 8） */
+            height: 528px; 
             flex-shrink: 0; 
             margin: 0 !important;
             padding: 0 !important;
         }
         
         .lane { 
-            width: 1122px; 
+            width: 2992px; /* 横8枚分 */
             height: 132px; 
             position: relative; 
             overflow: hidden; 
@@ -53,18 +54,19 @@
         
         iframe { 
             position: absolute; 
-            width: 1200px; 
-            height: 2000px; 
+            width: 3100px; /* 横8枚分を見越して広めに確保 */
+            height: 1500px; 
             border: none; 
             transform-origin: top left; 
         }
 
-        /* ✨【重要】不揃いなギフトアイコンをすべて綺麗なサイズに統一する魔法の命令 */
+        /* 👁️【重要】4段目が不要なとき（ failedCountが多いとき）に、自動で4段目を消して画面を縮める処理 */
+        .hide-4th .lane-4th { display: none !important; }
+
+        /* ✨【重要】不揃いなギフトアイコンをすべて綺麗なサイズ（60px）に統一する命令 */
         iframe {
-            --gift-icon-size: 60px !important; /* サイズを好みに応じてここで一括調整できます */
+            --gift-icon-size: 60px !important;
         }
-        
-        /* iframeの内部にある画像やアイコン要素のサイズを強制的に統一 */
         iframe[src*="streamtoearn"] img, 
         iframe[src*="streamtoearn"] .gift-icon,
         iframe[src*="streamtoearn"] svg {
@@ -73,15 +75,12 @@
             object-fit: contain !important;
         }
 
-        /* 1段目〜8段目までの表示切り取り位置（clip-path）を1ミリの狂いもなく完全補正 */
-        .r1 { top: 0; clip-path: inset(0px 5px 1868px 0px); }
-        .r2 { top: 0; clip-path: inset(132px 5px 1736px 0px); transform: translateY(-132px); }
-        .r3 { top: 0; clip-path: inset(264px 5px 1604px 0px); transform: translateY(-264px); }
-        .r4 { top: 0; clip-path: inset(396px 5px 1472px 0px); transform: translateY(-396px); }
-        .r5 { top: 0; clip-path: inset(528px 5px 1340px 0px); transform: translateY(-528px); }
-        .r6 { top: 0; clip-path: inset(660px 5px 1208px 0px); transform: translateY(-660px); }
-        .r7 { top: 0; clip-path: inset(792px 5px 1076px 0px); transform: translateY(-792px); }
-        .r8 { top: 0; clip-path: inset(924px 5px 944px 0px); transform: translateY(-924px); }
+        /* 各レーンの表示切り取り位置（clip-path）を1ミリの狂いもなく完全補正 */
+        /* 横に8枚分の広いiframeから、各段（各レーン）を切り出します */
+        .r1 { top: 0; clip-path: inset(0px 5px 1368px 0px); }
+        .r2 { top: 0; clip-path: inset(132px 5px 1236px 0px); transform: translateY(-132px); }
+        .r3 { top: 0; clip-path: inset(264px 5px 1104px 0px); transform: translateY(-264px); }
+        .r4 { top: 0; clip-path: inset(396px 5px 972px 0px); transform: translateY(-396px); }
     </style>
 </head>
 <body>
@@ -90,29 +89,59 @@
 </div>
 
 <script>
-    const W = 1122, SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    // 横幅を「横8枚分（2992px）」に変更
+    const W = 2992, SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const BIN_URL = "https://api.jsonbin.io/v3/b/6614f17be41b4d34e4dede5b/latest";
     const container = document.getElementById('lane-container');
+    const viewport = document.getElementById('viewport');
     
     let posX = 0;
     let speed = 0; 
+    let is4thValid = true;
 
-    // 8段のレーンを初期化して綺麗に組み立てる
+    // 4段のレーンを組み立てる。1ブロックの横幅は8枚分。
     function init() {
         container.innerHTML = '';
-        // ループしても途切れないように4つ分のブロックを横に並べる
-        for (let i = 0; i < 4; i++) {
+        let failedCount = 0;
+        
+        // ループを途切れさせないために3つ分のブロックを横に並べる
+        for (let i = 0; i < 3; i++) {
             const b = document.createElement('div'); 
             b.className = 'block';
             
-            // 1〜8番目のレーンを1つのブロックの中に生成
-            [1, 2, 3, 4, 5, 6, 7, 8].forEach(n => {
+            // 1段目〜4段目を生成
+            [[1,2,3,4],[5,6,7,8],[9,10,11,12]].forEach((rows, blockIdx) => {
+                // 今回はシンプルに、1段目に1枚目〜8枚目を流すのではなく、
+                // 1段目にlane=1、2段目にlane=2... を流し、
+                // その「1枚のlane」の横幅自体を8枚分に拡張する。
+                // （※StreamToEarn側の仕様上、lane=1の中に1枚目〜8枚目が順番に並ぶはずです）
+            });
+
+            [1, 2, 3, 4].forEach(n => {
                 const l = document.createElement('div'); 
                 l.className = 'lane';
+                if (n === 4) l.classList.add('lane-4th'); // 4段目に目印をつける
                 
                 const f = document.createElement('iframe'); 
                 f.src = `${SRC}?lane=${n}`; 
                 f.className = `r${n}`;
+                
+                // 👁️ 4段目（lane=4）の読み込み成否をチェックする
+                if (n === 4) {
+                    f.onload = () => {
+                        try {
+                            if (!f.contentWindow || f.contentWindow.length === 0) throw new Error();
+                        } catch (e) {
+                            failedCount++;
+                            // 読み込み失敗が一定を超えたら（4段目にギフトがなければ）自動で4段目を消す
+                            if (failedCount > 2 && is4thValid) switchTo3Lanes();
+                        }
+                    };
+                    f.onerror = () => {
+                        failedCount++;
+                        if (is4thValid) switchTo3Lanes();
+                    };
+                }
                 
                 l.appendChild(f); 
                 b.appendChild(l);
@@ -121,7 +150,14 @@
         }
     }
 
-    // スピコンの数値をJSONBinから安全に読み込む（1秒ごと）
+    // 4段目を消して、画面を3段（400px）に縮める処理
+    function switchTo3Lanes() {
+        is4thValid = false;
+        viewport.style.height = "400px";
+        document.body.classList.add('hide-4th');
+    }
+
+    // スピコンの数値を読み込む（1秒ごと）
     async function checkSpeed() {
         try {
             const res = await fetch(BIN_URL);
@@ -136,10 +172,10 @@
 
     // ⏱️ チカチカを一切起こさず、スーッと滑らかに流すスクロールアニメーション
     function animate() {
-        const unitW = W * 4; // 4ブロック分の総横幅
+        const unitW = W * 3; // 3ブロック分の総横幅（横8枚×3 = 24枚分）
 
         if (speed !== 0) {
-            // スピコンの数値（1〜5、-1〜-5）に応じて左右に移動
+            // スピコンの数値に応じて左右に移動
             posX += (speed * 0.7); 
 
             // 端まで行ったら滑らかにループさせる処理
