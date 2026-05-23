@@ -26,7 +26,7 @@
             pointer-events: none !important; 
         }
 
-        /* 幅1122px（3列分）、高さは3段分の396px */
+        /* 幅1122px、高さは3段分の396px */
         .block { 
             display: flex; 
             flex-direction: column; 
@@ -80,13 +80,34 @@
 <script>
     const W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
     
-    // 完全に独立動作：最も綺麗に見える「左へ流れる速度（-1.0）」で自動固定
-    let posX = 0, speed = -1.0, isTouching = false, startX = 0;
-    const currentGiftCount = 50; 
+    let posX = 0, speed = 0, isTouching = false, startX = 0;
+    let currentGiftCount = 50; 
     let totalBlocksCount = 0;
+
+    // 🛠️ コントローラーから送信された情報をリアルタイムでキャッチして反映します
+    async function syncSpeed() {
+        try {
+            const res = await fetch(API_URL);
+            if (!res.ok) return;
+            const text = await res.text();
+            const parts = text.trim().split(',');
+            
+            const s = parseFloat(parts[0]);
+            if(!isNaN(s)) speed = s;
+            
+            // 全すべてのタイポを完全に消し去った安全な同期処理
+            const c = parts[1] ? parseInt(parts[1], 10) : 50;
+            if(!isNaN(c) && currentGiftCount !== c) {
+                currentGiftCount = c;
+                init(); 
+            }
+        } catch (e) {}
+    }
+    setInterval(syncSpeed, 1000);
 
     // スワイプ・ドラッグ検知
     const handleStart = (e) => {
@@ -149,7 +170,7 @@
         }
     }
 
-    // 無限ループアニメーション（構文エラーを完全排除版）
+    // 無限ループアニメーション
     function animate() {
         if (!isTouching) {
             posX += speed;
@@ -167,7 +188,7 @@
         requestAnimationFrame(animate);
     }
 
-    init(); animate();
+    init(); syncSpeed(); animate();
 </script>
 </body>
 </html>
