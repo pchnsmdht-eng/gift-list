@@ -14,7 +14,7 @@
             -webkit-user-select: none;
         }
 
-        /* 4段分（528px）が綺麗に収まる高さ */
+        /* 4段分（132px × 4段 = 528px）が綺麗に収まる高さ */
         #viewport { 
             width: 100vw; 
             height: 530px; 
@@ -23,7 +23,7 @@
             pointer-events: auto !important;
         }
         
-        /* 横7個 × 縦4段分の巨大なギフトシートをそのまま動かすコンテナ */
+        /* 縦に積まれた各ブロックが、横（Row方向）にズラリと並ぶコンテナ */
         #lane-container { 
             position: absolute; 
             display: flex; 
@@ -35,22 +35,32 @@
             pointer-events: none !important; 
         }
 
-        /* ギフトが横に7個並んだ巨大な1ブロックのエリア（374px × 7列 = 2618px幅） */
-        .gift-block-wrapper { 
-            width: 2618px; 
+        /* 成功事例の構造：1つの縦箱（幅1122pxの中に、縦に4段のlaneがギッチリ積まれる） */
+        .block { 
+            display: flex; 
+            flex-direction: column; 
+            width: 1122px; 
             height: 528px; 
-            position: relative; 
-            overflow: hidden; 
-            flex-shrink: 0;
+            flex-shrink: 0; 
             margin: 0 !important;
             padding: 0 !important;
         }
         
-        /* iframe自体を「横7列×縦4段」が丸ごと収まる巨大なサイズで展開 */
+        /* 1つの行の高さ */
+        .lane { 
+            width: 1122px; 
+            height: 132px; 
+            position: relative; 
+            overflow: hidden; 
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* 28行目までの巨大な縦長シートをすべて受け止めるサイズ設定 */
         iframe { 
             position: absolute; 
-            width: 2800px; 
-            height: 1500px; 
+            width: 1200px; 
+            height: 4000px; 
             border: none; 
             transform-origin: top left; 
         }
@@ -75,9 +85,6 @@
             height: 60px !important; 
             object-fit: contain !important;
         }
-
-        /* 横7個・縦4段分のエリアを1ミリのズレもなく完全抽出 */
-        .clip-iframe { top: 0; clip-path: inset(0px 5px 972px 0px); }
     </style>
 </head>
 <body>
@@ -86,8 +93,7 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list";
-    const BLOCK_W = 2618; // 横7個分の総横幅 (374px × 7)
+    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     
     const container = document.getElementById('lane-container');
@@ -106,7 +112,7 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // スワイプ・ドラッグ検知（成功事例の快適な操作を完全維持）
+    // スワイプ・ドラッグ検知（完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -123,34 +129,59 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // システム側で「横7個で折り返して4段」に出力されているシートを、途切れないように横に3枚連結する
+    // データ読み込み：縦4段 × 横7列（7ブロック）のデータ構造
     function init() {
         container.innerHTML = '';
-        
-        // ループスクロールが途切れないよう、3つ並べる
+
+        // 成功事例のロジック：1つのブロックに縦に4本の行を入れ、それを横に7つの異なるブロックとして並べる
+        const blocksData = [
+            [1, 2, 3, 4],       // 1列目（1〜4行目）
+            [5, 6, 7, 8],       // 2列目（5〜8行目）
+            [9, 10, 11, 12],    // 3列目（9〜12行目）
+            [13, 14, 15, 16],   // 4列目（13〜16行目）
+            [17, 18, 19, 20],   // 5列目（17〜20行目）
+            [21, 22, 23, 24],   // 6列目（21〜24行目）
+            [25, 26, 27, 28]    // 7列目（25〜28行目）
+        ];
+
+        // スライドがループした際に途切れないよう、7つのブロックのセットを3ループ分横に連結
         for (let loop = 0; loop < 3; loop++) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'gift-block-wrapper';
+            blocksData.forEach((rows) => {
+                const b = document.createElement('div'); 
+                b.className = 'block';
 
-            const iframe = document.createElement('iframe');
-            // lane=1 から読み込むことで、URL側の「横7個で折り返す自動配置」をそのまま100%綺麗に表示させます
-            iframe.src = `${SRC}?lane=1`;
-            iframe.className = 'clip-iframe';
+                rows.forEach(n => {
+                    const l = document.createElement('div'); 
+                    l.className = 'lane';
+                    
+                    const f = document.createElement('iframe');
+                    f.src = `${SRC}?lane=${n}`;
 
-            wrapper.appendChild(iframe);
-            container.appendChild(wrapper);
+                    // 🪛【1ミリの狂いもない動的クリッピング補正】
+                    // 巨大シートから、それぞれの行（n）に応じた高さを寸分の狂いもなく自動で切り取って配置します
+                    const topPx = (n - 1) * 132;
+                    f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 132)}px 0px)`;
+                    f.style.transform = `translate3d(0, -${topPx}px, 0)`;
+
+                    l.appendChild(f); 
+                    b.appendChild(l);
+                });
+                container.appendChild(b);
+            });
         }
     }
 
-    // 無限ループアニメーション（7個×4段のシートが丸ごと追従して流れる）
+    // 無限ループアニメーション（7つの異なるブロックが一斉に横に流れる）
     function animate() {
         if (!isTouching) {
             posX += speed;
         }
+        
+        const unitW = W * 7; // 7ブロック分の総横幅 = 7854px
 
-        // 1つの巨大ブロック（横7個分）が流れたら先頭へ滑らかにループ
-        if (posX <= -BLOCK_W) posX += BLOCK_W;
-        else if (posX >= 0) posX -= BLOCK_W;
+        // 端まで流れたら滑らかに先頭へループ（これで違うギフトが被らず綺麗に無限に連なる）
+        if (posX <= -unitW) posX += unitW;
+        else if (posX >= 0) posX -= unitW;
         
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
