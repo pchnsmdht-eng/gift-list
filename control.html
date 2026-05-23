@@ -2,55 +2,40 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            background: #0a0a0a; color: #fff; font-family: sans-serif; 
-            display: flex; flex-direction: column; align-items: center; 
-            padding: 10px; margin: 0; 
-        }
-        .control-panel { width: 300px; }
-        .val { font-size: 24px; color: #00e5ff; text-align: center; margin-bottom: 5px; }
-        .slider { 
-            width: 300px; height: 4px; background: #222; 
-            -webkit-appearance: none; margin-bottom: 10px; 
-        }
-        .slider::-webkit-slider-thumb { 
-            -webkit-appearance: none; width: 12px; height: 12px; 
-            background: #00e5ff; border-radius: 50%; cursor: pointer; 
-        }
-        .btns { display: flex; gap: 4px; width: 300px; }
-        .btn { 
-            flex: 1; padding: 4px; font-size: 10px; background: #1a1a1a; 
-            border: 1px solid #333; color: #777; cursor: pointer; 
-        }
-        .btn.active { background: #00e5ff; color: #000; border: none; }
-        #log { 
-            width: 300px; height: 40px; overflow-y: auto; 
-            font-size: 8px; color: #444; margin-top: 10px; font-family: monospace;
-        }
+        body { background: #0a0a0a; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; user-select: none; }
+        .panel { width: 300px; }
+        /* リモコン風ディスプレイ */
+        .display { font-size: 40px; color: #00e5ff; text-align: center; margin-bottom: 20px; font-weight: bold; }
+        /* リモコン風スライダー */
+        .slider { width: 300px; height: 10px; background: #222; -webkit-appearance: none; border-radius: 5px; margin-bottom: 25px; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #00e5ff; }
+        /* ボタン群：押しやすさを重視 */
+        .buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .btn { padding: 15px 0; background: #222; border: none; color: #fff; border-radius: 8px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.95); background: #00e5ff; color: #000; }
+        .btn.active { background: #00e5ff; color: #000; }
+        #log { width: 300px; height: 50px; font-size: 9px; color: #555; margin-top: 20px; overflow: hidden; border-top: 1px solid #222; padding-top: 5px; }
     </style>
 </head>
 <body>
-
-    <div class="control-panel">
-        <div id="val" class="val">0</div>
+    <div class="panel">
+        <div id="val" class="display">0</div>
         <input type="range" id="range" class="slider" min="-5" max="5" value="0">
-        <div class="btns">
+        <div class="buttons">
             <button class="btn" onclick="setCount(this, 50)">50</button>
             <button class="btn" onclick="setCount(this, 100)">100</button>
             <button class="btn" onclick="setCount(this, 150)">150</button>
         </div>
         <div id="log"></div>
     </div>
-
     <script>
-        // ⚠️ ここにトークンを貼り付けてください
-        const G_TOKEN = "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";
+        const G_TOKEN = "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";
         const G_URL = "https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt";
         let curCount = 50;
 
-        function log(m) { const l = document.getElementById('log'); l.innerHTML = `> ${m}<br>${l.innerHTML}`; }
+        function log(m) { document.getElementById('log').innerText = m; }
         
         function setCount(el, c) {
             document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
@@ -61,17 +46,16 @@
 
         async function update(s, c) {
             try {
-                const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN, "Cache-Control": "no-cache" } });
+                const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN, "Cache-Control": "no-cache" }, mode: 'cors' });
                 const data = await get.json();
-                if (!data.sha) throw new Error("SHA取得失敗: " + (data.message || "不明"));
-                
                 const res = await fetch(G_URL, {
                     method: "PUT",
+                    mode: 'cors',
                     headers: { "Authorization": "token " + G_TOKEN, "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: "update", content: btoa(`${s},${c}`), sha: data.sha })
+                    body: JSON.stringify({ message: "u", content: btoa(`${s},${c}`), sha: data.sha })
                 });
-                if(res.ok) log(`送信成功: 速度[${s}] 個数[${c}]`); 
-                else { const err = await res.json(); log("失敗: " + err.message); }
+                if(res.ok) log(`送信成功: 速度${s} / 個数${c}`); 
+                else log("通信エラー: " + res.status);
             } catch(e) { log("エラー: " + e.message); }
         }
 
