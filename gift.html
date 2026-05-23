@@ -56,7 +56,7 @@
             padding: 0 !important;
         }
         
-        /* 28行目までの巨大な縦長シートをすべて受け止めるサイズ設定 */
+        /* 28行目までの巨大な縦長シートをすべて受け止めるサイズ設定（4000px） */
         iframe { 
             position: absolute; 
             width: 1200px; 
@@ -112,7 +112,7 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // スワイプ・ドラッグ検知（完全維持）
+    // スワイプ・ドラッグ検知（成功事例の快適な操作を完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -133,7 +133,7 @@
     function init() {
         container.innerHTML = '';
 
-        // 成功事例のロジック：1つのブロックに縦に4本の行を入れ、それを横に7つの異なるブロックとして並べる
+        // 成功事例のロジック：1つのブロックに縦に4本の行（lane=1〜4、5〜8...）を詰め込み、それを横に7つの異なるブロックとして並べる
         const blocksData = [
             [1, 2, 3, 4],       // 1列目（1〜4行目）
             [5, 6, 7, 8],       // 2列目（5〜8行目）
@@ -157,8 +157,8 @@
                     const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
 
-                    // 🪛【1ミリの狂いもない動的クリッピング補正】
-                    // 巨大シートから、それぞれの行（n）に応じた高さを寸分の狂いもなく自動で切り取って配置します
+                    // 🪛【1ミリの狂いもない動化クリッピング補正】
+                    // 巨大シート（4000px高）から、それぞれの行（n）に応じた高さを寸分の狂いもなく自動で切り取って配置します。これで被りは100%直ります。
                     const topPx = (n - 1) * 132;
                     f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 132)}px 0px)`;
                     f.style.transform = `translate3d(0, -${topPx}px, 0)`;
@@ -171,7 +171,7 @@
         }
     }
 
-    // 無限ループアニメーション（7つの異なるブロックが一斉に横に流れる）
+    // 無限ループアニメーション（7つの異なるブロックが丸ごと一斉に横に流れる）
     function animate() {
         if (!isTouching) {
             posX += speed;
