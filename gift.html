@@ -33,7 +33,7 @@
             pointer-events: none !important; 
         }
 
-        /* 成功事例の1122px幅、高さは4段分の528pxに固定 */
+        /* 成功事例の構造をベース（高さは4段分の528px） */
         .block { 
             display: flex; 
             flex-direction: column; 
@@ -82,7 +82,7 @@
             object-fit: contain !important;
         }
 
-        /* 👁️‍🗨️ 灰色の細い枠線のズレを完全に防ぐ5px補正のカット位置（4段目まで網羅） */
+        /* 👁️‍🗨️ 灰色の細い枠線のズレを完全に防ぐ5px補正のカット位置 */
         .r1 { top: 0; clip-path: inset(0px 5px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 5px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 5px 1104px 0px); transform: translateY(-264px); }
@@ -100,7 +100,7 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
+    const USER = "pchnsmdht-eng", REPO = "gift-list";
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
@@ -135,27 +135,36 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // データ読み込み：「横3個×2ブロック ＝ 横6個」、縦に4段のデータ構造
+    // データ読み込み：「横3個(左) ＋ 横2個(右) ＝ 横5個」、縦に4段のデータ構造
     function init() {
         container.innerHTML = '';
 
-        // 成功事例のロジックを継承：
-        // 横に6個並べるために、3個幅のブロックを2つ（1122px × 2）用意し、中にそれぞれ4段ずつ積みます
+        // 成功事例のロジックをベースに横5個へ最適化
+        // 左ブロック（横3個分 = 1122px）、右ブロック（横2個分 = 748pxにクリップ）
         const blocksData = [
-            [1, 2, 3, 4],   // 左側のブロック（1〜4行目、横3個×縦4段）
-            [5, 6, 7, 8]    // 右側のブロック（5〜8行目、横3個×縦4段）
+            { type: 'left', rows: [1, 2, 3, 4] },  // 1〜3個目のギフト×縦4段
+            { type: 'right', rows: [5, 6, 7, 8] }  // 4〜5個目のギフト×縦4段（6個目は非表示）
         ];
 
         // スライドがループした際に途切れないよう、横に5ループ分連結
         for (let loop = 0; loop < 5; loop++) {
-            blocksData.forEach((rows) => {
+            blocksData.forEach((bInfo) => {
                 const b = document.createElement('div'); 
                 b.className = 'block';
+                
+                // 横5個に収めるための幅の上書き調整
+                if (bInfo.type === 'right') {
+                    b.style.width = '748px'; // 374px × 2個分
+                }
 
-                rows.forEach(n => {
+                bInfo.rows.forEach(n => {
                     const l = document.createElement('div'); 
                     l.className = 'lane';
                     
+                    if (bInfo.type === 'right') {
+                        l.style.width = '748px';
+                    }
+
                     const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
                     f.className = `r${n}`;
@@ -174,17 +183,4 @@
             posX += speed;
         }
         
-        // 2ブロック分（横6個分）の総横幅 ＝ 2244px で滑らかにループ
-        const unitW = W * 2; 
-
-        if (posX <= -unitW) posX += unitW;
-        else if (posX >= 0) posX -= unitW;
-        
-        container.style.transform = `translate3d(${posX}px, 0, 0)`;
-        requestAnimationFrame(animate);
-    }
-
-    init(); syncSpeed(); animate();
-</script>
-</body>
-</html>
+        // 1セットの総横幅 ＝ 1122px + 748px = 1870px（ギフト5個分）で滑らか
