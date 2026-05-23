@@ -87,7 +87,7 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // 元の仕様：GitHubの speed.txt からデータを取り出す同期処理
+    // 成功ロジック：GitHubの speed.txt からデータを取り出す同期処理
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -98,7 +98,7 @@
             const s = parseFloat(parts[0]);
             if(!isNaN(s)) speed = s;
             
-            // 🛠️ クラッシュの原因だった箇所を parts[1] に完全に修復
+            // 🛠️【完全復元】タイポバグを駆逐し、確実に動く「parts[1]」に修正
             const c = parts[1] ? parseInt(parts[1], 10) : 50;
             if(!isNaN(c) && currentGiftCount !== c) {
                 currentGiftCount = c;
