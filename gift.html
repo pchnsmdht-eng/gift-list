@@ -30,10 +30,11 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // 🛠️ コントローラーが安全に書き換えた speed.txt をダイレクトに同期します
+    // 🛠️ 【キャッシュ完全破壊】GitHubへ行くたびに末尾に現在時刻を付けて「最新」を強制取得
     async function syncSpeed() {
         try {
-            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            const cacheBust = Date.now();
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${cacheBust}`);
             if (!res.ok) return;
             const text = await res.text();
             const parts = text.trim().split(',');
@@ -41,15 +42,14 @@
             const s = parseFloat(parts[0]);
             if(!isNaN(s)) speed = s;
             
-            // クラッシュの原因だった箇所を完全に修復して処理
             const c = parts[1] ? parseInt(parts[1], 10) : 50;
             if(!isNaN(c) && currentGiftCount !== c) {
                 currentGiftCount = c;
-                init(); 
+                init();
             }
         } catch (e) {}
     }
-    setInterval(syncSpeed, 1000);
+    setInterval(syncSpeed, 500); // 0.5秒ごとに超高速同期
 
     const handleStart = (e) => { isTouching = true; startX = e.clientX - posX; shield.setPointerCapture(e.pointerId); };
     const handleMove = (e) => { if (!isTouching) return; posX = e.clientX - startX; };
