@@ -74,18 +74,18 @@
         .r11 { top: 0; clip-path: inset(1320px 5px 48px 0px); transform: translateY(-1320px); }
         .r12 { top: 0; clip-path: inset(1452px 5px 0px 0px); transform: translateY(-1452px); }
 
-        /* 👁️ チェンジ・ブラインドネス用の目隠し（黒いカーテン） */
+        /* 👁️ 画面崩れを防ぐため、絶対配置（absolute）にして周囲を押し下げないように修正 */
         #blindfold {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000000; /* パッと真っ黒にする（白がいい場合は #ffffff に変更） */
+            width: 100%;
+            height: 100%;
+            background-color: #121212; /* 配信画面の背景と一致する黒 */
             opacity: 0;
             pointer-events: none;
             z-index: 9999;
-            transition: opacity 0.05s ease; /* 一瞬で閉じる */
+            transition: opacity 0.03s ease;
         }
         #blindfold.active {
             opacity: 1;
@@ -95,8 +95,8 @@
 <body>
 <div id="viewport">
     <div id="lane-container"></div>
+    <div id="blindfold"></div>
 </div>
-<div id="blindfold"></div>
 
 <script>
     const W = 1122, SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
@@ -104,7 +104,7 @@
     const viewport = document.getElementById('viewport');
     const blindfold = document.getElementById('blindfold');
     
-    // 🔴 ご自身の環境名に書き換えてください
+    // 🔒 あなたの確定した環境情報です
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     
@@ -135,7 +135,7 @@
 
     function switchTo3Lanes() { is4thValid = false; viewport.style.height = "400px"; document.body.classList.add('hide-4th'); }
 
-    // スピコンからの数値を読み込む（いつもの1秒タイマー）
+    // スピコンの数値を読み込む
     async function checkSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -146,43 +146,39 @@
         } catch (e) {}
     }
 
-    // 🧠 チェンジ・ブラインドネス（フリッカー制御）アニメーションループ
+    // チェンジ・ブラインドネス（フリッカー瞬間移動）制御
     function animate() {
         const activeBlocks = is4thValid ? 4 : 3; 
         const unitW = W * activeBlocks;
         const currentTime = Date.now();
 
         if (speed !== 0) {
-            // スピコンの絶対値（1〜5）が大きいほど、次の切り替えまでの時間（間隔）を短くする
-            // 速度1 ➔ 約1.2秒ごと / 速度5 ➔ 約0.24秒ごと
+            // スピコンの数値（1〜5）に合わせて点滅の間隔を変更
             const flashInterval = 1200 / Math.abs(speed); 
 
             if (currentTime - lastFlashTime > flashInterval) {
-                // 1. パッと画面を暗転（目隠し）
+                // 1. パッと暗転
                 blindfold.classList.add('active');
 
-                // 2. 目隠しが完了した一瞬の隙（0.05秒後）に、裏で位置をワープさせる
+                // 2. 暗転した一瞬（0.04秒後）に裏で位置をすり替える
                 setTimeout(() => {
-                    // スピコンがマイナス（右動）なら左へワープ、プラス（左動）なら右へワープ
-                    // 1回のワープ量を1つのレーン幅（1122px）に固定して綺麗に切り替えます
                     if (speed < 0) {
-                        posX -= W; // 右へ1ブロック分瞬間移動
+                        posX -= W; // 右へスライド指示のとき、中身を右へワープ
                     } else {
-                        posX += W; // 左へ1ブロック分瞬間移動
+                        posX += W; // 左へスライド指示のとき、中身を左へワープ
                     }
 
-                    // ループ補正
                     if (posX <= -unitW) posX += unitW;
                     else if (posX >= 0) posX -= unitW;
                     
                     container.style.transform = `translate3d(${posX}px, 0, 0)`;
 
-                    // 3. ワープ完了後に目隠しをパッと外す
+                    // 3. すり替え完了後にパッとカーテンを開ける
                     setTimeout(() => {
                         blindfold.classList.remove('active');
-                    }, 50);
+                    }, 40);
 
-                }, 50);
+                }, 40);
 
                 lastFlashTime = currentTime;
             }
