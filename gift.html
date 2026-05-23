@@ -14,10 +14,10 @@
             -webkit-user-select: none;
         }
 
-        /* 4段分（528px）が綺麗に収まる高さに完全固定 */
+        /* 3段分（132px × 3段 = 396px）が綺麗に収まる高さに完全固定 */
         #viewport { 
             width: 100vw; 
-            height: 530px; 
+            height: 400px; 
             position: relative; 
             overflow: hidden; 
             pointer-events: auto !important;
@@ -33,12 +33,12 @@
             pointer-events: none !important; 
         }
 
-        /* 成功事例の1122px幅、高さは4段分の528pxに完全固定 */
+        /* 成功事例の1122px幅、高さは3段分の396pxに完全最適化 */
         .block { 
             display: flex; 
             flex-direction: column; 
             width: 1122px; 
-            height: 528px; 
+            height: 396px; 
             flex-shrink: 0; 
             margin: 0 !important;
             padding: 0 !important;
@@ -53,7 +53,7 @@
             padding: 0 !important;
         }
         
-        /* 50個（20行分）の巨大シートをすべて受け止めるため、高さを3000pxに拡張 */
+        /* 50個（18行分）の巨大シートをすべて受け止めるサイズ設定 */
         iframe { 
             position: absolute; 
             width: 1200px; 
@@ -83,31 +83,26 @@
             object-fit: contain !important;
         }
 
-        /* 👁️‍🗨️ 灰色の枠線のズレを完全に防ぐ5px補正 ＆ 50個（20行）すべての正確なカット位置 */
+        /* 👁️‍🗨️ 灰色の枠線のズレを完全に防ぐ5px補正 ＆ 18行すべての正確なカット位置 */
         .r1 { top: 0; clip-path: inset(0px 5px 2868px 0px); }
         .r2 { top: 0; clip-path: inset(132px 5px 2736px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 5px 2604px 0px); transform: translateY(-264px); }
-        .r4 { top: 0; clip-path: inset(396px 5px 2472px 0px); transform: translateY(-396px); }
         
+        .r4 { top: 0; clip-path: inset(396px 5px 2472px 0px); transform: translateY(-396px); }
         .r5 { top: 0; clip-path: inset(528px 5px 2340px 0px); transform: translateY(-528px); }
         .r6 { top: 0; clip-path: inset(660px 5px 2208px 0px); transform: translateY(-660px); }
+        
         .r7 { top: 0; clip-path: inset(792px 5px 2076px 0px); transform: translateY(-792px); }
         .r8 { top: 0; clip-path: inset(924px 5px 1944px 0px); transform: translateY(-924px); }
-        
         .r9 { top: 0; clip-path: inset(1056px 5px 1812px 0px); transform: translateY(-1056px); }
-        .r10 { top: 0; clip-path: inset(1188px 5px 1680px 0px); transform: translateY(-1188px); }
-        .r11 { top: 0; clip-path: inset(1320px 5px 1548px 0px); transform: translateY(-1320px); }
-        .r12 { top: 0; clip-path: inset(1452px 5px 1416px 0px); transform: translateY(-1452px); }
 
         .r13 { top: 0; clip-path: inset(1584px 5px 1284px 0px); transform: translateY(-1584px); }
         .r14 { top: 0; clip-path: inset(1716px 5px 1152px 0px); transform: translateY(-1716px); }
         .r15 { top: 0; clip-path: inset(1848px 5px 1020px 0px); transform: translateY(-1848px); }
-        .r16 { top: 0; clip-path: inset(1980px 5px 888px 0px); transform: translateY(-1980px); }
 
+        .r16 { top: 0; clip-path: inset(1980px 5px 888px 0px); transform: translateY(-1980px); }
         .r17 { top: 0; clip-path: inset(2112px 5px 756px 0px); transform: translateY(-2112px); }
         .r18 { top: 0; clip-path: inset(2244px 5px 624px 0px); transform: translateY(-2244px); }
-        .r19 { top: 0; clip-path: inset(2376px 5px 492px 0px); transform: translateY(-2376px); }
-        .r20 { top: 0; clip-path: inset(2508px 5px 360px 0px); transform: translateY(-2508px); }
     </style>
 </head>
 <body>
@@ -151,19 +146,20 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // データ読み込み：縦4段 × 横5ブロック（計20行、ギフト60個分の全領域をカバー）
+    // データ読み込み：縦3段 × 横6ブロック（計18行、54枠分で50個を完全カバー）
     function init() {
         container.innerHTML = '';
 
         const blocksData = [
-            [1, 2, 3, 4],       // 1ブロック目
-            [5, 6, 7, 8],       // 2ブロック目
-            [9, 10, 11, 12],    // 3ブロック目
-            [13, 14, 15, 16],   // 4ブロック目
-            [17, 18, 19, 20]    // 5ブロック目（50個目のギフトを完全に包含）
+            [1, 2, 3],       // 1ブロック目（1〜9番）
+            [4, 5, 6],       // 2ブロック目（10〜18番）
+            [7, 8, 9],       // 3ブロック目（19〜27番）
+            [10, 11, 12],    // 4ブロック目（28〜36番）
+            [13, 14, 15],    // 5ブロック目（37〜45番）
+            [16, 17, 18]     // 6ブロック目（46〜54番 ➔ 50個目がここに収まる）
         ];
 
-        // スライドがループした際に途切れないよう、5ブロックのセットを3ループ分横に連結
+        // スライドがループした際に途切れないよう、6ブロックのセットを3ループ分横に連結
         for (let loop = 0; loop < 3; loop++) {
             blocksData.forEach((rows) => {
                 const b = document.createElement('div'); 
@@ -191,8 +187,8 @@
             posX += speed;
         }
         
-        // 5ブロック分の総横幅 ＝ 1122px × 5 ＝ 5610px で寸分の狂いもなく滑らかにループ
-        const unitW = W * 5; 
+        // 6ブロック分の総横幅 ＝ 1122px × 6 ＝ 6732px で滑らかにループ
+        const unitW = W * 6; 
 
         if (posX <= -unitW) posX += unitW;
         else if (posX >= 0) posX -= unitW;
