@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>スピードスライダーコントローラー</title>
+    <title>スピードスライダー</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -19,7 +19,6 @@
         }
         h3 { margin-top: 40px; margin-bottom: 10px; color: #aaaaaa; font-size: 16px; text-align: center; }
         
-        /* スライダー全体のコンテナ */
         .slider-container {
             width: 90vw;
             max-width: 400px;
@@ -31,67 +30,59 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 25px;
+            box-sizing: border-box;
         }
 
-        /* 現在の速度数値表示 */
         #speed-display {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: bold;
             color: #00e5ff;
             margin-bottom: 20px;
         }
 
-        /* スライダー（つまみ）の見た目カスタマイズ */
         .speed-slider {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
-            height: 12px;
-            border-radius: 6px;
+            height: 14px;
+            border-radius: 7px;
             background: #333333;
             outline: none;
         }
 
-        /* つまみ部分（iPhone/Android両対応用） */
+        /* スマホで掴みやすい大きなつまみ */
         .speed-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: #00e5ff;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,229,255,0.4);
-            transition: transform 0.1s;
-        }
-        .speed-slider::-webkit-slider-thumb:active {
-            transform: scale(1.2);
-            background: #00b3cc;
+            box-shadow: 0 2px 8px rgba(0,229,255,0.5);
         }
         .speed-slider::-moz-range-thumb {
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: #00e5ff;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,229,255,0.4);
+            box-shadow: 0 2px 8px rgba(0,229,255,0.5);
             border: none;
         }
 
-        /* 目盛りラベル */
         .labels {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            margin-top: 12px;
-            font-size: 12px;
-            color: #666666;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #777777;
         }
 
-        /* 停止ボタン */
         .stop-btn {
             width: 90vw;
-            max-width: 440px;
+            max-width: 400px;
             padding: 22px 0;
             font-size: 18px;
             font-weight: bold;
@@ -104,12 +95,12 @@
         }
         .stop-btn:active { background-color: #b71c1c; }
         
-        #status { font-size: 14px; color: #888888; margin-top: 20px; }
+        #status { font-size: 13px; color: #888888; margin-top: 25px; text-align: center; width: 90vw; word-break: break-all; }
     </style>
 </head>
 <body>
 
-    <h3>⏱️ スライドでスピード調整</h3>
+    <h3>⏱️ スライダー速度調整</h3>
     
     <div class="slider-container">
         <div id="speed-display">0</div>
@@ -117,9 +108,9 @@
         <input type="range" id="speedInput" min="-15" max="15" value="0" class="speed-slider">
         
         <div class="labels">
-            <span>≪ 左（高速）</span>
-            <span>停止（中央）</span>
-            <span>右（高速） ≫</span>
+            <span>≪ 左へ流す</span>
+            <span>停止</span>
+            <span>右へ流す ≫</span>
         </div>
     </div>
 
@@ -128,36 +119,40 @@
     <div id="status">通信待機中...</div>
 
 <script>
-    // 🔴 ご自身のGitHub環境に合わせて書き換えてください
-    const USER = "【あなたのGitHubユーザー名】";
-    const REPO = "【あなたのリポジトリ名】";
-    const TOKEN = "【あなたのGitHubトークン】";
+    // 🔴 ご自身のGitHub環境に書き換えてください（多少のスペース・記号ミスは自動除去されます）
+    const RAW_USER = "【あなたのGitHubユーザー名】";
+    const RAW_REPO = "【あなたのリポジトリ名】";
+    const RAW_TOKEN = "【あなたのGitHubトークン】";
     const FILE = "speed.txt";
+
+    // エラーの原因となる見えない文字や全角スペース、不要な【】を自動で掃除する機能
+    const USER = RAW_USER.replace(/[【】\s]/g, "").trim();
+    const REPO = RAW_REPO.replace(/[【】\s]/g, "").trim();
+    const TOKEN = RAW_TOKEN.replace(/[【】\s\u3000]/g, "").replace(/[^a-zA-Z0-9_]/g, "").trim();
 
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     let timer = null;
 
-    // スライダーを指で動かしている時の処理
+    // スライダーを動かしているとき
     slider.addEventListener('input', (e) => {
         const val = e.target.value;
-        display.innerText = val; // 画面上の数字をリアルタイムに変更
+        display.innerText = val;
         
-        // 指を動かしている最中に何度もGitHubへ送信するとパンクするため、
-        // 動かし終わった（または少し手が止まった）瞬間を狙って間引き送信（デバウンス処理）
+        // GitHubへの連続書き込みエラーを防ぐため0.25秒間止まったら送信
         clearTimeout(timer);
         timer = setTimeout(() => {
             sendSpeed(val);
-        }, 250); // 0.25秒間つまみが静止したら送信
+        }, 250);
     });
 
-    // 指を完全に離した時の処理（微調整後の確定送信）
+    // 指を離した瞬間
     slider.addEventListener('change', (e) => {
         clearTimeout(timer);
         sendSpeed(e.target.value);
     });
 
-    // 🛑 完全停止ボタンを押したとき
+    // 🛑 停止ボタン
     function resetToZero() {
         clearTimeout(timer);
         slider.value = 0;
@@ -165,16 +160,25 @@
         sendSpeed("0");
     }
 
-    // GitHubのspeed.txtを書き換える関数
+    // GitHubのspeed.txtを上書きするメイン処理
     async function sendSpeed(val) {
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const statusDiv = document.getElementById('status');
         const content = String(val);
         
         try {
-            statusDiv.innerText = "設定送信中...";
-            const res = await fetch(url, { headers: { Authorization: `token ${TOKEN}` } });
-            if (!res.ok) throw new Error("ファイル取得失敗");
+            statusDiv.innerText = "設定を送信中...";
+            
+            // トークンチェック
+            if(!TOKEN || TOKEN.startsWith("あなたの")) {
+                statusDiv.innerText = "エラー: トークンが正しく入力されていません";
+                return;
+            }
+
+            const res = await fetch(url, { 
+                headers: { "Authorization": `token ${TOKEN}` } 
+            });
+            if (!res.ok) throw new Error("GitHubからファイル情報の取得に失敗しました。設定を見直してください。");
             const data = await res.json();
             const sha = data.sha;
 
@@ -182,14 +186,17 @@
 
             const updateRes = await fetch(url, {
                 method: "PUT",
-                headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
+                headers: { 
+                    "Authorization": `token ${TOKEN}`, 
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify({ message: "slider update", content: base64Content, sha: sha })
             });
 
             if (updateRes.ok) {
-                statusDiv.innerText = `変更成功: 速度 ${content}`;
+                statusDiv.innerText = `変更成功: 現在の速度 [ ${content} ]`;
             } else {
-                statusDiv.innerText = "書き換え失敗";
+                statusDiv.innerText = "GitHubの書き換えに失敗しました。";
             }
         } catch (e) {
             statusDiv.innerText = `エラー: ${e.message}`;
