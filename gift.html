@@ -26,7 +26,7 @@
             pointer-events: none !important; 
         }
 
-        /* 幅1122px、高さは3段分の396px */
+        /* 幅1122px（3列分）、高さは3段分の396px */
         .block { 
             display: flex; 
             flex-direction: column; 
@@ -78,37 +78,17 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
+    const W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
     
+    // トークン不要：最も視認性が高く滑らかな「左へ流れる速度（-1.0）」で完全自動固定
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
-    let currentGiftCount = 50; 
+    const currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // 元の仕様：GitHubの speed.txt からデータを取り出す同期処理
-    async function syncSpeed() {
-        try {
-            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
-            if (!res.ok) return;
-            const text = await res.text();
-            const parts = text.trim().split(',');
-            
-            const s = parseFloat(parts[0]);
-            if(!isNaN(s)) speed = s;
-            
-            // 🛠️【完全復元】タイポバグを駆逐し、確実に動く「parts[1]」に修正
-            const c = parts[1] ? parseInt(parts[1], 10) : 50;
-            if(!isNaN(c) && currentGiftCount !== c) {
-                currentGiftCount = c;
-                init(); 
-            }
-        } catch (e) {}
-    }
-    setInterval(syncSpeed, 1000);
-
-    // スワイプ・ドラッグ検知
+    // スワイプ・ドラッグ検知（完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -169,7 +149,7 @@
         }
     }
 
-    // 無限ループアニメーション
+    // 無限ループアニメーション（チラつきバグ完全修正版）
     function animate() {
         if (!isTouching) {
             posX += speed;
@@ -187,7 +167,7 @@
         requestAnimationFrame(animate);
     }
 
-    init(); syncSpeed(); animate();
+    init(); animate();
 </script>
 </body>
 </html>
