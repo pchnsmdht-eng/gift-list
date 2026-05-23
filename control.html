@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>スピードコントローラー</title>
+    <title>スピードスライダーコントローラー</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -17,68 +17,162 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        h3 { margin-top: 30px; margin-bottom: 20px; color: #aaaaaa; font-size: 16px; }
+        h3 { margin-top: 40px; margin-bottom: 10px; color: #aaaaaa; font-size: 16px; text-align: center; }
         
-        .btn-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+        /* スライダー全体のコンテナ */
+        .slider-container {
             width: 90vw;
             max-width: 400px;
+            background-color: #1e1e1e;
+            padding: 30px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        /* 現在の速度数値表示 */
+        #speed-display {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00e5ff;
             margin-bottom: 20px;
         }
-        button {
+
+        /* スライダー（つまみ）の見た目カスタマイズ */
+        .speed-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            background: #333333;
+            outline: none;
+        }
+
+        /* つまみ部分（iPhone/Android両対応用） */
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #00e5ff;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,229,255,0.4);
+            transition: transform 0.1s;
+        }
+        .speed-slider::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+            background: #00b3cc;
+        }
+        .speed-slider::-moz-range-thumb {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #00e5ff;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,229,255,0.4);
+            border: none;
+        }
+
+        /* 目盛りラベル */
+        .labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #666666;
+        }
+
+        /* 停止ボタン */
+        .stop-btn {
+            width: 90vw;
+            max-width: 440px;
             padding: 22px 0;
             font-size: 18px;
             font-weight: bold;
             border: none;
             border-radius: 12px;
-            background-color: #2a2a2a;
+            background-color: #d32f2f;
             color: white;
             cursor: pointer;
-            transition: background 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
-        button:active { background-color: #444444; }
-        .stop-btn { background-color: #d32f2f; grid-column: span 3; padding: 25px 0; }
         .stop-btn:active { background-color: #b71c1c; }
         
-        #status { font-size: 14px; color: #888888; margin-top: 15px; }
-        
-        /* スワイプエリアを強制非表示にする保険コード */
-        #touch-pad, .touch-area, [id*="touch"] { display: none !important; }
+        #status { font-size: 14px; color: #888888; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <h3>⏱️ スピード調整</h3>
-    <div class="btn-container">
-        <button onclick="sendSpeed(-15)">≪ 速く</button>
-        <button onclick="sendSpeed(-5)">＜ 左</button>
-        <button onclick="sendSpeed(-1)">微微</button>
+    <h3>⏱️ スライドでスピード調整</h3>
+    
+    <div class="slider-container">
+        <div id="speed-display">0</div>
         
-        <button onclick="sendSpeed(1)">微微</button>
-        <button onclick="sendSpeed(5)">右 ＞</button>
-        <button onclick="sendSpeed(15)">速く ≫</button>
+        <input type="range" id="speedInput" min="-15" max="15" value="0" class="speed-slider">
         
-        <button class="stop-btn" onclick="sendSpeed(0)">🛑 完全停止</button>
+        <div class="labels">
+            <span>≪ 左（高速）</span>
+            <span>停止（中央）</span>
+            <span>右（高速） ≫</span>
+        </div>
     </div>
+
+    <button class="stop-btn" onclick="resetToZero()">🛑 スライダーを中央に戻す（停止）</button>
 
     <div id="status">通信待機中...</div>
 
 <script>
-    // 🔴 ご自身の環境に合わせて設定してください
+    // 🔴 ご自身のGitHub環境に合わせて書き換えてください
     const USER = "【あなたのGitHubユーザー名】";
     const REPO = "【あなたのリポジトリ名】";
     const TOKEN = "【あなたのGitHubトークン】";
     const FILE = "speed.txt";
 
+    const slider = document.getElementById('speedInput');
+    const display = document.getElementById('speed-display');
+    let timer = null;
+
+    // スライダーを指で動かしている時の処理
+    slider.addEventListener('input', (e) => {
+        const val = e.target.value;
+        display.innerText = val; // 画面上の数字をリアルタイムに変更
+        
+        // 指を動かしている最中に何度もGitHubへ送信するとパンクするため、
+        // 動かし終わった（または少し手が止まった）瞬間を狙って間引き送信（デバウンス処理）
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            sendSpeed(val);
+        }, 250); // 0.25秒間つまみが静止したら送信
+    });
+
+    // 指を完全に離した時の処理（微調整後の確定送信）
+    slider.addEventListener('change', (e) => {
+        clearTimeout(timer);
+        sendSpeed(e.target.value);
+    });
+
+    // 🛑 完全停止ボタンを押したとき
+    function resetToZero() {
+        clearTimeout(timer);
+        slider.value = 0;
+        display.innerText = "0";
+        sendSpeed("0");
+    }
+
+    // GitHubのspeed.txtを書き換える関数
     async function sendSpeed(val) {
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const statusDiv = document.getElementById('status');
         const content = String(val);
         
         try {
-            statusDiv.innerText = "送信中...";
+            statusDiv.innerText = "設定送信中...";
             const res = await fetch(url, { headers: { Authorization: `token ${TOKEN}` } });
             if (!res.ok) throw new Error("ファイル取得失敗");
             const data = await res.json();
@@ -89,11 +183,11 @@
             const updateRes = await fetch(url, {
                 method: "PUT",
                 headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "reset speed", content: base64Content, sha: sha })
+                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
             });
 
             if (updateRes.ok) {
-                statusDiv.innerText = `変更成功: ${content}`;
+                statusDiv.innerText = `変更成功: 速度 ${content}`;
             } else {
                 statusDiv.innerText = "書き換え失敗";
             }
