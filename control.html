@@ -1,29 +1,23 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controller</title>
-</head>
+<html>
+<head><meta charset="UTF-8"></head>
 <body>
-    <input type="range" id="speed" min="-5" max="5" value="0" style="width:100%">
-    <div id="status">待機中</div>
+    <input type="range" id="s" min="-5" max="5" value="0">
+    <div id="m">待機中</div>
     <script>
         const T = "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";
-        const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
-        
-        document.getElementById('speed').onchange = async (e) => {
+        document.getElementById('s').onchange = async (e) => {
             const val = -e.target.value;
             try {
-                const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`, {headers:{"Authorization":"token "+T}});
+                const res = await fetch("https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt", {headers:{"Authorization":"token "+T}});
                 const data = await res.json();
-                await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`, {
+                await fetch("https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt", {
                     method:"PUT",
                     headers:{"Authorization":"token "+T,"Content-Type":"application/json"},
                     body:JSON.stringify({message:"update",content:btoa(val+",50"),sha:data.sha})
                 });
-                document.getElementById('status').innerText = "送信完了: " + val;
-            } catch(e) { document.getElementById('status').innerText = "失敗"; }
+                document.getElementById('m').innerText = "完了: " + val;
+            } catch(e) { document.getElementById('m').innerText = "失敗"; }
         };
     </script>
 </body>
