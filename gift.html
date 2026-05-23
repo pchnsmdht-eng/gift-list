@@ -87,7 +87,7 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // 成功ロジック：GitHubの speed.txt からデータを取り出す同期処理
+    // 元の仕様：GitHubの speed.txt からデータを取り出す同期処理
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
