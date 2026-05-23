@@ -18,6 +18,7 @@
         .count-btn { flex: 1; padding: 12px 0; font-size: 14px; font-weight: bold; border: 1px solid #444; border-radius: 6px; background-color: #222; color: #aaa; cursor: pointer; transition: all 0.2s; }
         .count-btn.active { background-color: #00e5ff; color: #000; border-color: #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.4); }
         
+        /* 指定枠のデザインを完全維持 */
         .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
         #status { font-size: 14px; color: #69f0ae; text-align: center; font-weight: bold; padding: 5px 10px; }
     </style>
@@ -50,7 +51,7 @@
         </div>
     </div>
 <script>
-    // 🌐 トークンを一切必要としない、独立したデータ置き場のURL
+    // GitHubを完全に迂回するデータ置き場のURL
     const DATA_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_stream_data_v2";
 
     const slider = document.getElementById('speedInput');
@@ -93,7 +94,7 @@
         sendData(0);
     }
 
-    // 🛠️ データを別スペースに書き込む処理（トークン不要）
+    // 新しいデータスペースへ直接書き込み（401エラーの要素を完全撤廃）
     async function sendData(val) {
         const content = `${val},${currentCount}`;
         try {
@@ -105,11 +106,12 @@
                 statusDiv.style.color = "#69f0ae";
                 statusDiv.innerText = `変更成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
             } else {
-                throw new Error();
+                statusDiv.style.color = "#ff5252";
+                statusDiv.innerText = `【通信エラー】(Status: ${res.status})`;
             }
         } catch (e) {
             statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "通信エラーが発生しました。再読込してください。";
+            statusDiv.innerText = "【通信エラー】接続に失敗しました。";
         }
     }
 </script>
