@@ -1,38 +1,13 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { margin: 0; background: transparent; overflow: hidden; }
-        #lane-container { display: flex; flex-direction: row; width: max-content; }
-        .block { display: flex; flex-direction: column; width: 1122px; }
-        .lane { width: 1122px; height: 132px; overflow: hidden; position: relative; }
-        iframe { width: 1200px; height: 4000px; border: none; }
-    </style>
-</head>
-<body>
-<div id="lane-container"></div>
-<script>
-    const DATA_URL = "https://keyvalue.xyz/v1/pchnsmdht_final_v1";
-    const container = document.getElementById('lane-container');
-    let speed = 0;
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
-    async function sync() {
-        try {
-            const res = await fetch(DATA_URL);
-            const text = await res.text();
-            const [s, c] = text.split(',');
-            speed = parseFloat(s);
-            // ※ここに追加で個数反映のロジックが必要であればinitを呼ぶ
-        } catch(e) {}
-    }
-    setInterval(sync, 500);
+    const app = initializeApp({ databaseURL: "https://stream-control-default-rtdb.firebaseio.com/" });
+    const db = getDatabase(app);
 
-    function animate() {
-        // ここでposXをspeedで動かすロジックを回す
-        requestAnimationFrame(animate);
-    }
-    animate();
+    onValue(ref(db, 'speed'), (snapshot) => {
+        const speed = snapshot.val();
+        // ここで受け取った速度で動きを変えるロジックを回す
+        console.log("現在の速度:", speed);
+    });
 </script>
-</body>
-</html>
