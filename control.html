@@ -1,40 +1,68 @@
-<style>
-    body { 
-        background: #000000; /* 真っ黒 */
-        color: #ffffff; 
-        font-family: sans-serif; 
-        display: flex; flex-direction: column; align-items: center; 
-        padding: 20px; margin: 0; 
-    }
-    .control-panel { 
-        width: 300px; 
-        background: #1a1a1a; 
-        padding: 20px; 
-        border: 2px solid #ffffff; /* 枠線を白く強調 */
-        border-radius: 12px; 
-    }
-    .val { 
-        font-size: 32px; color: #ffff00; /* 黄色で最高視認性 */
-        text-align: center; margin-bottom: 15px; font-weight: bold; 
-    }
-    .slider { 
-        width: 100%; height: 12px; background: #404040; 
-        -webkit-appearance: none; border-radius: 6px; margin-bottom: 20px; 
-        border: 1px solid #ffffff; /* スライダーにも枠線 */
-    }
-    .slider::-webkit-slider-thumb { 
-        -webkit-appearance: none; width: 24px; height: 24px; 
-        background: #ffffff; border-radius: 50%; cursor: pointer; 
-    }
-    .btns { display: flex; gap: 8px; margin-bottom: 20px; }
-    .btn { 
-        flex: 1; padding: 10px; font-size: 12px; background: #333333; 
-        border: 2px solid #ffffff; color: #ffffff; cursor: pointer; font-weight: bold;
-    }
-    .btn.active { background: #ffff00; color: #000000; border: 2px solid #ffff00; }
-    #log { 
-        width: 280px; height: 50px; overflow-y: auto; 
-        font-size: 10px; color: #ffffff; border: 1px solid #ffffff; 
-        padding: 5px; font-family: monospace;
-    }
-</style>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: sans-serif; margin: 0; }
+        .panel { width: 300px; border: 2px solid #fff; padding: 20px; border-radius: 10px; }
+        .val { font-size: 32px; color: #ff0; text-align: center; margin-bottom: 20px; }
+        .slider { width: 100%; height: 20px; margin-bottom: 20px; cursor: pointer; }
+        .btns { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 15px; background: #333; border: 2px solid #fff; color: #fff; cursor: pointer; font-weight: bold; }
+        .btn.active { background: #ff0; color: #000; border: 2px solid #ff0; }
+        #log { font-size: 10px; margin-top: 15px; color: #888; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div id="val" class="val">0</div>
+        <input type="range" id="range" class="slider" min="-5" max="5" value="0">
+        <div class="btns">
+            <button class="btn" onclick="setCount(this, 50)">50</button>
+            <button class="btn" onclick="setCount(this, 100)">100</button>
+            <button class="btn" onclick="setCount(this, 150)">150</button>
+        </div>
+        <div id="log">ログ待ち...</div>
+    </div>
+
+    <script>
+        const G_TOKEN = "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";
+        const G_URL = "https://api.github.com/repos/pchnsmdht-eng/gift-list/contents/speed.txt";
+        let curCount = 50;
+
+        function log(m) { document.getElementById('log').innerText = m; }
+        
+        async function update(s, c) {
+            try {
+                // 1. SHA取得 (認証付)
+                const get = await fetch(G_URL, { headers: { "Authorization": "token " + G_TOKEN, "Cache-Control": "no-cache" } });
+                const data = await get.json();
+                if (!data.sha) throw new Error("通信エラー");
+                
+                // 2. 更新実行
+                const res = await fetch(G_URL, {
+                    method: "PUT",
+                    headers: { "Authorization": "token " + G_TOKEN, "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: "update", content: btoa(`${s},${c}`), sha: data.sha })
+                });
+                
+                if(res.ok) log(`成功: 速度${s} / 個数${c}`); 
+                else log("失敗: 権限を確認してください");
+            } catch(e) { log("エラー: 通信設定を確認してください"); }
+        }
+
+        document.getElementById('range').oninput = (e) => {
+            const v = e.target.value * -1;
+            document.getElementById('val').innerText = v;
+            update(v, curCount);
+        };
+        function setCount(el, c) {
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            curCount = c;
+            update(document.getElementById('range').value * -1, c);
+        }
+    </script>
+</body>
+</html>
