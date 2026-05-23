@@ -14,7 +14,7 @@
             -webkit-user-select: none;
         }
 
-        /* 👁️‍🗨️【ここを修正】画面に見える表示枠を「横5個(1870px)×縦3段(400px)」に完全統一 */
+        /* 画面に見える表示枠は「横5個(1870px)×縦3段(400px)」の黄金比で完全固定 */
         #viewport { 
             width: 1870px; /* 374px × 5列 = 1870px */
             height: 400px; /* 132px × 3段 = 396px（余白込み400px） */
@@ -54,11 +54,11 @@
             padding: 0 !important;
         }
         
-        /* 50個（18行分）の巨大シートをすべて受け止めるサイズ設定 */
+        /* 100個以上の巨大な縦長シートをすべて受け止めるサイズ設定 */
         iframe { 
             position: absolute; 
             width: 1200px; 
-            height: 3000px; 
+            height: 8000px; /* 100個以上のデータに対応するため縦幅を拡張 */
             border: none; 
             transform-origin: top left; 
         }
@@ -97,6 +97,7 @@
     const shield = document.getElementById('touch-shield');
     
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
+    let totalBlocksCount = 0; // 自動生成されたブロックの総数
 
     // リモコン（speed.txt）との同期
     async function syncSpeed() {
@@ -109,7 +110,7 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // スワイプ・ドラッグ検知（成功事例を完全維持）
+    // スワイプ・ドラッグ検知（完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -126,20 +127,21 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // データ読み込み：縦3段 × 横6ブロック（計18行、54枠分で50個を100%完全カバー）
+    // ➔ 【ここが最大の進化】ギフトが何個になっても自動でブロックを組み上げるロジック
     function init() {
         container.innerHTML = '';
 
-        const blocksData = [
-            [1, 2, 3],       // 1ブロック目（1〜9番）
-            [4, 5, 6],       // 2ブロック目（10〜18番）
-            [7, 8, 9],       // 3ブロック目（19〜27番）
-            [10, 11, 12],    // 4ブロック目（28〜36番）
-            [13, 14, 15],    // 5ブロック目（37〜45番）
-            [16, 17, 18]     // 6ブロック目（46〜54番 ➔ 50個目がここに美しく収まります）
-        ];
+        // ギフト100個（34行）〜150個（50行）まで対応できるよう、
+        // 3行ずつのブロックを「17ブロック分（計51行、153個枠）」自動で計算して作成します。
+        const maxLines = 51; 
+        const blocksData = [];
+        for (let i = 1; i <= maxLines; i += 3) {
+            blocksData.push([i, i+1, i+2]);
+        }
 
-        // スライドがループした際に途切れないよう、6ブロックのセットを3ループ分横に連結
+        totalBlocksCount = blocksData.length; // ブロック総数を自動記録 (17ブロック)
+
+        // スライドが途切れないよう、3ループ分横に連結
         for (let loop = 0; loop < 3; loop++) {
             blocksData.forEach((rows) => {
                 const b = document.createElement('div'); 
@@ -152,9 +154,9 @@
                     const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
 
-                    // 🪛【灰色の細い枠線ズレを完全に消し去る動的5px補正】
+                    // 🪛【手動の手間ゼロ】何行目になっても、灰色の細い枠線ズレ（5px補正）を全自動で計算してカット
                     const topPx = (n - 1) * 132;
-                    f.style.clipPath = `inset(${topPx}px 5px ${3000 - (topPx + 132)}px 0px)`;
+                    f.style.clipPath = `inset(${topPx}px 5px ${8000 - (topPx + 132)}px 0px)`;
                     f.style.transform = `translate3d(0, -${topPx}px, 0)`;
 
                     l.appendChild(f); 
@@ -171,8 +173,8 @@
             posX += speed;
         }
         
-        // 6ブロック分の総横幅 ＝ 1122px × 6 ＝ 6732px で寸分の狂いもなく滑らかにループ
-        const unitW = W * 6; 
+        // 自動生成されたブロックの総幅（1122px × 17ブロック ＝ 19074px）を自動計算して滑らかにループ
+        const unitW = W * totalBlocksCount; 
 
         if (posX <= -unitW) posX += unitW;
         else if (posX >= 0) posX -= unitW;
