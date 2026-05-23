@@ -2,33 +2,41 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background: transparent; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
-        #viewport { width: 1870px; height: 400px; position: relative; overflow: hidden; pointer-events: auto !important; }
-        #lane-container { position: absolute; display: flex; flex-direction: row; width: max-content; top: 2px; will-change: transform; transform: translate3d(0, 0, 0); pointer-events: none !important; }
-        .block { display: flex; flex-direction: column; width: 1122px; height: 396px; flex-shrink: 0; margin: 0 !important; padding: 0 !important; }
-        .lane { width: 1122px; height: 132px; position: relative; overflow: hidden; margin: 0 !important; padding: 0 !important; }
-        iframe { position: absolute; width: 1200px; height: 4000px; border: none; transform-origin: top left; }
-        #touch-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0); touch-action: none; pointer-events: auto !important; cursor: grab; }
-        iframe { --gift-icon-size: 60px !important; }
-        iframe[src*="streamtoearn"] img, iframe[src*="streamtoearn"] .gift-icon, iframe[src*="streamtoearn"] svg { width: 60px !important; height: 60px !important; object-fit: contain !important; }
+        body { margin: 0; background: transparent; overflow: hidden; }
+        #viewport { width: 1122px; height: 240px; position: relative; overflow: hidden; }
+        #lane-container { 
+            display: flex; 
+            flex-direction: row; 
+            width: max-content; 
+            will-change: transform; 
+        }
+        /* 5個x4段のグリッド配置 (60px * 5 = 300px幅) */
+        .block { 
+            display: grid; 
+            grid-template-columns: repeat(5, 60px); 
+            grid-template-rows: repeat(4, 60px); 
+            width: 300px; 
+            height: 240px; 
+            flex-shrink: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .lane { width: 60px; height: 60px; overflow: hidden; position: relative; }
+        iframe { 
+            width: 1200px; height: 4000px; border: none; 
+            position: absolute; pointer-events: none;
+        }
     </style>
 </head>
 <body>
 <div id="viewport">
-    <div id="touch-shield"></div>
     <div id="lane-container"></div>
 </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
-    const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const USER = "pchnsmdht-eng", REPO = "gift-list", SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
-    const shield = document.getElementById('touch-shield');
-    
-    let posX = 0, speed = -1.0, isTouching = false, startX = 0;
-    let currentGiftCount = 50; 
-    let totalBlocksCount = 0;
+    let posX = 0, speed = -1.0, currentGiftCount = 50;
 
     async function syncSpeed() {
         try {
@@ -36,67 +44,53 @@
             if (!res.ok) return;
             const text = await res.text();
             const parts = text.trim().split(',');
-            
-            const s = parseFloat(parts[0]);
-            if(!isNaN(s)) speed = s;
-            
-            const c = parts[1] ? parseInt(parts[1], 10) : 50;
-            if(!isNaN(c) && currentGiftCount !== c) {
-                currentGiftCount = c;
-                init(); 
+            speed = parseFloat(parts[0]) || -1.0;
+            const count = parseInt(parts[1], 10) || 50;
+            if (currentGiftCount !== count) {
+                currentGiftCount = count;
+                init();
             }
         } catch (e) {}
     }
-    setInterval(syncSpeed, 1000);
-
-    const handleStart = (e) => { isTouching = true; startX = e.clientX - posX; shield.setPointerCapture(e.pointerId); };
-    const handleMove = (e) => { if (!isTouching) return; posX = e.clientX - startX; };
-    const handleEnd = () => { isTouching = false; };
-    shield.addEventListener('pointerdown', handleStart);
-    shield.addEventListener('pointermove', handleMove);
-    shield.addEventListener('pointerup', handleEnd);
-    shield.addEventListener('pointercancel', handleEnd);
 
     function init() {
         container.innerHTML = '';
-        const totalLanes = Math.ceil(currentGiftCount / 3);
-        const requiredLanes = Math.ceil(totalLanes / 3) * 3;
-        const lanesArray = [];
-        for (let i = 1; i <= requiredLanes; i++) {
-            if (i <= totalLanes) lanesArray.push(i);
-            else lanesArray.push((i - totalLanes - 1) % totalLanes + 1);
-        }
-        const blocksData = [];
-        for (let i = 0; i < lanesArray.length; i += 3) {
-            blocksData.push([lanesArray[i], lanesArray[i+1], lanesArray[i+2]]);
-        }
-        totalBlocksCount = blocksData.length;
-        for (let loop = 0; loop < 3; loop++) {
-            blocksData.forEach((rows) => {
-                const b = document.createElement('div'); b.className = 'block';
-                rows.forEach(n => {
-                    const l = document.createElement('div'); l.className = 'lane';
-                    const f = document.createElement('iframe'); f.src = `${SRC}?lane=${n}`;
-                    const topPx = (n - 1) * 132;
-                    f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 132)}px 0px)`;
-                    f.style.transform = `translate3d(0, -${topPx}px, 0)`;
-                    l.appendChild(f); b.appendChild(l);
-                });
-                container.appendChild(b);
-            });
+        // 5x4 = 20個を1ブロックとして生成
+        const blocks = Math.ceil(currentGiftCount / 20);
+        for (let b = 0; b < blocks; b++) {
+            const block = document.createElement('div');
+            block.className = 'block';
+            for (let i = 0; i < 20; i++) {
+                const lane = document.createElement('div');
+                lane.className = 'lane';
+                const iframe = document.createElement('iframe');
+                // Lane ID計算
+                const n = (b * 20) + i + 1;
+                iframe.src = `${SRC}?lane=${n}`;
+                // 60pxずつのオフセットで表示（clip-pathやtransformで調整）
+                const row = Math.floor(i / 5);
+                const col = i % 5;
+                iframe.style.left = `-${col * 60}px`;
+                iframe.style.top = `-${row * 60}px`;
+                lane.appendChild(iframe);
+                block.appendChild(lane);
+            }
+            container.appendChild(block);
         }
     }
 
     function animate() {
-        if (!isTouching) posX += speed;
-        const unitW = W * totalBlocksCount; 
-        if (posX <= -unitW) posX += unitW;
-        else if (posX >= 0) posX -= unitW;
+        posX += speed;
+        const totalW = container.scrollWidth / 2; // ループ用
+        if (posX <= -totalW) posX = 0;
+        else if (posX > 0) posX = -totalW;
         container.style.transform = `translate3d(${posX}px, 0, 0)`;
         requestAnimationFrame(animate);
     }
 
-    init(); syncSpeed(); animate();
+    setInterval(syncSpeed, 1000);
+    init();
+    animate();
 </script>
 </body>
 </html>
