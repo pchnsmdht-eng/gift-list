@@ -14,7 +14,7 @@
             -webkit-user-select: none;
         }
 
-        /* 成功事例のピクセル数をそのまま1段分追加（132px × 4段 = 528px、枠は530px） */
+        /* 成功事例のピクセル数をそのまま1段分追加（132px × 4段 = 528px、全体の余白用で530px） */
         #viewport { 
             width: 100vw; 
             height: 530px; 
@@ -34,6 +34,17 @@
             pointer-events: none !important; 
         }
 
+        /* 🪛【ここを修正】4段分（132px × 4 = 528px）の枠をしっかり確保して潰れないようにしました */
+        .block { 
+            display: flex; 
+            flex-direction: column; 
+            width: 1122px; 
+            height: 528px; 
+            flex-shrink: 0; 
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
         /* 成功事例の1122px幅のトラック */
         .row-track {
             display: flex;
