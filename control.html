@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>スクロール ＆ スピードコントローラー</title>
+    <title>スピードコントローラー</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -17,40 +17,22 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        h3 { margin-bottom: 10px; color: #aaaaaa; font-size: 14px; }
+        h3 { margin-bottom: 20px; color: #aaaaaa; font-size: 16px; }
         
-        /* トラックパッド（視覚的操作エリア） */
-        #touch-pad {
-            width: 90vw;
-            height: 200px;
-            background: linear-gradient(145deg, #1e1e1e, #252525);
-            border: 2px dashed #00e5ff;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-weight: bold;
-            color: #00e5ff;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(0,229,255,0.2);
-            touch-action: none;
-        }
-
-        /* 速度調整ボタンエリア */
         .btn-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 15px;
             width: 90vw;
+            max-width: 400px;
             margin-bottom: 20px;
         }
         button {
-            padding: 18px 0;
-            font-size: 16px;
+            padding: 20px 0;
+            font-size: 18px;
             font-weight: bold;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             background-color: #2a2a2a;
             color: white;
             cursor: pointer;
@@ -60,15 +42,12 @@
         .stop-btn { background-color: #d32f2f; grid-column: span 3; }
         .stop-btn:active { background-color: #b71c1c; }
         
-        #status { font-size: 12px; color: #888888; margin-top: 10px; }
+        #status { font-size: 14px; color: #888888; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <h3>👆 ここを指で左右にスワイプしてスクロール</h3>
-    <div id="touch-pad">左右にスワイプして画面を動かす</div>
-
-    <h3>⏱️ 通常の自動巡航スピード調整</h3>
+    <h3>⏱️ スピード調整</h3>
     <div class="btn-container">
         <button onclick="sendSpeed(-15)">≪ 速く</button>
         <button onclick="sendSpeed(-5)">＜ 左</button>
@@ -84,52 +63,16 @@
     <div id="status">通信待機中...</div>
 
 <script>
-    // 🔴 ご自身の環境に合わせて正しく設定してください
+    // 🔴 ご自身の環境に合わせて設定してください
     const USER = "【あなたのGitHubユーザー名】";
     const REPO = "【あなたのリポジトリ名】";
     const TOKEN = "【あなたのGitHubトークン】";
     const FILE = "speed.txt";
 
-    let lastX = 0;
-    let isMoving = false;
-    const touchPad = document.getElementById('touch-pad');
-
-    // スワイプ操作を検知して直接配信画面を押し流す（スワイプ量をそのまま速度として送信）
-    touchPad.addEventListener('touchstart', (e) => {
-        lastX = e.touches[0].clientX;
-        isMoving = true;
-        touchPad.style.background = "#2a2a2a";
-    });
-
-    touchPad.addEventListener('touchmove', (e) => {
-        if (!isMoving) return;
-        let currentX = e.touches[0].clientX;
-        let deltaX = currentX - lastX; // 指の移動量
-        
-        // 1回の手ブレで何度も送らないよう、一定以上の動きで間引き送信
-        if (Math.abs(deltaX) > 5) {
-            // 指を動かした方向に合わせてギフトを押し出す命令を送る
-            // 反応を良くするため、移動量を3倍にして送信
-            updateSpeedFile(`swipe:${Math.round(deltaX * 3)}`);
-            lastX = currentX;
-        }
-    });
-
-    touchPad.addEventListener('touchend', () => {
-        isMoving = false;
-        touchPad.style.background = "linear-gradient(145deg, #1e1e1e, #252525)";
-        // 指を離したら、徐々に止まるように速度0の命令を1秒後に送る
-        setTimeout(() => { if(!isMoving) updateSpeedFile("0"); }, 800);
-    });
-
-    function sendSpeed(val) {
-        updateSpeedFile(String(val));
-    }
-
-    // GitHubのspeed.txtを書き換えるいつもの確実な関数
-    async function updateSpeedFile(content) {
+    async function sendSpeed(val) {
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const statusDiv = document.getElementById('status');
+        const content = String(val);
         
         try {
             statusDiv.innerText = "送信中...";
@@ -147,7 +90,7 @@
             });
 
             if (updateRes.ok) {
-                statusDiv.innerText = `送信成功: ${content}`;
+                statusDiv.innerText = `変更成功: ${content}`;
             } else {
                 statusDiv.innerText = "書き換え失敗";
             }
