@@ -19,41 +19,11 @@
             box-sizing: border-box;
         }
         
-        .container {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .box {
-            background-color: #1e1e1e;
-            border-radius: 12px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .box-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #888888;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            text-align: center;
-        }
-
-        #speed-display {
-            font-size: 52px;
-            font-weight: bold;
-            color: #00e5ff;
-            text-align: center;
-            margin-bottom: 20px;
-            height: 60px;
-            line-height: 60px;
-        }
-
+        .container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
+        .box { background-color: #1e1e1e; border-radius: 12px; padding: 20px; box-sizing: border-box; }
+        .box-title { font-size: 13px; font-weight: bold; color: #888888; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
+        #speed-display { font-size: 52px; font-weight: bold; color: #00e5ff; text-align: center; margin-bottom: 20px; height: 60px; line-height: 60px; }
+        
         .speed-slider {
             -webkit-appearance: none;
             appearance: none;
@@ -63,7 +33,6 @@
             background: #333333;
             outline: none;
         }
-
         .speed-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -74,36 +43,10 @@
             cursor: pointer;
         }
 
-        .labels {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin-top: 15px;
-            font-size: 13px;
-            color: #666666;
-        }
-
-        .stop-btn {
-            width: 100%;
-            padding: 18px 0;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            background-color: #cf6679;
-            color: white;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
-        /* 🔑 トークンをスマホに直接記憶させるための入力ボックス（最初の1回だけ出ます） */
-        .token-setup-box {
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 10px;
-        }
+        .labels { display: flex; justify-content: space-between; width: 100%; margin-top: 15px; font-size: 13px; color: #666666; }
+        .stop-btn { width: 100%; padding: 18px 0; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; background-color: #cf6679; color: white; cursor: pointer; margin-top: 15px; }
+        
+        /* 🔑 初回入力用フォーム */
         .token-input {
             width: 100%;
             padding: 12px;
@@ -115,6 +58,7 @@
             font-size: 14px;
             text-align: center;
             outline: none;
+            margin-top: 5px;
         }
         .token-btn {
             width: 100%;
@@ -128,16 +72,7 @@
             cursor: pointer;
         }
         
-        .status-box {
-            width: 100%;
-            min-height: 50px;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #1a1a1a;
-            border-radius: 8px;
-        }
+        .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
         #status { font-size: 13px; color: #888888; text-align: center; padding: 5px 10px; }
     </style>
 </head>
@@ -147,21 +82,18 @@
         <div class="box">
             <div class="box-title">⏱️ スライダー速度調整</div>
             <div id="speed-display">0</div>
-            
             <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
-            
             <div class="labels">
                 <span>≪ 左へ流す (1〜5)</span>
                 <span>停止</span>
                 <span>右へ流す (-1〜-5) ≫</span>
             </div>
-            
             <button class="stop-btn" onclick="resetToZero()">🛑 停止（中央に戻す）</button>
         </div>
 
         <div class="box" id="setup-box">
-            <div class="box-title" style="color: #00e5ff;">🔑 新しいトークンの設定</div>
-            <p style="font-size: 11px; color: #aaa; margin: 0 0 10px 0; text-align: center;">新しく作った ghp_ から始まるトークンをここに貼り付けてボタンを押してください。</p>
+            <div class="box-title" style="color: #00e5ff;">🔑 トークンの設定</div>
+            <p style="font-size: 11px; color: #aaa; margin: 0 0 10px 0; text-align: center;">発行した ghp_ から始まる最新のトークンを貼り付けてください。</p>
             <input type="password" id="tokenInput" class="token-input" placeholder="ghp_xxxxxxxxxxxx">
             <button class="token-btn" onclick="saveToken()">スマホに鍵を記憶させて開始</button>
         </div>
@@ -182,28 +114,26 @@
     const setupBox = document.getElementById('setup-box');
     let timer = null;
 
-    // スマホが鍵を覚えているかチェック
     function checkSetup() {
         const savedToken = localStorage.getItem('gt_token');
         if (savedToken && savedToken.startsWith('ghp_')) {
-            setupBox.style.display = 'none'; // 覚えているなら入力欄は非表示
+            setupBox.style.display = 'none';
             statusDiv.style.color = "#69f0ae";
-            statusDiv.innerText = "準備完了：エラーはありません";
+            statusDiv.innerText = "準備完了：スライダーを動かせます";
         } else {
             setupBox.style.display = 'block';
             statusDiv.style.color = "#ffb300";
-            statusDiv.innerText = "上の欄に新しく発行したghp_トークンを入力してください";
+            statusDiv.innerText = "上の欄に有効なghp_トークンを入力してください";
         }
     }
 
-    // スマホのブラウザに直接トークンを保存（GitHubのAI検知を100%回避）
     function saveToken() {
         const input = document.getElementById('tokenInput').value.trim();
         if (input.startsWith('ghp_')) {
             localStorage.setItem('gt_token', input);
             checkSetup();
         } else {
-            alert('トークンは ghp_ から始まる正しい文字を入力してください。');
+            alert('ghp_ から始まる正しいトークンを入力してください。');
         }
     }
 
@@ -211,7 +141,6 @@
         const originalVal = parseInt(e.target.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         display.innerText = invertedVal;
-        
         clearTimeout(timer);
         timer = setTimeout(() => { sendSpeed(invertedVal); }, 250);
     });
@@ -232,11 +161,7 @@
 
     async function sendSpeed(val) {
         const token = localStorage.getItem('gt_token');
-        if (!token) {
-            statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "❌ トークンが設定されていません。";
-            return;
-        }
+        if (!token) return;
 
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = String(val);
@@ -244,9 +169,7 @@
         statusDiv.innerText = "通信中...";
         
         try {
-            const res = await fetch(`${url}?t=${Date.now()}`, { 
-                headers: { "Authorization": `token ${token}` } 
-            });
+            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${token}` } });
             if (!res.ok) throw new Error();
             
             const data = await res.json();
@@ -262,16 +185,15 @@
             if (updateRes.ok) {
                 statusDiv.style.color = "#69f0ae";
                 statusDiv.innerText = `変更成功: 速度 [ ${content} ]`;
-            } else {
-                throw new Error();
-            }
+            } else { throw new Error(); }
         } catch (e) {
             statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "通信エラー。トークンが無効化された可能性があります。";
+            statusDiv.innerText = "通信エラー。トークンが削除された可能性があります。再度入力してください。";
+            localStorage.removeItem('gt_token');
+            setupBox.style.display = 'block';
         }
     }
 
-    // 起動処理
     checkSetup();
 </script>
 </body>
