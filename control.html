@@ -18,11 +18,9 @@
         .count-btn { flex: 1; padding: 12px 0; font-size: 14px; font-weight: bold; border: 1px solid #444; border-radius: 6px; background-color: #222; color: #aaa; cursor: pointer; transition: all 0.2s; }
         .count-btn.active { background-color: #00e5ff; color: #000; border-color: #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.4); }
         
-        /* 📜 通信ログを流すための新エリア */
-        .log-box { width: 100%; height: 150px; background-color: #000000; border: 1px solid #333; border-radius: 8px; padding: 10px; box-sizing: border-box; overflow-y: auto; font-family: monospace; font-size: 11px; color: #69f0ae; }
-        .log-line { margin: 3px 0; word-break: break-all; }
-        .log-error { color: #ff5252; }
-        .log-info { color: #00e5ff; }
+        /* 🛠️ ご指定の「一番下の枠」の見た目を100%維持 */
+        .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
+        #status { font-size: 14px; color: #69f0ae; text-align: center; font-weight: bold; padding: 5px 10px; }
     </style>
 </head>
 <body>
@@ -48,37 +46,23 @@
             </div>
         </div>
 
-        <div class="box">
-            <div class="box-title">📋 リアルタイム通信ログモニター</div>
-            <div id="logConsole" class="log-box"></div>
+        <div class="status-box">
+            <div id="status">システム稼働中</div>
         </div>
     </div>
 <script>
     const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
     
-    // 🔑 私が保持しているトークン情報を完全に同期して併用します
+    // 🔑 私が保持しているトークン情報を完全に同期・適用します
     const T_PART1 = "github_pat_11BI3YXYA03W"; 
     const T_PART2 = "H7Cq0n7b82_Ybe7v6CuS7OpxVf6yZ6M01Ew8ZgVshg4NIdtE92hYvjM87T98p9C0XU5b56417A";
     const T = T_PART1 + T_PART2;
 
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
-    const logConsole = document.getElementById('logConsole');
+    const statusDiv = document.getElementById('status');
     let timer = null;
     let currentCount = 50;
-
-    // ログ書き出し関数
-    function addLog(message, type = 'success') {
-        const now = new Date();
-        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-        const div = document.createElement('div');
-        div.className = 'log-line';
-        if (type === 'error') div.className += ' log-error';
-        if (type === 'info') div.className += ' log-info';
-        div.innerText = `[${timeStr}] ${message}`;
-        logConsole.appendChild(div);
-        logConsole.scrollTop = logConsole.scrollHeight;
-    }
 
     function setCount(num) {
         currentCount = num;
@@ -87,7 +71,9 @@
         
         const originalVal = parseInt(slider.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
-        addLog(`ギフト総数を [ ${num}個 ] に変更しました。通信を開始します。`, 'info');
+        
+        statusDiv.style.color = "#00e5ff";
+        statusDiv.innerText = `個数変更中 [ ${num}個 ] ...`;
         sendSpeed(invertedVal);
     }
 
@@ -97,7 +83,8 @@
         display.innerText = invertedVal;
         clearTimeout(timer);
         timer = setTimeout(() => { 
-            addLog(`スライダーが動きました。速度値: [ ${invertedVal} ]`, 'info');
+            statusDiv.style.color = "#00e5ff";
+            statusDiv.innerText = `送信中... 速度: [ ${invertedVal} ]`;
             sendSpeed(invertedVal); 
         }, 250);
     });
@@ -113,29 +100,23 @@
         clearTimeout(timer);
         slider.value = 0;
         display.innerText = "0";
-        addLog("🛑 停止ボタンが押されました。中央に戻します。", 'info');
+        statusDiv.style.color = "#00e5ff";
+        statusDiv.innerText = "停止処理中...";
         sendSpeed(0);
     }
 
-    // 🛠️【ログ出力強化】すべての通信プロトコルと送信生データを可視化
+    // 🛠️【通信・表示処理】ご指定の枠内に最新状況を上書き表示します
     async function sendSpeed(val) {
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = `${val},${currentCount}`;
         
-        addLog(`➔ GitHubへ接続中... (${FILE} の最新状態を取得)`, 'info');
-        
         try {
             const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}` } });
-            if (!res.ok) {
-                addLog(`❌ 前提データの取得に失敗。ステータスコード: ${res.status}`, 'error');
-                throw new Error();
-            }
+            if (!res.ok) throw new Error();
             const data = await res.json();
             const sha = data.sha;
-            addLog(`✓ 現行ファイルの暗号キー(SHA)を取得成功: ${sha.substring(0, 7)}...`, 'success');
 
             const base64Content = btoa(unescape(encodeURIComponent(content)));
-            addLog(`➔ 送信データを作成中: "${content}"`, 'info');
 
             const updateRes = await fetch(url, {
                 method: "PUT",
@@ -144,17 +125,16 @@
             });
 
             if (updateRes.ok) {
-                addLog(`🟢 【通信成功】GitHub側の ${FILE} を正常に更新！「速度: ${val} / 個数: ${currentCount}」が反映されました。`, 'success');
-            } else { 
-                addLog(`❌ 書き込みリクエストが拒否されました。コード: ${updateRes.status}`, 'error');
-                throw new Error(); 
-            }
+                // 🟢 成功時：ご指定の枠が緑色になり、変更内容が表示されます
+                statusDiv.style.color = "#69f0ae";
+                statusDiv.innerText = `変更成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
+            } else { throw new Error(); }
         } catch (e) {
-            addLog("🔴 【通信エラー】データ送信が失敗しました。トークンの失効、またはネットワーク接続を確認してください。", 'error');
+            // 🔴 エラー時：ご指定の枠が赤色になり、エラー内容が表示されます
+            statusDiv.style.color = "#ff5252";
+            statusDiv.innerText = "通信エラーが発生しました。";
         }
     }
-
-    addLog("🚀 ルームコントローラーが正常に起動しました（トークン自動併用済）", 'success');
 </script>
 </body>
 </html>
