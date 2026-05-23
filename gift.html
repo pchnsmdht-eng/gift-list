@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script src="https://js.pusher.com/8.3.0/pusher.min.js"></script>
     <style>
         body { 
             margin: 0; 
@@ -61,7 +60,7 @@
 
         .hide-4th .lane-4th { display: none !important; }
 
-        /* 右端ズレ完全補正（幅5px指定） */
+        /* 右端ズレ完全補正 */
         .r1 { top: 0; clip-path: inset(0px 5px 1368px 0px); }
         .r2 { top: 0; clip-path: inset(132px 5px 1236px 0px); transform: translateY(-132px); }
         .r3 { top: 0; clip-path: inset(264px 5px 1104px 0px); transform: translateY(-264px); }
@@ -85,17 +84,14 @@
     const container = document.getElementById('lane-container');
     const viewport = document.getElementById('viewport');
     
-    let posX = 0, currentSpeed = 0;
-    let is4thValid = true;
-
-    // 🔴 Pusherから「いいね」の衝撃を受信（設定済み！）
-    const pusher = new Pusher('89e64480e599673ba26e', { cluster: 'ap3', forceTLS: true });
-    const channel = pusher.subscribe('gift-stream');
+    // 🔴 ご自身のGitHubユーザー名とリポジトリ名を設定してください
+    const USER = "【あなたのGitHubユーザー名】";
+    const REPO = "【あなたのリポジトリ名】";
     
-    channel.bind('swipe-move', function(data) {
-        // いいねが届いた瞬間、物理的にグッと左へ加速させる
-        currentSpeed += data.deltaX; 
-    });
+    let posX = 0;
+    let baseSpeed = 0;      // ボタンから指示されたベースの常時移動速度
+    let swipeVelocity = 0;  // スワイプによる瞬間的な加速速度
+    let is4thValid = true;
 
     function init() {
         container.innerHTML = '';
@@ -124,14 +120,38 @@
         document.body.classList.add('hide-4th');
     }
 
-    // 慣性ブレーキアニメーション
+    // 🔴 GitHubから速度またはスワイプ命令を読み込む（キャッシュ回避付き1秒ごと）
+    async function checkSpeed() {
+        try {
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            if (res.ok) {
+                const text = (await res.text()).trim();
+                
+                if (text.startsWith("swipe:")) {
+                    // スワイプ命令が来たら、現在の慣性速度にその移動量をプラスして「ズサッ」と動かす
+                    let swipeValue = parseInt(text.split(":")[1], 10);
+                    if (!isNaN(swipeValue)) {
+                        swipeVelocity += swipeValue * 0.3; // 動きが激しすぎないよう適度に調整
+                    }
+                } else {
+                    // 通常の数値ならベース速度を上書き
+                    let num = parseFloat(text);
+                    if (!isNaN(num)) baseSpeed = num;
+                }
+            }
+        } catch (e) {}
+    }
+
+    // アニメーションループ（物理計算）
     function animate() {
         const activeBlocks = is4thValid ? 4 : 3;
         const unitW = W * activeBlocks; 
 
-        // 摩擦で徐々に減速して止まる計算
-        currentSpeed *= 0.92;
-        posX += currentSpeed;
+        // スワイプの勢いは、摩擦（0.85）で徐々に減速して自然に止まるようにする
+        swipeVelocity *= 0.85;
+        
+        // 通常の巡航速度 ＋ スワイプの慣性速度 を足して動かす
+        posX += (baseSpeed + swipeVelocity);
 
         if (posX <= -unitW) posX += unitW;
         else if (posX >= 0) posX -= unitW;
@@ -140,7 +160,11 @@
         requestAnimationFrame(animate);
     }
 
-    init(); animate();
+    // 1秒ごとにリモコンの指示を確認に行く（いつもの仕様）
+    setInterval(checkSpeed, 1000);
+
+    init(); 
+    animate();
 </script>
 </body>
 </html>
