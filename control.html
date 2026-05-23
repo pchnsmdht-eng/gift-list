@@ -17,7 +17,7 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        h3 { margin-bottom: 20px; color: #aaaaaa; font-size: 16px; }
+        h3 { margin-top: 30px; margin-bottom: 20px; color: #aaaaaa; font-size: 16px; }
         
         .btn-container {
             display: grid;
@@ -28,7 +28,7 @@
             margin-bottom: 20px;
         }
         button {
-            padding: 20px 0;
+            padding: 22px 0;
             font-size: 18px;
             font-weight: bold;
             border: none;
@@ -39,10 +39,13 @@
             transition: background 0.1s;
         }
         button:active { background-color: #444444; }
-        .stop-btn { background-color: #d32f2f; grid-column: span 3; }
+        .stop-btn { background-color: #d32f2f; grid-column: span 3; padding: 25px 0; }
         .stop-btn:active { background-color: #b71c1c; }
         
         #status { font-size: 14px; color: #888888; margin-top: 15px; }
+        
+        /* スワイプエリアを強制非表示にする保険コード */
+        #touch-pad, .touch-area, [id*="touch"] { display: none !important; }
     </style>
 </head>
 <body>
@@ -86,7 +89,7 @@
             const updateRes = await fetch(url, {
                 method: "PUT",
                 headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "update speed", content: base64Content, sha: sha })
+                body: JSON.stringify({ message: "reset speed", content: base64Content, sha: sha })
             });
 
             if (updateRes.ok) {
