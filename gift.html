@@ -6,10 +6,10 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
 
-        /* 表示枠はあなたの指定した「横5列(1870px) × 縦3段(400px)」で完全固定 */
+        /* 【横5列(1870px) × 縦3段(400px)】の表示枠に完全固定 */
         #viewport { 
-            width: 1870px; /* 374px × 5列 = 1870px */
-            height: 400px; /* 132px × 3段 = 396px */
+            width: 1870px; 
+            height: 400px; 
             position: relative; 
             overflow: hidden; 
             pointer-events: auto !important;
@@ -26,7 +26,7 @@
             pointer-events: none !important; 
         }
 
-        /* 成功事例の1122px幅、高さは3段分の396pxに完全最適化 */
+        /* 幅1122px（3列分）、高さは3段分の396px */
         .block { 
             display: flex; 
             flex-direction: column; 
@@ -46,11 +46,10 @@
             padding: 0 !important;
         }
         
-        /* 巨大シートをすべて受け止めるサイズ設定 */
         iframe { 
             position: absolute; 
             width: 1200px; 
-            height: 8000px; 
+            height: 4000px; 
             border: none; 
             transform-origin: top left; 
         }
@@ -65,7 +64,6 @@
             cursor: grab;
         }
 
-        /* ✨【アイコンサイズ統一】文字まで綺麗によめる均一なサイズ（60px） */
         iframe { --gift-icon-size: 60px !important; }
         iframe[src*="streamtoearn"] img, 
         iframe[src*="streamtoearn"] .gift-icon, 
@@ -80,30 +78,30 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
+    const W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
     
-    let posX = 0, speed = -1.0, isTouching = false, startX = 0;
-    let currentGiftCount = 50; // デフォルト50個
+    let posX = 0, speed = 0, isTouching = false, startX = 0;
+    let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // リモコン（speed.txt）との同期
+    // トークンを一切介さず、1秒ごとに中継APIから速度と個数を同期
     async function syncSpeed() {
         try {
-            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            const res = await fetch(API_URL);
             const text = await res.text();
             const parts = text.trim().split(',');
             
             const s = parseFloat(parts[0]);
             if(!isNaN(s)) speed = s;
             
-            // リモコンから送られてきた個数を読み取る
             const c = parts[1] ? parseInt(parts[1], 10) : 50;
             if(!isNaN(c) && currentGiftCount !== c) {
                 currentGiftCount = c;
-                init(); // 個数が切り替わったらその瞬間に裏の部屋の広さをリサイズ！
+                init(); 
             }
         } catch (e) {}
     }
@@ -126,22 +124,29 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // ⚡【全自動リサイズ構造】選択された個数に応じて、必要なブロック数だけをぴったり生成！
+    // 段落の欠けを自動穴埋めしてブロックを生成するロジック
     function init() {
         container.innerHTML = '';
 
-        const linesNeeded = Math.ceil(currentGiftCount / 3);
-        const blocksCount = Math.ceil(linesNeeded / 3);
-
-        const blocksData = [];
-        for (let i = 0; i < blocksCount; i++) {
-            const startLine = i * 3 + 1;
-            blocksData.push([startLine, startLine + 1, startLine + 2]);
+        const totalLanes = Math.ceil(currentGiftCount / 3);
+        const requiredLanes = Math.ceil(totalLanes / 3) * 3;
+        
+        const lanesArray = [];
+        for (let i = 1; i <= requiredLanes; i++) {
+            if (i <= totalLanes) {
+                lanesArray.push(i);
+            } else {
+                lanesArray.push((i - totalLanes - 1) % totalLanes + 1);
+            }
         }
-
+        
+        const blocksData = [];
+        for (let i = 0; i < lanesArray.length; i += 3) {
+            blocksData.push([lanesArray[i], lanesArray[i+1], lanesArray[i+2]]);
+        }
+        
         totalBlocksCount = blocksData.length;
 
-        // ループ用に3回連結
         for (let loop = 0; loop < 3; loop++) {
             blocksData.forEach((rows) => {
                 const b = document.createElement('div'); 
@@ -152,9 +157,8 @@
                     const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
 
-                    // 灰色の枠線ズレ（5px補正）を全自動で計算してカット
                     const topPx = (n - 1) * 132;
-                    f.style.clipPath = `inset(${topPx}px 5px ${8000 - (topPx + 132)}px 0px)`;
+                    f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 132)}px 0px)`;
                     f.style.transform = `translate3d(0, -${topPx}px, 0)`;
 
                     l.appendChild(f); b.appendChild(l);
@@ -170,7 +174,6 @@
             posX += speed;
         }
         
-        // 実際のデータ量に1ミリの狂いもなくジャストフィットした総横幅でループ！
         const unitW = W * totalBlocksCount; 
 
         if (posX <= -unitW) posX += unitW;
