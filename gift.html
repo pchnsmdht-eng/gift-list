@@ -14,10 +14,10 @@
             -webkit-user-select: none;
         }
 
-        /* 3段分（132px × 3段 = 396px）が綺麗に収まる高さに完全固定 */
+        /* 👁️‍🗨️【ここを修正】画面に見える表示枠を「横5個(1870px)×縦3段(400px)」に完全統一 */
         #viewport { 
-            width: 100vw; 
-            height: 400px; 
+            width: 1870px; /* 374px × 5列 = 1870px */
+            height: 400px; /* 132px × 3段 = 396px（余白込み400px） */
             position: relative; 
             overflow: hidden; 
             pointer-events: auto !important;
@@ -26,6 +26,7 @@
         #lane-container { 
             position: absolute; 
             display: flex; 
+            flex-direction: row;
             width: max-content; 
             top: 2px; 
             will-change: transform; 
@@ -82,27 +83,6 @@
             height: 60px !important; 
             object-fit: contain !important;
         }
-
-        /* 👁️‍🗨️ 灰色の枠線のズレを完全に防ぐ5px補正 ＆ 18行すべての正確なカット位置 */
-        .r1 { top: 0; clip-path: inset(0px 5px 2868px 0px); }
-        .r2 { top: 0; clip-path: inset(132px 5px 2736px 0px); transform: translateY(-132px); }
-        .r3 { top: 0; clip-path: inset(264px 5px 2604px 0px); transform: translateY(-264px); }
-        
-        .r4 { top: 0; clip-path: inset(396px 5px 2472px 0px); transform: translateY(-396px); }
-        .r5 { top: 0; clip-path: inset(528px 5px 2340px 0px); transform: translateY(-528px); }
-        .r6 { top: 0; clip-path: inset(660px 5px 2208px 0px); transform: translateY(-660px); }
-        
-        .r7 { top: 0; clip-path: inset(792px 5px 2076px 0px); transform: translateY(-792px); }
-        .r8 { top: 0; clip-path: inset(924px 5px 1944px 0px); transform: translateY(-924px); }
-        .r9 { top: 0; clip-path: inset(1056px 5px 1812px 0px); transform: translateY(-1056px); }
-
-        .r13 { top: 0; clip-path: inset(1584px 5px 1284px 0px); transform: translateY(-1584px); }
-        .r14 { top: 0; clip-path: inset(1716px 5px 1152px 0px); transform: translateY(-1716px); }
-        .r15 { top: 0; clip-path: inset(1848px 5px 1020px 0px); transform: translateY(-1848px); }
-
-        .r16 { top: 0; clip-path: inset(1980px 5px 888px 0px); transform: translateY(-1980px); }
-        .r17 { top: 0; clip-path: inset(2112px 5px 756px 0px); transform: translateY(-2112px); }
-        .r18 { top: 0; clip-path: inset(2244px 5px 624px 0px); transform: translateY(-2244px); }
     </style>
 </head>
 <body>
@@ -146,7 +126,7 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // データ読み込み：縦3段 × 横6ブロック（計18行、54枠分で50個を完全カバー）
+    // データ読み込み：縦3段 × 横6ブロック（計18行、54枠分で50個を100%完全カバー）
     function init() {
         container.innerHTML = '';
 
@@ -156,7 +136,7 @@
             [7, 8, 9],       // 3ブロック目（19〜27番）
             [10, 11, 12],    // 4ブロック目（28〜36番）
             [13, 14, 15],    // 5ブロック目（37〜45番）
-            [16, 17, 18]     // 6ブロック目（46〜54番 ➔ 50個目がここに収まる）
+            [16, 17, 18]     // 6ブロック目（46〜54番 ➔ 50個目がここに美しく収まります）
         ];
 
         // スライドがループした際に途切れないよう、6ブロックのセットを3ループ分横に連結
@@ -171,7 +151,11 @@
 
                     const f = document.createElement('iframe');
                     f.src = `${SRC}?lane=${n}`;
-                    f.className = `r${n}`;
+
+                    // 🪛【灰色の細い枠線ズレを完全に消し去る動的5px補正】
+                    const topPx = (n - 1) * 132;
+                    f.style.clipPath = `inset(${topPx}px 5px ${3000 - (topPx + 132)}px 0px)`;
+                    f.style.transform = `translate3d(0, -${topPx}px, 0)`;
 
                     l.appendChild(f); 
                     b.appendChild(l);
@@ -187,7 +171,7 @@
             posX += speed;
         }
         
-        // 6ブロック分の総横幅 ＝ 1122px × 6 ＝ 6732px で滑らかにループ
+        // 6ブロック分の総横幅 ＝ 1122px × 6 ＝ 6732px で寸分の狂いもなく滑らかにループ
         const unitW = W * 6; 
 
         if (posX <= -unitW) posX += unitW;
