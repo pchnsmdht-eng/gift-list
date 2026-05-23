@@ -14,20 +14,19 @@
             -webkit-user-select: none;
         }
 
-        /* ウィジェット領域：4段分が綺麗に収まる高さ */
+        /* 実際のデータ（3段分）が1ミリの無駄もなく収まる高さ（132px × 3段 = 396px） */
         #viewport { 
             width: 100vw; 
-            height: 530px; 
+            height: 396px; 
             position: relative; 
             overflow: hidden; 
             pointer-events: auto !important;
-            transition: height 0.3s ease;
         }
         
         #lane-container { 
             position: absolute; 
             display: flex; 
-            flex-direction: column; /* 4つの行トラックを縦に並べる */
+            flex-direction: column; /* 出力されている3つの行を縦に並べる */
             width: max-content; 
             top: 2px; 
             will-change: transform; 
@@ -35,7 +34,7 @@
             pointer-events: none !important; 
         }
 
-        /* 1つの段（行）。横に最大8個（374px × 8 = 2992px）のiframeが隙間なく結合されるトラック */
+        /* 1つの段（行）。横に1122px（3枚分）のiframeが並ぶトラック */
         .row-track {
             display: flex;
             flex-direction: row;
@@ -45,7 +44,7 @@
             padding: 0 !important;
         }
         
-        /* 1マスのサイズ */
+        /* 成功事例の1マスのサイズを完全維持 */
         .gift-frame-wrapper { 
             width: 374px; 
             height: 132px; 
@@ -64,7 +63,7 @@
             transform-origin: top left; 
         }
 
-        /* 指でのスワイプやマウスを認識させるための透明な膜 */
+        /* 🖐️ 指でのスワイプやマウスを認識させるための透明な膜 */
         #touch-shield { 
             position: absolute; 
             top: 0; left: 0; width: 100%; height: 100%; 
@@ -75,7 +74,7 @@
             cursor: grab;
         }
 
-        /* ✨【アイコンサイズ統一】不揃いなギフトをすべて綺麗なサイズ（60px）に強制統一 */
+        /* ✨【アイコンサイズ統一】文字まで綺麗によめる均一なサイズ（60px）に強制統一 */
         iframe { --gift-icon-size: 60px !important; }
         iframe[src*="streamtoearn"] img, 
         iframe[src*="streamtoearn"] .gift-icon, 
@@ -85,11 +84,8 @@
             object-fit: contain !important;
         }
 
-        /* 抽出幅の切り取り補正 */
+        /* 成功事例のズレをピタッと直した抽出幅をそのまま適用 */
         .clip-iframe { top: 0; clip-path: inset(0px 5px 1368px 0px); }
-        
-        /* 自動引き算（4段目非表示）の設定 */
-        .hide-4th #row-4 { display: none !important; }
     </style>
 </head>
 <body>
@@ -99,21 +95,18 @@
         <div class="row-track" id="row-1"></div>
         <div class="row-track" id="row-2"></div>
         <div class="row-track" id="row-3"></div>
-        <div class="row-track" id="row-4"></div>
     </div>
 </div>
 <script>
     const USER = "pchnsmdht-eng", REPO = "gift-list";
     const FRAME_W = 374; // 1マスの横幅
-    const COLUMNS_PER_ROW = 8; // 1本のラインに並べる枠の数（8列）
+    const COLUMNS_PER_ROW = 3; // 実データに合わせた1ラインのマス数（3列）
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
-    const viewport = document.getElementById('viewport');
     
     let posX = 0, speed = -1.0, isTouching = false, startX = 0;
-    let is4thValid = true;
 
     // リモコン（speed.txt）との同期（1秒ごと）
     async function syncSpeed() {
@@ -126,7 +119,7 @@
     }
     setInterval(syncSpeed, 1000);
 
-    // ウィジェット上でのスワイプ・ドラッグ検知（完全維持）
+    // ウィジェット上でのスワイプ・ドラッグ検知（成功事例を完全維持）
     const handleStart = (e) => {
         isTouching = true;
         startX = e.clientX - posX;
@@ -143,18 +136,16 @@
     shield.addEventListener('pointerup', handleEnd);
     shield.addEventListener('pointercancel', handleEnd);
 
-    // 4本のトラック（行）に、横方向に8個（ループ用に3倍連結）のiframeを配置する
+    // 実在する1〜9番目のレーンを、重複させずに3本の行トラックへ正しく配置
     function init() {
-        let failedCount = 0;
-
-        for (let r = 1; r <= 4; r++) {
+        for (let r = 1; r <= 3; r++) {
             const track = document.getElementById(`row-${r}`);
             track.innerHTML = '';
 
-            // スライドや追従がループした際に途切れないよう、3ループ分を横に連結
-            for (let loop = 0; loop < 3; loop++) {
+            // スライドや追従がループした際に途切れないよう、横に4枚分（4ループ）連結
+            for (let loop = 0; loop < 4; loop++) {
                 for (let c = 1; c <= COLUMNS_PER_ROW; c++) {
-                    // 正確なレーン番号の割り当て計算（1行目:1~8、2行目:9~16、3行目:17~24、4行目:25~32）
+                    // 正確なレーン番号の割り当て計算（1行目:1~3、2行目:4~6、3行目:7~9）
                     const laneNumber = ((r - 1) * COLUMNS_PER_ROW) + c;
 
                     const wrapper = document.createElement('div');
@@ -164,25 +155,6 @@
                     iframe.src = `${SRC}?lane=${laneNumber}`;
                     iframe.className = 'clip-iframe';
 
-                    // 👁️ 4段目の最後の列（32番目のレーン）にデータが存在するか監視
-                    if (r === 4 && c === COLUMNS_PER_ROW) {
-                        iframe.onload = () => {
-                            try {
-                                if (!iframe.contentWindow || iframe.contentWindow.length === 0) {
-                                    throw new Error("Empty");
-                                }
-                            } catch (err) {
-                                failedCount++;
-                                // ギフトが認識されていなければ自動的に4段目を引き算して縮める
-                                if (failedCount > 1 && is4thValid) switchTo3Lanes();
-                            }
-                        };
-                        iframe.onerror = () => {
-                            failedCount++;
-                            if (is4thValid) switchTo3Lanes();
-                        };
-                    }
-
                     wrapper.appendChild(iframe);
                     track.appendChild(wrapper);
                 }
@@ -190,22 +162,15 @@
         }
     }
 
-    // 4段目を非表示にし、高さを400pxに自動縮小する引き算安全装置
-    function switchTo3Lanes() {
-        is4thValid = false;
-        viewport.style.height = "400px";
-        document.body.classList.add('hide-4th');
-    }
-
-    // 無限ループ追従アニメーション（4つの行をすべて一斉に同調させて横スライド）
+    // 無限ループ追従アニメーション（すべての行を同じ速度で一斉に横スクロール）
     function animate() {
         if (!isTouching) {
             posX += speed;
         }
         
-        const maxTrackW = FRAME_W * COLUMNS_PER_ROW; // 8個分の総横幅 = 2992px
+        const maxTrackW = FRAME_W * COLUMNS_PER_ROW; // 3個分の総横幅 = 1122px
 
-        // 端まで流れたら滑らかに先頭へループ（追従を途切れさせない処理）
+        // 端まで流れたら滑らかに先頭へループ
         if (posX <= -maxTrackW) posX += maxTrackW;
         else if (posX >= 0) posX -= maxTrackW;
         
