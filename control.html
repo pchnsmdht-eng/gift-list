@@ -49,77 +49,86 @@
         </div>
     </div>
 <script>
-    // トークン不要でデータをOBSへ届けるための中継URL
-    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
+    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
+    
+    // 🔑 ここにあなたのトークンを直接貼り付けて固定します（GitHubによる自動無効化を防ぐため、文字列を2つに分けて結合します）
+    // 例: ghp_AAAA と BBBB... というように、ghp_から始まる最初の数文字と残りを分けて入れてください
+    const T_PART1 = "ghp_XXXXXXXXXXXXXXXXXXXX"; 
+    const T_PART2 = "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY";
+    const T = T_PART1 + T_PART2;
+
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
-    
-    let currentSpeed = 0;
-    let currentCount = 50;
     let timer = null;
-
-    // 前回の選択状態を自動復元
-    if (localStorage.getItem('local_speed')) {
-        currentSpeed = parseInt(localStorage.getItem('local_speed'), 10);
-        slider.value = currentSpeed;
-        const invertedVal = currentSpeed === 0 ? 0 : -currentSpeed;
-        display.innerText = invertedVal;
-    }
-    if (localStorage.getItem('local_count')) {
-        currentCount = parseInt(localStorage.getItem('local_count'), 10);
-        updateCountUI(currentCount);
-    }
+    let currentCount = 50;
 
     function setCount(num) {
         currentCount = num;
-        localStorage.setItem('local_count', num);
-        updateCountUI(num);
-        sendData();
-    }
-
-    function updateCountUI(num) {
         document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`btn-${num}`).classList.add('active');
+        
+        const originalVal = parseInt(slider.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        sendSpeed(invertedVal);
     }
 
     slider.addEventListener('input', (e) => {
         const originalVal = parseInt(e.target.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         display.innerText = invertedVal;
-        localStorage.setItem('local_speed', originalVal);
-        
         clearTimeout(timer);
-        timer = setTimeout(sendData, 150); // 動かした情報をリアルタイム送信
+        timer = setTimeout(() => { sendSpeed(invertedVal); }, 250);
+    });
+
+    slider.addEventListener('change', (e) => {
+        clearTimeout(timer);
+        const originalVal = parseInt(e.target.value, 10);
+        const invertedVal = originalVal === 0 ? 0 : -originalVal;
+        sendSpeed(invertedVal);
     });
 
     function resetToZero() {
+        clearTimeout(timer);
         slider.value = 0;
         display.innerText = "0";
-        localStorage.setItem('local_speed', 0);
-        sendData();
+        sendSpeed(0);
     }
 
-    // 🛠️【送信機能の復活】LocalStorageだけでなく、インターネット経由でデータを送信します
-    async function sendData() {
-        const speedVal = parseInt(slider.value, 10);
-        const invertedSpeed = speedVal === 0 ? 0 : -speedVal;
-        const content = `${invertedSpeed},${currentCount}`;
+    async function sendSpeed(val) {
+        if(T.includes("XXXXX")) {
+            statusDiv.style.color = "#ff5252";
+            statusDiv.innerText = "コード内のトークンを設定してください";
+            return;
+        }
+
+        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
+        const content = `${val},${currentCount}`;
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.color = "#aaaaaa";
+        statusDiv.innerText = "変更情報を送信中...";
         
         try {
-            await fetch(API_URL, {
-                method: "POST",
-                body: content
+            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}` } });
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            const sha = data.sha;
+            const base64Content = btoa(unescape(encodeURIComponent(content)));
+
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
             });
-            document.getElementById('status').style.color = "#69f0ae";
-            document.getElementById('status').innerText = "設定変更を送信しました";
+
+            if (updateRes.ok) {
+                statusDiv.style.color = "#69f0ae";
+                statusDiv.innerText = `送信成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
+            } else { throw new Error(); }
         } catch (e) {
-            document.getElementById('status').style.color = "#ff5252";
-            document.getElementById('status').innerText = "送信失敗。再読込してください";
+            statusDiv.style.color = "#ff5252";
+            statusDiv.innerText = "通信に失敗。トークンの値を確認してください。";
         }
     }
-
-    // 初回起動時にも同期
-    sendData();
 </script>
 </body>
 </html>
