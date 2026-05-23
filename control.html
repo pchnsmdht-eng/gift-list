@@ -49,13 +49,16 @@
         </div>
     </div>
 <script>
+    // トークン不要でデータをOBSへ届けるための中継URL
+    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     
     let currentSpeed = 0;
     let currentCount = 50;
+    let timer = null;
 
-    // トークンエラーを永久に起こさないよう、スマホ単体で選択状態を記憶・保持するシンプルな仕組み
+    // 前回の選択状態を自動復元
     if (localStorage.getItem('local_speed')) {
         currentSpeed = parseInt(localStorage.getItem('local_speed'), 10);
         slider.value = currentSpeed;
@@ -71,6 +74,7 @@
         currentCount = num;
         localStorage.setItem('local_count', num);
         updateCountUI(num);
+        sendData();
     }
 
     function updateCountUI(num) {
@@ -83,13 +87,39 @@
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         display.innerText = invertedVal;
         localStorage.setItem('local_speed', originalVal);
+        
+        clearTimeout(timer);
+        timer = setTimeout(sendData, 150); // 動かした情報をリアルタイム送信
     });
 
     function resetToZero() {
         slider.value = 0;
         display.innerText = "0";
         localStorage.setItem('local_speed', 0);
+        sendData();
     }
+
+    // 🛠️【送信機能の復活】LocalStorageだけでなく、インターネット経由でデータを送信します
+    async function sendData() {
+        const speedVal = parseInt(slider.value, 10);
+        const invertedSpeed = speedVal === 0 ? 0 : -speedVal;
+        const content = `${invertedSpeed},${currentCount}`;
+        
+        try {
+            await fetch(API_URL, {
+                method: "POST",
+                body: content
+            });
+            document.getElementById('status').style.color = "#69f0ae";
+            document.getElementById('status').innerText = "設定変更を送信しました";
+        } catch (e) {
+            document.getElementById('status').style.color = "#ff5252";
+            document.getElementById('status').innerText = "送信失敗。再読込してください";
+        }
+    }
+
+    // 初回起動時にも同期
+    sendData();
 </script>
 </body>
 </html>
