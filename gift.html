@@ -74,37 +74,35 @@
         .r11 { top: 0; clip-path: inset(1320px 5px 48px 0px); transform: translateY(-1320px); }
         .r12 { top: 0; clip-path: inset(1452px 5px 0px 0px); transform: translateY(-1452px); }
 
-        /* 👁️ 画面崩れを防ぐため、絶対配置（absolute）にして周囲を押し下げないように修正 */
-        #blindfold {
+        /* 👁️ 上塗り用フェードレイヤー（黒くならず、じわっと重なる） */
+        #fade-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #121212; /* 配信画面の背景と一致する黒 */
+            background-color: #121212; /* 現在の背景と同じ色 */
             opacity: 0;
             pointer-events: none;
             z-index: 9999;
-            transition: opacity 0.03s ease;
-        }
-        #blindfold.active {
-            opacity: 1;
+            mix-blend-mode: normal;
+            transition: opacity 0.15s ease-in-out; /* じわっと上塗りする速度 */
+            will-change: opacity;
         }
     </style>
 </head>
 <body>
 <div id="viewport">
     <div id="lane-container"></div>
-    <div id="blindfold"></div>
+    <div id="fade-overlay"></div>
 </div>
 
 <script>
     const W = 1122, SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
     const container = document.getElementById('lane-container');
     const viewport = document.getElementById('viewport');
-    const blindfold = document.getElementById('blindfold');
+    const overlay = document.getElementById('fade-overlay');
     
-    // 🔒 あなたの確定した環境情報です
     const USER = "pchnsmdht-eng";
     const REPO = "gift-list";
     
@@ -146,26 +144,26 @@
         } catch (e) {}
     }
 
-    // チェンジ・ブラインドネス（フリッカー瞬間移動）制御
+    // チェンジ・ブラインドネス（上塗りクロスフェード瞬間移動）制御
     function animate() {
         const activeBlocks = is4thValid ? 4 : 3; 
         const unitW = W * activeBlocks;
         const currentTime = Date.now();
 
         if (speed !== 0) {
-            // スピコンの数値（1〜5）に合わせて点滅の間隔を変更
-            const flashInterval = 1200 / Math.abs(speed); 
+            // スピコンの数値に合わせて切り替わる間隔を変更（1400ms〜280ms）
+            const flashInterval = 1400 / Math.abs(speed); 
 
             if (currentTime - lastFlashTime > flashInterval) {
-                // 1. パッと暗転
-                blindfold.classList.add('active');
+                // 1. 次の画面の残像を「じわっ」と上に重ね始める（不透明度0.6程度でブレンド）
+                overlay.style.opacity = "0.65";
 
-                // 2. 暗転した一瞬（0.04秒後）に裏で位置をすり替える
+                // 2. 上塗りが一番濃くなった瞬間（0.12秒後）に、裏で位置をすり替える
                 setTimeout(() => {
                     if (speed < 0) {
-                        posX -= W; // 右へスライド指示のとき、中身を右へワープ
+                        posX -= W; // 右へワープ
                     } else {
-                        posX += W; // 左へスライド指示のとき、中身を左へワープ
+                        posX += W; // 左へワープ
                     }
 
                     if (posX <= -unitW) posX += unitW;
@@ -173,12 +171,12 @@
                     
                     container.style.transform = `translate3d(${posX}px, 0, 0)`;
 
-                    // 3. すり替え完了後にパッとカーテンを開ける
+                    // 3. すり替えが終わったら、重ねた上塗りをフワッと消す
                     setTimeout(() => {
-                        blindfold.classList.remove('active');
+                        overlay.style.opacity = "0";
                     }, 40);
 
-                }, 40);
+                }, 120);
 
                 lastFlashTime = currentTime;
             }
