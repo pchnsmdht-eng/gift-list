@@ -87,7 +87,7 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // コントローラーが書き換えた speed.txt を1秒ごとに読み込んで同期
+    // speed.txt を1秒ごとに読み込んで同期
     async function syncSpeed() {
         try {
             const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
@@ -98,7 +98,6 @@
             const s = parseFloat(parts[0]);
             if(!isNaN(s)) speed = s;
             
-            // クラッシュの原因だった箇所を完全に修復して同期
             const c = parts[1] ? parseInt(parts[1], 10) : 50;
             if(!isNaN(c) && currentGiftCount !== c) {
                 currentGiftCount = c;
