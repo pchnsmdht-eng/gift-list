@@ -21,9 +21,8 @@
     <div id="lane-container"></div>
 </div>
 <script>
-    const W = 1122;
+    const USER = "pchnsmdht-eng", REPO = "gift-list", W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
     
@@ -31,17 +30,26 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // 🛠️ コントローラーからのダイレクト電波をタイムラグゼロで受信する処理
-    const bc = new BroadcastChannel('stream_gift_control');
-    bc.onmessage = (e) => {
-        if (e.data) {
-            if (typeof e.data.speed === 'number') speed = e.data.speed;
-            if (typeof e.data.count === 'number' && currentGiftCount !== e.data.count) {
-                currentGiftCount = e.data.count;
-                init();
+    // 🛠️ コントローラーが安全に書き換えた speed.txt をダイレクトに同期します
+    async function syncSpeed() {
+        try {
+            const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/speed.txt?t=${Date.now()}`);
+            if (!res.ok) return;
+            const text = await res.text();
+            const parts = text.trim().split(',');
+            
+            const s = parseFloat(parts[0]);
+            if(!isNaN(s)) speed = s;
+            
+            // クラッシュの原因だった箇所を完全に修復して処理
+            const c = parts[1] ? parseInt(parts[1], 10) : 50;
+            if(!isNaN(c) && currentGiftCount !== c) {
+                currentGiftCount = c;
+                init(); 
             }
-        }
-    };
+        } catch (e) {}
+    }
+    setInterval(syncSpeed, 1000);
 
     const handleStart = (e) => { isTouching = true; startX = e.clientX - posX; shield.setPointerCapture(e.pointerId); };
     const handleMove = (e) => { if (!isTouching) return; posX = e.clientX - startX; };
@@ -90,7 +98,7 @@
         requestAnimationFrame(animate);
     }
 
-    init(); animate();
+    init(); syncSpeed(); animate();
 </script>
 </body>
 </html>
