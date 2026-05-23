@@ -23,7 +23,6 @@
 <script>
     const W = 1122;
     const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
-    const DATA_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_stream_data_v2";
     
     const container = document.getElementById('lane-container');
     const shield = document.getElementById('touch-shield');
@@ -32,25 +31,17 @@
     let currentGiftCount = 50; 
     let totalBlocksCount = 0;
 
-    // 1秒ごとにデータ置き場を見に行く同期処理
-    async function syncSpeed() {
-        try {
-            const res = await fetch(`${DATA_URL}?t=${Date.now()}`);
-            if (!res.ok) return;
-            const text = await res.text();
-            const parts = text.trim().split(',');
-            
-            const s = parseFloat(parts[0]);
-            if(!isNaN(s)) speed = s;
-            
-            const c = parts[1] ? parseInt(parts[1], 10) : 50;
-            if(!isNaN(c) && currentGiftCount !== c) {
-                currentGiftCount = c;
-                init(); 
+    // 🛠️ コントローラーからのダイレクト電波をタイムラグゼロで受信する処理
+    const bc = new BroadcastChannel('stream_gift_control');
+    bc.onmessage = (e) => {
+        if (e.data) {
+            if (typeof e.data.speed === 'number') speed = e.data.speed;
+            if (typeof e.data.count === 'number' && currentGiftCount !== e.data.count) {
+                currentGiftCount = e.data.count;
+                init();
             }
-        } catch (e) {}
-    }
-    setInterval(syncSpeed, 1000);
+        }
+    };
 
     const handleStart = (e) => { isTouching = true; startX = e.clientX - posX; shield.setPointerCapture(e.pointerId); };
     const handleMove = (e) => { if (!isTouching) return; posX = e.clientX - startX; };
@@ -99,7 +90,7 @@
         requestAnimationFrame(animate);
     }
 
-    init(); syncSpeed(); animate();
+    init(); animate();
 </script>
 </body>
 </html>
