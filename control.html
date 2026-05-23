@@ -18,8 +18,9 @@
         .count-btn { flex: 1; padding: 12px 0; font-size: 14px; font-weight: bold; border: 1px solid #444; border-radius: 6px; background-color: #222; color: #aaa; cursor: pointer; transition: all 0.2s; }
         .count-btn.active { background-color: #00e5ff; color: #000; border-color: #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.4); }
         
+        /* 🛠️ 指定枠（メッセージ表示用） */
         .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
-        #status { font-size: 14px; color: #69f0ae; text-align: center; font-weight: bold; padding: 5px 10px; }
+        #status { font-size: 13px; color: #69f0ae; text-align: center; font-weight: bold; padding: 5px; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -51,8 +52,6 @@
     </div>
 <script>
     const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
-    
-    // 🔑 提供された新トークン(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)を完全偽装化
     const codes = [103,104,112,95,85,111,108,102,66,82,88,78,70,84,67,71,108,101,71,65,52,90,116,67,104,117,48,110,83,81,65,67,90,51,120,101,112,106,120];
     const T = String.fromCharCode(...codes);
 
@@ -66,12 +65,11 @@
         currentCount = num;
         document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`btn-${num}`).classList.add('active');
-        
         const originalVal = parseInt(slider.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         
         statusDiv.style.color = "#00e5ff";
-        statusDiv.innerText = `送信中... 個数変更: [ ${num}個 ]`;
+        statusDiv.innerText = `送信中... ギフト数: ${num}個`;
         sendSpeed(invertedVal);
     }
 
@@ -82,9 +80,9 @@
         clearTimeout(timer);
         timer = setTimeout(() => { 
             statusDiv.style.color = "#00e5ff";
-            statusDiv.innerText = `送信中... 速度: [ ${invertedVal} ]`;
+            statusDiv.innerText = `送信中... 速度: ${invertedVal}`;
             sendSpeed(invertedVal); 
-        }, 250);
+        }, 200);
     });
 
     function resetToZero() {
@@ -96,7 +94,6 @@
         sendSpeed(0);
     }
 
-    // 🛠️ GitHubのAPIに直接、安定した標準プロトコルでspeed.txtを上書きします
     async function sendSpeed(val) {
         const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = `${val},${currentCount}`;
@@ -105,7 +102,7 @@
             const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}` } });
             if (!res.ok) {
                 statusDiv.style.color = "#ff5252";
-                statusDiv.innerText = `通信エラー (Error: ${res.status})`;
+                statusDiv.innerText = `エラー: 取得失敗 (Status: ${res.status})`;
                 return;
             }
             const data = await res.json();
@@ -115,19 +112,19 @@
             const updateRes = await fetch(url, {
                 method: "PUT",
                 headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
+                body: JSON.stringify({ message: "slider update", content: base64Content, sha: sha })
             });
 
             if (updateRes.ok) {
                 statusDiv.style.color = "#69f0ae";
-                statusDiv.innerText = `変更成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
+                statusDiv.innerText = `送信成功: 速度:${val} 個数:${currentCount}`;
             } else {
                 statusDiv.style.color = "#ff5252";
-                statusDiv.innerText = `送信エラー (Error: ${updateRes.status})`;
+                statusDiv.innerText = `エラー: 送信拒否 (Status: ${updateRes.status})`;
             }
         } catch (e) {
             statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "通信エラーが発生しました。";
+            statusDiv.innerText = "通信エラー: ネットワークを確認してください";
         }
     }
 </script>
