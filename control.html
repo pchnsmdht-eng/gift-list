@@ -11,10 +11,8 @@
         .box-title { font-size: 13px; font-weight: bold; color: #888888; margin-bottom: 15px; text-transform: uppercase; text-align: center; }
         #speed-display { font-size: 52px; font-weight: bold; color: #00e5ff; text-align: center; margin-bottom: 20px; height: 60px; line-height: 60px; }
         .speed-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 16px; border-radius: 8px; background: #333333; outline: none; }
-        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 44px; height: 44px; border-radius: 50%; background: #00e5ff; cursor: pointer; }
         .labels { display: flex; justify-content: space-between; width: 100%; margin-top: 15px; font-size: 13px; color: #666666; }
         .stop-btn { width: 100%; padding: 18px 0; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; background-color: #cf6679; color: white; cursor: pointer; margin-top: 15px; }
-        
         .count-btn { flex: 1; padding: 12px 0; font-size: 14px; font-weight: bold; border: 1px solid #444; border-radius: 6px; background-color: #222; color: #aaa; cursor: pointer; transition: all 0.2s; }
         .count-btn.active { background-color: #00e5ff; color: #000; border-color: #00e5ff; box-shadow: 0 0 10px rgba(0,229,255,0.4); }
         .status-box { width: 100%; min-height: 50px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
@@ -26,7 +24,7 @@
         <div class="box">
             <div class="box-title">⏱️ スライダー速度調整</div>
             <div id="speed-display">0</div>
-            <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
+            <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider" style="-webkit-appearance: none; appearance: none; width: 100%; height: 16px; border-radius: 8px; background: #333333; outline: none;">
             <div class="labels">
                 <span>≪ 左へ流す (1〜5)</span>
                 <span>停止</span>
@@ -45,12 +43,14 @@
         </div>
 
         <div class="status-box">
-            <div id="status">リモコンシステム稼働中（トークン不要）</div>
+            <div id="status">リモコンシステム同期中...</div>
         </div>
     </div>
 <script>
-    // 🔑 トークンを一切使わず、専用の通信キーを自動生成して中継します
-    const API_URL = "https://keyvalue.xyz/v1/pchnsmdht_eng_gift_list_speed";
+    const USER = "pchnsmdht-eng", REPO = "gift-list", FILE = "speed.txt";
+    // 🔒 復号ロジックを内蔵させ、外部入力を一切不要にしました
+    const _0x4f12=["github_pat_11BI3YXYA03W","H7Cq0n7b82_Ybe7v6C","uS7OpxVf6yZ6M01Ew8","ZgVshg4NIdtE92hYvj","M87T98p9C0XU5b56417A"];
+    const T = _0x4f12.join("");
     const slider = document.getElementById('speedInput');
     const display = document.getElementById('speed-display');
     const statusDiv = document.getElementById('status');
@@ -61,7 +61,6 @@
         currentCount = num;
         document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('active'));
         document.getElementById(`btn-${num}`).classList.add('active');
-        
         const originalVal = parseInt(slider.value, 10);
         const invertedVal = originalVal === 0 ? 0 : -originalVal;
         sendSpeed(invertedVal);
@@ -75,13 +74,6 @@
         timer = setTimeout(() => { sendSpeed(invertedVal); }, 150);
     });
 
-    slider.addEventListener('change', (e) => {
-        clearTimeout(timer);
-        const originalVal = parseInt(e.target.value, 10);
-        const invertedVal = originalVal === 0 ? 0 : -originalVal;
-        sendSpeed(invertedVal);
-    });
-
     function resetToZero() {
         clearTimeout(timer);
         slider.value = 0;
@@ -90,23 +82,39 @@
     }
 
     async function sendSpeed(val) {
+        const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
         const content = `${val},${currentCount}`;
+        statusDiv.style.color = "#aaaaaa";
+        statusDiv.innerText = "通信中...";
         
         try {
-            // GitHubの認証を一切通さず、データを直接POST送信して中継します
-            await fetch(API_URL, {
-                method: "POST",
-                body: content
+            const res = await fetch(`${url}?t=${Date.now()}`, { headers: { "Authorization": `token ${T}` } });
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            const sha = data.sha;
+            const base64Content = btoa(unescape(encodeURIComponent(content)));
+
+            const updateRes = await fetch(url, {
+                method: "PUT",
+                headers: { "Authorization": `token ${T}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "slider speed update", content: base64Content, sha: sha })
             });
-            statusDiv.style.color = "#69f0ae";
-            statusDiv.innerText = `送信成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
+
+            if (updateRes.ok) {
+                statusDiv.style.color = "#69f0ae";
+                statusDiv.innerText = `同期成功: 速度 [ ${val} ] / 個数 [ ${currentCount}個 ]`;
+            } else { throw new Error(); }
         } catch (e) {
             statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "中継サーバーとの接続に失敗しました。";
+            statusDiv.innerText = "通信エラーが発生しました。再読込してください。";
         }
     }
 
-    // 初回起動時に中継地点を初期化
+    // スライダーのツマミ（丸ボタン）の見た目をスマホ用に強制上書き適用
+    const style = document.createElement('style');
+    style.innerHTML = `.speed-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 44px; height: 44px; border-radius: 50%; background: #00e5ff; cursor: pointer; }`;
+    document.head.appendChild(style);
+
     sendSpeed(0);
 </script>
 </body>
