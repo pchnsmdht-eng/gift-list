@@ -5,8 +5,14 @@
     <style>
         body { margin: 0; background: transparent; overflow: hidden; }
         #viewport { width: 1870px; height: 400px; position: relative; overflow: hidden; }
-        #lane-container { display: flex; flex-direction: row; width: max-content; transition: transform 0.1s linear; }
-        .lane { width: 1122px; height: 132px; overflow: hidden; position: relative; }
+        #lane-container { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            grid-template-rows: repeat(4, 1fr); 
+            width: 1870px; height: 400px;
+            gap: 2px;
+        }
+        .lane { width: 100%; height: 100%; overflow: hidden; position: relative; }
         iframe { width: 1200px; height: 4000px; border: none; transform-origin: top left; }
     </style>
 </head>
@@ -14,7 +20,6 @@
     <div id="viewport"><div id="lane-container"></div></div>
     <script>
         const USER = "pchnsmdht-eng", REPO = "gift-list";
-        // 指定のURLを配置
         const SRC = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
         const container = document.getElementById('lane-container');
         let currentSpeed = 0;
@@ -22,13 +27,14 @@
 
         async function init() {
             container.innerHTML = '';
-            for (let n = 1; n <= 15; n++) {
+            // 50個のギフトを表示するために50回ループ
+            for (let n = 1; n <= 50; n++) {
                 const l = document.createElement('div');
                 l.className = 'lane';
                 const f = document.createElement('iframe');
                 f.src = `${SRC}?lane=${n}`;
-                const topPx = (n - 1) * 132;
-                f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 132)}px 0px)`;
+                const topPx = (n - 1) * 100; // 必要に応じて調整
+                f.style.clipPath = `inset(${topPx}px 5px ${4000 - (topPx + 100)}px 0px)`;
                 f.style.transform = `translate3d(0, -${topPx}px, 0)`;
                 l.appendChild(f);
                 container.appendChild(l);
