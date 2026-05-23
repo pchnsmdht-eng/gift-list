@@ -2,67 +2,37 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ルームコントローラー</title>
     <style>
-        body { font-family: sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
-        .box { background-color: #1e1e1e; border-radius: 12px; padding: 20px; }
-        #speed-display { font-size: 52px; font-weight: bold; color: #00e5ff; text-align: center; margin: 10px 0; }
-        .speed-slider { width: 100%; height: 16px; accent-color: #00e5ff; }
-        .count-btn { padding: 10px; border: 1px solid #444; border-radius: 6px; background: #222; color: #aaa; }
-        .count-btn.active { background: #00e5ff; color: #000; }
-        .status-box { width: 100%; min-height: 50px; display: flex; align-items: center; justify-content: center; background-color: #1a1a1a; border-radius: 8px; }
-        #status { color: #69f0ae; font-weight: bold; }
+        body { font-family: sans-serif; background-color: #121212; color: white; padding: 20px; }
+        .box { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 10px; }
+        #status { background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center; color: #69f0ae; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="box">
-            <div>速度調整</div>
-            <div id="speed-display">0</div>
-            <input type="range" id="speedInput" min="-5" max="5" value="0" class="speed-slider">
-        </div>
-        <div class="box">
-            <div>ギフト総数</div>
-            <div style="display: flex; gap: 5px;">
-                <button id="btn-50" class="count-btn active" onclick="setCount(50)">50個</button>
-                <button id="btn-100" class="count-btn" onclick="setCount(100)">100個</button>
-                <button id="btn-150" class="count-btn" onclick="setCount(150)">150個</button>
-            </div>
-        </div>
-        <div class="status-box"><div id="status">システム稼働中</div></div>
+    <div class="box">
+        <input type="range" id="speedInput" min="-5" max="5" value="0" style="width:100%">
     </div>
-<script>
-    // GitHub APIを一切使わない、直接データ書き込み用URL
-    const DATA_URL = "https://keyvalue.xyz/v1/pchnsmdht_final_v1";
-    const statusDiv = document.getElementById('status');
-    let currentCount = 50;
+    <div id="status">接続待機中...</div>
 
-    async function sendData(val) {
-        try {
-            statusDiv.innerText = "送信中...";
-            await fetch(DATA_URL, { method: "POST", body: `${val},${currentCount}` });
-            statusDiv.style.color = "#69f0ae";
-            statusDiv.innerText = `変更成功: 速度[${val}] 個数[${currentCount}]`;
-        } catch(e) {
-            statusDiv.style.color = "#ff5252";
-            statusDiv.innerText = "通信エラー発生";
-        }
-    }
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = { databaseURL: "https://stream-control-default-rtdb.firebaseio.com/" };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const statusDiv = document.getElementById('status');
 
     document.getElementById('speedInput').oninput = (e) => {
         const val = -parseInt(e.target.value);
-        document.getElementById('speed-display').innerText = val;
-        sendData(val);
+        set(ref(db, 'speed'), val).then(() => {
+            statusDiv.innerText = `変更成功: 速度 ${val}`;
+        }).catch(() => {
+            statusDiv.innerText = "通信エラー";
+        });
     };
-
-    function setCount(num) {
-        currentCount = num;
-        document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`btn-${num}`).classList.add('active');
-        sendData(-parseInt(document.getElementById('speedInput').value));
-    }
 </script>
 </body>
 </html>
