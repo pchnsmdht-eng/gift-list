@@ -16,19 +16,15 @@
 </head>
 <body>
     <div class="panel">
-        <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
-        <input type="range" id="speed" min="-10" max="10" step="0.1" value="1" oninput="updateDisplay()">
-        <span class="value-display" id="speed-val">現在の設定値: 1</span>
+        <label>スクロール速度 (-5.0 ～ +5.0 ※0.1刻み)</label>
+        <input type="range" id="speed" min="-5" max="5" step="0.1" value="1" oninput="updateDisplay()">
+        <span class="value-display" id="speed-val">現在の設定値: 1.0</span>
         
-        <label style="color: #00bfff;">アイコンサイズ (縮小 0.1倍 ～ 拡大 1.5倍)</label>
+        <label style="color: #00bfff;">アイコンサイズ (0.1倍 ～ 1.5倍)</label>
         <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="updateDisplay()">
         <span class="value-display" id="size-val" style="color: #00bfff;">現在の設定値: 0.3x</span>
 
-        <label style="color: #ffaa00;">表示範囲（下の無駄な余白を切り取る）</label>
-        <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
-        <span class="value-display" id="crop-val" style="color: #ffaa00;">現在の設定値: 100%</span>
-
-        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 受信確認テスト</button>
+        <button class="apply-btn" onclick="applySettings()">設定を反映(Group2)</button>
     </div>
     <div class="panel"><div id="log-terminal"></div></div>
 
@@ -36,28 +32,25 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
-        const firebaseConfig = { apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
         
         window.updateDisplay = () => {
             document.getElementById('speed-val').innerText = "現在の設定値: " + document.getElementById('speed').value;
             document.getElementById('size-val').innerText = "現在の設定値: " + document.getElementById('size').value + "x";
-            document.getElementById('crop-val').innerText = "現在の設定値: " + document.getElementById('crop').value + "%";
         };
 
         window.applySettings = () => {
             set(ref(db, 'settings2'), {
                 speed: parseFloat(document.getElementById('speed').value),
                 size: parseFloat(document.getElementById('size').value),
-                crop: parseInt(document.getElementById('crop').value),
                 pingRequest: Date.now()
             });
+            document.getElementById('log-terminal').innerHTML += `<span class="log-wait">[送信中] 設定を更新しました</span><br>`;
         };
 
         onValue(ref(db, 'pingResponse2'), (snapshot) => {
             if (snapshot.exists()) {
-                document.getElementById('log-terminal').innerHTML += `<span class="log-success">[OK] 画面Bと同期完了</span><br>`;
+                document.getElementById('log-terminal').innerHTML += `<span class="log-success">[OK] 画面B同期完了</span><br>`;
             }
         });
         updateDisplay();
