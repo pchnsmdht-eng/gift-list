@@ -4,70 +4,38 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+    #master-container { width: 100%; height: 100%; }
     
-    #master-container {
-        width: 100%;
-        height: 100%;
-        transform-origin: top left;
-        will-change: transform;
-    }
-
-    /* 横4000pxの巨大なキャンバスを2つくっつけてループさせる */
-    .marquee-track {
-        display: flex;
-        width: 8000px; 
-        will-change: transform;
-    }
-
-    /* 巨大な窓枠 */
+    /* 余白を切り取るための窓 */
     .iframe-wrapper {
-        width: 4000px;
-        height: 1200px;
-        overflow: hidden; 
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden; /* ここで余白を隠す */
         position: relative;
     }
-
-    /* 外部サイトを巨大サイズで読み込む（これで確実に3段以上が描画される） */
     iframe {
-        width: 4000px;
-        height: 1200px;
+        width: 100vw;
+        height: 100vh;
         border: none;
         pointer-events: none;
         position: absolute;
         top: 0;
         left: 0;
     }
-
-    .hardware-accel {
-        backface-visibility: hidden;
-        perspective: 1000px;
-        transform: translateZ(0);
-    }
-
-    /* 4000px移動したら0秒で元に戻る無限ループ */
-    @keyframes slideRight {
-        0% { transform: translate3d(-4000px, 0, 0); }
-        100% { transform: translate3d(0, 0, 0); }
-    }
-
-    @keyframes slideLeft {
-        0% { transform: translate3d(0, 0, 0); }
-        100% { transform: translate3d(-4000px, 0, 0); }
-    }
 </style>
 </head>
 <body>
     <div id="master-container">
-        <div class="marquee-track" id="track">
-            <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-            <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
+        <div class="iframe-wrapper" id="crop-area">
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // ここにあなたのFirebase設定を貼り付けてください
         const firebaseConfig = {
           apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
           authDomain: "gift-list-app-53ef2.firebaseapp.com",
@@ -80,53 +48,12 @@
         
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
-        const masterContainer = document.getElementById('master-container');
-        const track = document.getElementById('track');
-        const wrappers = document.querySelectorAll('.iframe-wrapper');
+        const cropArea = document.getElementById('crop-area');
 
         onValue(ref(db, 'settings'), (snapshot) => {
             const data = snapshot.val() || {};
-            const speed = data.speed || 0;
-            const size = data.size || 0.3; // 初期値を0.3倍に設定
-            const optimize = data.optimize || false;
-            const crop = data.crop || 100;
-
-            // 巨大キャンバスをスマホの指示通りに縮小
-            masterContainer.style.transform = `scale(${size})`;
-
-            // 切り取り（1200pxを基準に切り取る）
-            wrappers.forEach(w => {
-                w.style.height = `${(crop / 100) * 1200}px`;
-            });
-
-            if(optimize) {
-                track.classList.add('hardware-accel');
-            } else {
-                track.classList.remove('hardware-accel');
-            }
-
-            if (speed === 0) {
-                track.style.animationPlayState = 'paused';
-                track.style.animationName = 'none';
-            } else {
-                const duration = 50 / Math.abs(speed);
-                track.style.animationName = speed > 0 ? 'slideRight' : 'slideLeft';
-                track.style.animationDuration = `${duration}s`;
-                track.style.animationTimingFunction = 'linear';
-                track.style.animationIterationCount = 'infinite';
-                track.style.animationPlayState = 'running';
-            }
-
-            if (data.pingRequest) {
-                set(ref(db, 'pingResponse'), { 
-                    time: data.pingRequest,
-                    echoSpeed: speed,
-                    echoSize: size,
-                    echoOpt: optimize,
-                    echoCrop: crop
-                });
-            }
+            // スマホから送られてくる高さ設定（例: 40vh）を反映
+            cropArea.style.height = (data.cropHeight || 100) + 'vh';
         });
     </script>
 </body>
