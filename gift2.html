@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+    /* GPUレンダリング最適化を常時有効 */
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
+    
     .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
+    /* 余白切り取り対応のラップ */
     .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; }
     iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; }
     @keyframes slide { 0% { transform: translateX(-4000px); } 100% { transform: translateX(0px); } }
@@ -19,18 +22,25 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
+        const app = initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" });
+        const db = getDatabase(app);
         const container = document.getElementById('master-container');
         const track = document.getElementById('track');
         const wrappers = document.querySelectorAll('.iframe-wrapper');
         
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
+            
+            // アイコンサイズ反映
             if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
+            
+            // 余白切り取り反映
             if(data.crop !== undefined) {
                 const height = (data.crop / 100) * 698;
                 wrappers.forEach(w => w.style.height = height + 'px');
             }
+            
+            // スピードと方向反映
             if(data.speed !== undefined) {
                 if (data.speed === 0) { track.style.animation = 'none'; }
                 else {
@@ -39,9 +49,10 @@
                     track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
                 }
             }
-            // 速度情報を返信に含める
+            
+            // ログのレイテンシ計算用に応答を返す
             if (data.pingRequest) {
-                set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK", echoSpeed: data.speed });
+                set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
             }
         });
     </script>
