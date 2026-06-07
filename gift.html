@@ -63,7 +63,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
-        // あなた専用のFirebase設定
         const firebaseConfig = {
           apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
           authDomain: "gift-list-app-53ef2.firebaseapp.com",
@@ -104,9 +103,14 @@
                 }
             });
 
-            // コントローラーからのPing要求に応答を返す（通信テスト用）
+            // コントローラーからのPing要求に対し、受け取ったパラメータを添えて送り返す（受信確認テスト）
             if (data.pingRequest) {
-                set(ref(db, 'pingResponse'), { time: data.pingRequest });
+                set(ref(db, 'pingResponse'), { 
+                    time: data.pingRequest,
+                    echoSpeed: speed,
+                    echoSize: size,
+                    echoOpt: optimize
+                });
             }
         });
     </script>
