@@ -4,13 +4,17 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
-    /* GPU最適化のための will-change 指定 */
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
     
     .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
     .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; }
     iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; }
-    @keyframes slide { 0% { transform: translateX(0); } 100% { transform: translateX(-4000px); } }
+    
+    /* 左右どちらにも動かせるように開始点と終了点を調整 */
+    @keyframes slide { 
+        0% { transform: translateX(-4000px); } 
+        100% { transform: translateX(0px); } 
+    }
 </style>
 </head>
 <body>
@@ -29,23 +33,24 @@
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
             
-            // アイコンサイズの反映
+            // サイズ反映
             if(data.size !== undefined) {
                 container.style.transform = `scale(${data.size})`;
             }
             
-            // スクロール速度と方向の反映 (右=normal, 左=reverse)
+            // 速度と方向の反映
             if(data.speed !== undefined) {
                 if (data.speed === 0) {
                     track.style.animation = 'none';
                 } else {
                     const duration = 30 / Math.abs(data.speed);
                     track.style.animation = `slide ${duration}s linear infinite`;
-                    track.style.animationDirection = data.speed > 0 ? 'normal' : 'reverse';
+                    // プラスなら右へ(reverse)、マイナスなら左へ(normal)
+                    track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
                 }
             }
             
-            // ログ機能（逆引き同期処理）
+            // ログ機能
             if (data.pingRequest) {
                 set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
             }
