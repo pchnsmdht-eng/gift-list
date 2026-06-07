@@ -11,27 +11,30 @@
         .value-display { font-size: 1.2rem; color: #0f0; margin-bottom: 20px; text-align: right; display: block; }
         .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
         .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
+        
         .apply-btn { width: 100%; padding: 15px; background: #007bff; color: white; font-size: 1.2rem; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+        .apply-btn:active { background: #0056b3; transform: translateY(2px); }
+
         #log-terminal { background: #000; color: #0f0; padding: 10px; height: 180px; overflow-y: auto; font-size: 0.85rem; border: 1px solid #444; line-height: 1.5; }
         .log-success { color: #00ff00; } .log-wait { color: #aaaaaa; } .log-info { color: #00bfff; }
     </style>
 </head>
 <body>
     <div class="panel">
-        <label>スクロール速度 (-10 ～ +10)</label>
+        <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
         <input type="range" id="speed" min="-10" max="10" step="0.1" value="1" oninput="updateDisplay()">
         <span class="value-display" id="speed-val">セット予定値: 1</span>
         
-        <label style="color: #00bfff;">アイコンサイズ (0.1 ～ 1.5)</label>
+        <label style="color: #00bfff;">アイコンサイズ (縮小 0.1倍 ～ 拡大 1.5倍)</label>
         <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="updateDisplay()">
         <span class="value-display" id="size-val" style="color: #00bfff;">セット予定値: 0.3x</span>
 
-        <label style="color: #ffaa00;">表示範囲 (10% ～ 100%)</label>
+        <label style="color: #ffaa00;">表示範囲 (切り取り 10% ～ 100%)</label>
         <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
         <span class="value-display" id="crop-val" style="color: #ffaa00;">セット予定値: 100%</span>
 
-        <label style="color: #ff00ff;">更新間隔 (1分 ～ 60分)</label>
-        <input type="range" id="refresh" min="1" max="60" value="5" oninput="updateDisplay()">
+        <label style="color: #ff00ff;">自動更新間隔 (分)</label>
+        <input type="range" id="refreshMin" min="1" max="60" value="5" oninput="updateDisplay()">
         <span class="value-display" id="refresh-val" style="color: #ff00ff;">セット予定値: 5分</span>
 
         <div class="checkbox-group">
@@ -41,11 +44,16 @@
 
         <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 受信確認テスト</button>
     </div>
-    <div class="panel"><label>ネットワーク通信ログ</label><div id="log-terminal"></div></div>
+
+    <div class="panel">
+        <label>ネットワーク通信ログ</label>
+        <div id="log-terminal"></div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        
         const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
         const logTerminal = document.getElementById('log-terminal');
         let requestTime = 0;
@@ -60,21 +68,28 @@
             document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
             document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
             document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
-            document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refresh').value + "分";
+            document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshMin').value + "分";
         };
 
         window.applySettings = () => {
+            const speed = parseFloat(document.getElementById('speed').value);
+            const size = parseFloat(document.getElementById('size').value);
+            const optimize = document.getElementById('optimize').checked;
+            const crop = parseInt(document.getElementById('crop').value);
+            const refreshMin = parseInt(document.getElementById('refreshMin').value);
+            // 分をミリ秒に変換
+            const refreshMs = refreshMin * 60 * 1000;
+            
             requestTime = Date.now();
-            const s = parseFloat(document.getElementById('speed').value);
-            const refresh = parseInt(document.getElementById('refresh').value);
-            addLog(`🔄 設定送信: 速度[${s}], 更新[${refresh}分]`, "log-wait");
+            
+            addLog(`🔄 送信: 速度[${speed}], 更新[${refreshMin}分/${refreshMs}ms]`, "log-wait");
 
             set(ref(db, 'settings'), {
-                speed: s,
-                size: parseFloat(document.getElementById('size').value),
-                crop: parseInt(document.getElementById('crop').value),
-                optimize: document.getElementById('optimize').checked,
-                refreshInterval: refresh,
+                speed: speed,
+                size: size,
+                optimize: optimize,
+                crop: crop,
+                refreshMs: refreshMs, // ミリ秒で送信
                 pingRequest: requestTime
             });
         };
@@ -82,7 +97,8 @@
         onValue(ref(db, 'pingResponse'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
-                addLog(`✅ 通信成功: レイテンシ ${Date.now() - data.time}ms`, "log-success");
+                const latency = Date.now() - data.time;
+                addLog(`✅ 通信成功: 応答確認 (${latency}ms)`, "log-success");
             }
         });
         updateDisplay();
