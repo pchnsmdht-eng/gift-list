@@ -39,7 +39,6 @@
         .log-success { color: #00ff00; }
         .log-wait { color: #aaaaaa; }
         .log-info { color: #00bfff; }
-        .log-highlight { color: #ffd700; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -90,15 +89,14 @@
 
         function addLog(msg, type = "log-info") {
             const time = new Date().toLocaleTimeString('ja-JP', { hour12: false, fractionalSecondDigits: 2 });
-            const logEntry = `<span class="${type}">[${time}] ${msg}</span><br>`;
-            logTerminal.innerHTML += logEntry;
+            logTerminal.innerHTML += `<span class="${type}">[${time}] ${msg}</span><br>`;
             logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
         window.updateDisplay = () => {
-            document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
-            document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
-            document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
+            document.getElementById('speed-val').innerText = "現在の設定値: " + document.getElementById('speed').value;
+            document.getElementById('size-val').innerText = "現在の設定値: " + document.getElementById('size').value + "x";
+            document.getElementById('crop-val').innerText = "現在の設定値: " + document.getElementById('crop').value + "%";
         };
 
         window.applySettings = () => {
@@ -110,7 +108,7 @@
             
             addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], 切取[${crop}%]`, "log-wait");
 
-            // ★重要：ここを 'settings2' にすることで、別々に動きます
+            // ★ここを 'settings2' にしました
             set(ref(db, 'settings2'), {
                 speed: speed,
                 size: size,
@@ -120,12 +118,12 @@
             });
         };
 
-        // ★重要：ここも 'pingResponse2' を監視してログを返します
+        // ★ここを 'pingResponse2' にしました
         onValue(ref(db, 'pingResponse2'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
                 addLog(`✅ 通信成功: 応答確認`, "log-success");
-                addLog(`🌐 画面Bと同期完了`, "log-success");
+                addLog(`🌐 逆引き同期完了`, "log-success");
             }
         });
 
