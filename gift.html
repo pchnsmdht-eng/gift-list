@@ -12,22 +12,19 @@
         will-change: transform;
     }
 
-    /* 横に流れる1本道（トラック） */
     .marquee-track {
         display: flex;
-        width: 200vw; /* 継ぎ目をなくすため画面2つ分の幅 */
+        width: 200vw;
         will-change: transform;
     }
 
-    /* 不要な余白を切り取るための窓（クリッピング枠） */
     .iframe-wrapper {
         width: 100vw;
-        height: 100vh; /* 初期値。後でコントローラーから切り取られます */
-        overflow: hidden; /* 枠からはみ出た部分（下の余白）を消去 */
+        height: 100vh;
+        overflow: hidden;
         position: relative;
     }
 
-    /* 外部サイトの読み込み */
     iframe {
         width: 100vw;
         height: 100vh;
@@ -44,7 +41,6 @@
         transform: translateZ(0);
     }
 
-    /* 画面1つ分をスライドして0秒で元に戻る（無限ループ） */
     @keyframes slideRight {
         0% { transform: translate3d(-100vw, 0, 0); }
         100% { transform: translate3d(0, 0, 0); }
@@ -90,30 +86,31 @@
             const speed = data.speed || 0;
             const size = data.size || 1.0;
             const optimize = data.optimize || false;
-            const crop = data.crop || 100; // 高さの切り取り率
+            const crop = data.crop || 100;
 
-            // 1. サイズ調整
             masterContainer.style.transform = `scale(${size})`;
 
-            // 2. 下の余白のトリミング（切り取り）
             wrappers.forEach(w => {
                 w.style.height = `${crop}vh`;
             });
 
-            // 3. ラグ軽減処理
             if(optimize) {
                 track.classList.add('hardware-accel');
             } else {
                 track.classList.remove('hardware-accel');
             }
 
-            // 4. 無限スクロールアニメーション
+            // 【修正箇所】アニメーションの命令を細かく分解して強制適用
             if (speed === 0) {
-                track.style.animation = 'none';
+                track.style.animationPlayState = 'paused';
+                track.style.animationName = 'none';
             } else {
                 const duration = 50 / Math.abs(speed);
-                const direction = speed > 0 ? 'slideRight' : 'slideLeft';
-                track.style.animation = `${direction} ${duration}s linear infinite`;
+                track.style.animationName = speed > 0 ? 'slideRight' : 'slideLeft';
+                track.style.animationDuration = `${duration}s`;
+                track.style.animationTimingFunction = 'linear';
+                track.style.animationIterationCount = 'infinite';
+                track.style.animationPlayState = 'running';
             }
 
             if (data.pingRequest) {
