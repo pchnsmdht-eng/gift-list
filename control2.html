@@ -1,31 +1,47 @@
-<script type="module">
-    // ... 前半の定数定義などは同じ ...
-    window.applySettings = () => {
-        const speed = parseFloat(document.getElementById('speed').value);
-        const size = parseFloat(document.getElementById('size').value);
-        const optimize = document.getElementById('optimize').checked;
-        const crop = parseInt(document.getElementById('crop').value);
-        requestTime = Date.now();
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background: #1a1a1a; color: #eee; padding: 15px; font-family: monospace; }
+        .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        input[type="range"] { width: 100%; margin-bottom: 10px; }
+        .value-display { color: #0f0; text-align: right; display: block; }
+        .apply-btn { width: 100%; padding: 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+        #log-terminal { background: #000; color: #0f0; padding: 10px; height: 150px; overflow-y: auto; border: 1px solid #444; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <label>スクロール速度 (-5.0 ～ 5.0 ※0.1刻み)</label>
+        <input type="range" id="speed" min="-5" max="5" step="0.1" value="1" oninput="document.getElementById('s-val').innerText=this.value">
+        <span class="value-display" id="s-val">1</span>
         
-        addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], 切取[${crop}%]`, "log-wait");
+        <label>アイコンサイズ (0.1 ～ 1.5)</label>
+        <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="document.getElementById('z-val').innerText=this.value">
+        <span class="value-display" id="z-val">0.3</span>
 
-        // ★重要：ここを 'settings2' に変更
-        set(ref(db, 'settings2'), {
-            speed: speed,
-            size: size,
-            optimize: optimize,
-            crop: crop,
-            pingRequest: requestTime
+        <button class="apply-btn" onclick="apply()">設定を反映(ログ有効)</button>
+    </div>
+    <div class="panel"><div id="log-terminal"></div></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const db = getDatabase(initializeApp({ /* 設定はそのまま */ }));
+        
+        window.apply = () => {
+            set(ref(db, 'settings2'), {
+                speed: parseFloat(document.getElementById('speed').value),
+                size: parseFloat(document.getElementById('size').value),
+                ping: Date.now()
+            });
+            document.getElementById('log-terminal').innerHTML += `[送信] 速度:${document.getElementById('speed').value}<br>`;
+        };
+        onValue(ref(db, 'pingResponse2'), () => {
+            document.getElementById('log-terminal').innerHTML += `<span style="color:#0f0">[OK] 受信確認完了</span><br>`;
         });
-    };
-
-    // ★重要：ここを 'pingResponse2' に変更
-    onValue(ref(db, 'pingResponse2'), (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.time === requestTime) {
-            addLog(`✅ 通信成功: 応答確認`, "log-success");
-            addLog(`🌐 画面Bと同期完了`, "log-success");
-        }
-    });
-    updateDisplay();
-</script>
+    </script>
+</body>
+</html>
