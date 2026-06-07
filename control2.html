@@ -29,9 +29,13 @@
         <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="updateDisplay()">
         <span class="value-display" id="size-val" style="color: #00bfff;">セット予定値: 0.3x</span>
 
-        <label style="color: #ffaa00;">表示範囲（下の無駄な余白を切り取る）</label>
+        <label style="color: #ffaa00;">表示範囲 (切り取り 10% ～ 100%)</label>
         <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
         <span class="value-display" id="crop-val" style="color: #ffaa00;">セット予定値: 100%</span>
+
+        <label style="color: #ff00ff;">自動更新間隔 (分)</label>
+        <input type="range" id="refreshMin" min="1" max="60" value="5" oninput="updateDisplay()">
+        <span class="value-display" id="refresh-val" style="color: #ff00ff;">セット予定値: 5分</span>
 
         <div class="checkbox-group">
             <input type="checkbox" id="optimize" checked>
@@ -64,6 +68,7 @@
             document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
             document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
             document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
+            document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshMin').value + "分";
         };
 
         window.applySettings = () => {
@@ -71,15 +76,20 @@
             const size = parseFloat(document.getElementById('size').value);
             const optimize = document.getElementById('optimize').checked;
             const crop = parseInt(document.getElementById('crop').value);
+            const refreshMin = parseInt(document.getElementById('refreshMin').value);
+            const refreshMs = refreshMin * 60 * 1000;
+            
             requestTime = Date.now();
             
-            addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], 切取[${crop}%], GPU[${optimize ? 'ON' : 'OFF'}]`, "log-wait");
+            addLog(`🔄 送信: 速度[${speed}], 更新[${refreshMin}分/${refreshMs}ms]`, "log-wait");
 
+            // settings2を使用
             set(ref(db, 'settings2'), {
                 speed: speed,
                 size: size,
                 optimize: optimize,
                 crop: crop,
+                refreshMs: refreshMs,
                 pingRequest: requestTime
             });
         };
