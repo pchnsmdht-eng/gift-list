@@ -48,9 +48,9 @@
         <input type="range" id="speed" min="-10" max="10" value="2" oninput="updateDisplay()">
         <span class="value-display" id="speed-val">現在の設定値: 2</span>
         
-        <label>アイコンサイズ (0.5倍 ～ 2.0倍)</label>
-        <input type="range" id="size" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateDisplay()">
-        <span class="value-display" id="size-val">現在の設定値: 1.0x</span>
+        <label style="color: #00bfff;">アイコンサイズ (縮小 0.1倍 ～ 拡大 1.5倍)</label>
+        <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="updateDisplay()">
+        <span class="value-display" id="size-val" style="color: #00bfff;">現在の設定値: 0.3x</span>
 
         <label style="color: #ffaa00;">表示範囲（下の無駄な余白を切り取る）</label>
         <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
@@ -65,7 +65,7 @@
     </div>
 
     <div class="panel">
-        <label>ネットワーク通信ログ（受信テスト）</label>
+        <label>ネットワーク通信ログ</label>
         <div id="log-terminal"></div>
     </div>
 
@@ -129,15 +129,12 @@
             if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
                 let status = latency < 100 ? "Excellent" : (latency < 300 ? "Good" : "Warning");
-                
                 addLog(`✅ 通信成功: 応答確認`, "log-success");
-                addLog(`📡 Ping遅延: ${latency}ms (${status})`, "log-success");
                 
                 if(data.echoSpeed !== undefined) {
-                    addLog(`📥 受信データ: 速度[${data.echoSpeed}] 切取[${data.echoCrop}%]`, "log-highlight");
+                    addLog(`📥 受信データ: 速度[${data.echoSpeed}] サイズ[${data.echoSize}x]`, "log-highlight");
                 }
-                
-                addLog(`🌐 逆引き同期完了: 配信画面に反映されました`, "log-success");
+                addLog(`🌐 逆引き同期完了`, "log-success");
             }
         });
 
