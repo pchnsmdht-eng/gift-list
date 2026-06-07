@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
-    /* GPUレンダリング最適化を反映 */
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
     
     .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
@@ -15,8 +14,8 @@
 </head>
 <body>
     <div id="master-container"><div class="marquee-track" id="track">
-        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe></div>
-        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe></div>
+        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
+        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
     </div></div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -27,26 +26,25 @@
         const track = document.getElementById('track');
         const wrappers = document.querySelectorAll('.iframe-wrapper');
         
-        // 送信先を 'settings' に設定（gift.html用）
         onValue(ref(db, 'settings'), (snapshot) => {
             const data = snapshot.val() || {};
             
-            // アイコンサイズ
+            // サイズ反映
             if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
             
-            // 余白切り取り (crop)
+            // 余白切り取り反映
             if(data.crop !== undefined) {
                 const height = (data.crop / 100) * 698;
                 wrappers.forEach(w => w.style.height = height + 'px');
             }
             
-            // GPUレンダリング最適化 (optimize)
+            // GPUレンダリング最適化反映
             if(data.optimize !== undefined) {
                 container.style.willChange = data.optimize ? 'transform' : 'auto';
                 track.style.willChange = data.optimize ? 'transform' : 'auto';
             }
             
-            // スピードと方向
+            // 速度と方向の反映 (右=reverse, 左=normal)
             if(data.speed !== undefined) {
                 if (data.speed === 0) { track.style.animation = 'none'; }
                 else {
@@ -56,7 +54,7 @@
                 }
             }
             
-            // レイテンシ計測用返信 (pingResponse)
+            // ログのレイテンシ計算用に応答を返す
             if (data.pingRequest) {
                 set(ref(db, 'pingResponse'), { time: data.pingRequest, status: "OK" });
             }
