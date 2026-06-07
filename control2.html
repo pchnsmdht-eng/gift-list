@@ -10,7 +10,7 @@
         .value-display { font-size: 1.2rem; color: #0f0; margin-bottom: 20px; text-align: right; display: block; }
         .apply-btn { width: 100%; padding: 15px; background: #007bff; color: white; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
         #log-terminal { background: #000; color: #0f0; padding: 10px; height: 180px; overflow-y: auto; font-size: 0.85rem; border: 1px solid #444; line-height: 1.5; }
-        .log-success { color: #00ff00; } .log-wait { color: #aaaaaa; }
+        .log-success { color: #00ff00; } .log-wait { color: #aaaaaa; } .log-highlight { color: #ffd700; }
     </style>
 </head>
 <body>
@@ -47,20 +47,24 @@
 
         window.applySettings = () => {
             requestTime = Date.now();
+            const s = parseFloat(document.getElementById('speed').value);
+            logTerminal.innerHTML += `[送信] 速度:${s} を送信中...<br>`;
+            
             set(ref(db, 'settings2'), {
-                speed: parseFloat(document.getElementById('speed').value),
+                speed: s,
                 size: parseFloat(document.getElementById('size').value),
                 crop: parseInt(document.getElementById('crop').value),
                 pingRequest: requestTime
             });
-            logTerminal.innerHTML += `[送信] 計測開始...<br>`;
         };
 
         onValue(ref(db, 'pingResponse2'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
-                logTerminal.innerHTML += `<span class="log-success">[OK] 通信成功: レイテンシ ${latency}ms</span><br>`;
+                // 受信した速度設定を表示に追加
+                logTerminal.innerHTML += `<span class="log-success">[OK] 完了: ${latency}ms</span><br>`;
+                logTerminal.innerHTML += `<span class="log-highlight"> └ 速度反映値: ${document.getElementById('speed').value}</span><br>`;
                 logTerminal.scrollTop = logTerminal.scrollHeight;
             }
         });
