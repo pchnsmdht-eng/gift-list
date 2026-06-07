@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
-    #master-container { width: 100%; height: 100%; }
+    #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.3s ease; }
     
-    /* 余白を切り取るための窓 */
-    .iframe-wrapper {
+    /* 巨大なコンテナ */
+    #crop-wrapper {
         width: 100vw;
         height: 100vh;
-        overflow: hidden; /* ここで余白を隠す */
+        overflow: hidden; /* 余白を隠す窓 */
         position: relative;
     }
     iframe {
@@ -26,7 +26,7 @@
 </head>
 <body>
     <div id="master-container">
-        <div class="iframe-wrapper" id="crop-area">
+        <div id="crop-wrapper">
             <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
     </div>
@@ -35,7 +35,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // ここにあなたのFirebase設定を貼り付けてください
         const firebaseConfig = {
           apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
           authDomain: "gift-list-app-53ef2.firebaseapp.com",
@@ -48,12 +47,15 @@
         
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const cropArea = document.getElementById('crop-area');
+        
+        const container = document.getElementById('master-container');
+        const wrapper = document.getElementById('crop-wrapper');
 
         onValue(ref(db, 'settings'), (snapshot) => {
             const data = snapshot.val() || {};
-            // スマホから送られてくる高さ設定（例: 40vh）を反映
-            cropArea.style.height = (data.cropHeight || 100) + 'vh';
+            // スマホから送られてくるパラメータを適用
+            container.style.transform = `scale(${data.scale || 1.0})`;
+            wrapper.style.height = (data.cropHeight || 100) + 'vh';
         });
     </script>
 </body>
