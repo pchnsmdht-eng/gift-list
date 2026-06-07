@@ -5,82 +5,38 @@
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     
-    #master-container { width: 100%; height: 100%; }
-
-    /* 横に流れる無限ループのトラック */
-    .marquee-track {
+    #track {
         display: flex;
-        width: 200vw; /* 継ぎ目をなくすため画面2つ分の幅 */
-        animation: slide 20s linear infinite; /* ★スクロールの心臓部 */
+        width: 8000px;
+        /* アニメーションをここから直接実行 */
+        animation: slide 20s linear infinite;
     }
 
-    /* 高さ切り取り用の窓 */
+    /* H698の枠に合わせる調整 */
     .iframe-wrapper {
-        width: 100vw;
-        height: 100vh; /* スマホからの指示で変わります */
-        overflow: hidden; 
+        width: 4000px;
+        height: 698px;
+        overflow: hidden;
         position: relative;
     }
 
     iframe {
-        width: 100vw;
-        height: 100vh;
+        width: 4000px;
+        height: 1200px;
         border: none;
         pointer-events: none;
-        position: absolute;
-        top: 0;
-        left: 0;
     }
 
-    /* 無限ループのアニメーション */
     @keyframes slide {
         0% { transform: translateX(0); }
-        100% { transform: translateX(-100vw); }
+        100% { transform: translateX(-4000px); }
     }
 </style>
 </head>
 <body>
-    <div id="master-container">
-        <div class="marquee-track" id="track">
-            <div class="iframe-wrapper" id="crop-area">
-                <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-            </div>
-            <div class="iframe-wrapper" id="crop-area-2">
-                <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-            </div>
-        </div>
+    <div id="track">
+        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
+        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
     </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
-          authDomain: "gift-list-app-53ef2.firebaseapp.com",
-          projectId: "gift-list-app-53ef2",
-          storageBucket: "gift-list-app-53ef2.firebasestorage.app",
-          messagingSenderId: "161949465085",
-          appId: "1:161949465085:web:3574bdee443e4fcec70194",
-          measurementId: "G-B3PJELG3Q9"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const track = document.getElementById('track');
-        const wrappers = document.querySelectorAll('.iframe-wrapper');
-
-        onValue(ref(db, 'settings'), (snapshot) => {
-            const data = snapshot.val() || {};
-            
-            // 1. 高さの切り取りを適用
-            const h = (data.cropHeight || 100) + 'vh';
-            wrappers.forEach(w => w.style.height = h);
-            
-            // 2. スピードの反映（data.speedが送られてくると想定）
-            const speed = data.speed || 5; 
-            track.style.animationDuration = (30 / Math.abs(speed)) + 's';
-        });
-    </script>
 </body>
 </html>
