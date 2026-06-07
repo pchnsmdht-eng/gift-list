@@ -5,58 +5,59 @@
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     
-    #master-container {
-        width: 100%;
-        height: 100%;
-        transform-origin: top left;
-        will-change: transform;
-    }
+    #master-container { width: 100%; height: 100%; transform-origin: top left; }
 
     .marquee-track {
         display: flex;
-        width: 200vw;
+        width: 200vw; /* 継ぎ目なしの無限ループ用 */
         will-change: transform;
     }
 
-    .iframe-wrapper {
+    /* 3段×7列のグリッドレイアウト */
+    .grid-block {
         width: 100vw;
         height: 100vh;
-        overflow: hidden;
-        position: relative;
+        display: grid;
+        grid-template-rows: repeat(3, 1fr);    /* 縦に3段 */
+        grid-template-columns: repeat(7, 1fr); /* 横に7列 */
+        gap: 15px; /* アイコン同士の隙間 */
+        padding: 20px;
+        box-sizing: border-box;
     }
 
-    iframe {
-        width: 100vw;
-        height: 100vh;
-        border: none;
-        pointer-events: none;
-        position: absolute;
-        top: 0;
-        left: 0;
+    /* ギフトアイコンのダミーデザイン */
+    .gift-item {
+        background: linear-gradient(135deg, #ffd700, #ffaa00);
+        border: 2px solid #fff;
+        border-radius: 15px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 3rem; /* アイコンの大きさ */
     }
 
     .hardware-accel {
         backface-visibility: hidden;
-        perspective: 1000px;
         transform: translateZ(0);
     }
 
     @keyframes slideRight {
-        0% { transform: translate3d(-100vw, 0, 0); }
-        100% { transform: translate3d(0, 0, 0); }
+        0% { transform: translateX(-100vw); }
+        100% { transform: translateX(0); }
     }
 
     @keyframes slideLeft {
-        0% { transform: translate3d(0, 0, 0); }
-        100% { transform: translate3d(-100vw, 0, 0); }
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-100vw); }
     }
 </style>
 </head>
 <body>
     <div id="master-container">
         <div class="marquee-track" id="track">
-            <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-            <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
+            <div class="grid-block" id="block1"></div>
+            <div class="grid-block" id="block2"></div>
         </div>
     </div>
 
@@ -64,6 +65,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
+        // ★ご自身のFirebaseの鍵（firebaseConfig）に書き換えてください★
         const firebaseConfig = {
           apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
           authDomain: "gift-list-app-53ef2.firebaseapp.com",
@@ -77,22 +79,29 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
+        // 3段7列のアイコン（🎁）を自動生成する処理
+        function generateGifts(blockId) {
+            const block = document.getElementById(blockId);
+            for(let i = 0; i < 21; i++) {
+                const item = document.createElement('div');
+                item.className = 'gift-item';
+                item.innerText = '🎁'; // ここを画像に変えることも可能です
+                block.appendChild(item);
+            }
+        }
+        generateGifts('block1');
+        generateGifts('block2');
+
         const masterContainer = document.getElementById('master-container');
         const track = document.getElementById('track');
-        const wrappers = document.querySelectorAll('.iframe-wrapper');
 
         onValue(ref(db, 'settings'), (snapshot) => {
             const data = snapshot.val() || {};
             const speed = data.speed || 0;
             const size = data.size || 1.0;
             const optimize = data.optimize || false;
-            const crop = data.crop || 100;
 
             masterContainer.style.transform = `scale(${size})`;
-
-            wrappers.forEach(w => {
-                w.style.height = `${crop}vh`;
-            });
 
             if(optimize) {
                 track.classList.add('hardware-accel');
@@ -100,26 +109,19 @@
                 track.classList.remove('hardware-accel');
             }
 
-            // 【修正箇所】アニメーションの命令を細かく分解して強制適用
             if (speed === 0) {
-                track.style.animationPlayState = 'paused';
-                track.style.animationName = 'none';
+                track.style.animation = 'none';
             } else {
                 const duration = 50 / Math.abs(speed);
-                track.style.animationName = speed > 0 ? 'slideRight' : 'slideLeft';
-                track.style.animationDuration = `${duration}s`;
-                track.style.animationTimingFunction = 'linear';
-                track.style.animationIterationCount = 'infinite';
-                track.style.animationPlayState = 'running';
+                const direction = speed > 0 ? 'slideRight' : 'slideLeft';
+                track.style.animation = `${direction} ${duration}s linear infinite`;
             }
 
             if (data.pingRequest) {
                 set(ref(db, 'pingResponse'), { 
                     time: data.pingRequest,
                     echoSpeed: speed,
-                    echoSize: size,
-                    echoOpt: optimize,
-                    echoCrop: crop
+                    echoSize: size
                 });
             }
         });
