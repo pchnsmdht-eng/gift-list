@@ -4,58 +4,51 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
-    #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.3s ease; }
-    
-    /* 巨大なコンテナ */
-    #crop-wrapper {
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden; /* 余白を隠す窓 */
-        position: relative;
-    }
-    iframe {
-        width: 100vw;
-        height: 100vh;
-        border: none;
-        pointer-events: none;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
+    #master-container { width: 100%; height: 100%; transform-origin: top left; will-change: transform; }
+    .marquee-track { display: flex; width: 8000px; will-change: transform; }
+    .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; }
+    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; }
 </style>
 </head>
 <body>
     <div id="master-container">
-        <div id="crop-wrapper">
-            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+        <div class="marquee-track" id="track">
+            <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
+            <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
         </div>
     </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
-          authDomain: "gift-list-app-53ef2.firebaseapp.com",
-          projectId: "gift-list-app-53ef2",
-          storageBucket: "gift-list-app-53ef2.firebasestorage.app",
-          messagingSenderId: "161949465085",
-          appId: "1:161949465085:web:3574bdee443e4fcec70194",
-          measurementId: "G-B3PJELG3Q9"
-        };
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
+        const firebaseConfig = { apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
-        const container = document.getElementById('master-container');
-        const wrapper = document.getElementById('crop-wrapper');
+        const track = document.getElementById('track');
+        const wrappers = document.querySelectorAll('.iframe-wrapper');
 
-        onValue(ref(db, 'settings'), (snapshot) => {
-            const data = snapshot.val() || {};
-            // スマホから送られてくるパラメータを適用
-            container.style.transform = `scale(${data.scale || 1.0})`;
-            wrapper.style.height = (data.cropHeight || 100) + 'vh';
+        // ★修正：settings という場所を常に監視して、変化があったら即座に反映する
+        const settingsRef = ref(db, 'settings');
+        onValue(settingsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            
+            console.log("Firebaseデータ受信:", data); // ブラウザのF12開発者ツールで見れるようにする
+
+            // 1. スクロール速度適用
+            if (data.speed !== undefined) {
+                if (data.speed === 0) {
+                    track.style.animation = 'none';
+                } else {
+                    const duration = 50 / Math.abs(data.speed);
+                    track.style.animation = `${data.speed > 0 ? 'slideRight' : 'slideLeft'} ${duration}s linear infinite`;
+                }
+            }
+
+            // 2. 表示範囲(Crop)反映
+            if (data.crop !== undefined) {
+                wrappers.forEach(w => w.style.height = `${(data.crop / 100) * 698}px`);
+            }
         });
     </script>
 </body>
