@@ -73,7 +73,7 @@
             const crop = parseInt(document.getElementById('crop').value);
             requestTime = Date.now();
             
-            addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], 切取[${crop}%], GPU[${optimize}]`, "log-wait");
+            addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], 切取[${crop}%], GPU[${optimize ? 'ON' : 'OFF'}]`, "log-wait");
 
             set(ref(db, 'settings2'), {
                 speed: speed,
