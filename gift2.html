@@ -25,13 +25,20 @@
         const container = document.getElementById('master-container');
         const track = document.getElementById('track');
         
-        // ★ここを settings2 にすることで、AとBが干渉しなくなります
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
-            if(data.scale) container.style.transform = `scale(${data.scale})`;
-            if(data.speed) track.style.animationDuration = (30 / Math.abs(data.speed)) + 's';
             
-            // ★ここを pingResponse2 にすることで、ログも正しくB側に返ります
+            // アイコンサイズを適用 (sizeという名前で統一)
+            if(data.size !== undefined) {
+                container.style.transform = `scale(${data.size})`;
+            }
+            
+            // 速度を適用
+            if(data.speed !== undefined) {
+                track.style.animationDuration = (30 / Math.abs(data.speed)) + 's';
+            }
+            
+            // ログを返す処理 (pingResponse2へ)
             if (data.pingRequest) {
                 set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
             }
