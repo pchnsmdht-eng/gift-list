@@ -4,18 +4,19 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
-    #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; }
+    /* GPUレンダリング最適化を反映 */
+    #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
     
-    .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; }
+    .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
     .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; }
     iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; }
-    @keyframes slide { 0% { transform: translateX(0); } 100% { transform: translateX(-4000px); } }
+    @keyframes slide { 0% { transform: translateX(-4000px); } 100% { transform: translateX(0px); } }
 </style>
 </head>
 <body>
     <div id="master-container"><div class="marquee-track" id="track">
-        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
+        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe></div>
+        <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe></div>
     </div></div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -24,13 +25,38 @@
         const db = getDatabase(app);
         const container = document.getElementById('master-container');
         const track = document.getElementById('track');
+        const wrappers = document.querySelectorAll('.iframe-wrapper');
         
+        // 送信先を 'settings' に設定（gift.html用）
         onValue(ref(db, 'settings'), (snapshot) => {
             const data = snapshot.val() || {};
-            if(data.scale) container.style.transform = `scale(${data.scale})`;
-            if(data.speed) track.style.animationDuration = (30 / Math.abs(data.speed)) + 's';
             
-            // ログを返すための逆引き同期処理（これがログ復活の鍵です）
+            // アイコンサイズ
+            if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
+            
+            // 余白切り取り (crop)
+            if(data.crop !== undefined) {
+                const height = (data.crop / 100) * 698;
+                wrappers.forEach(w => w.style.height = height + 'px');
+            }
+            
+            // GPUレンダリング最適化 (optimize)
+            if(data.optimize !== undefined) {
+                container.style.willChange = data.optimize ? 'transform' : 'auto';
+                track.style.willChange = data.optimize ? 'transform' : 'auto';
+            }
+            
+            // スピードと方向
+            if(data.speed !== undefined) {
+                if (data.speed === 0) { track.style.animation = 'none'; }
+                else {
+                    const duration = 30 / Math.abs(data.speed);
+                    track.style.animation = `slide ${duration}s linear infinite`;
+                    track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
+                }
+            }
+            
+            // レイテンシ計測用返信 (pingResponse)
             if (data.pingRequest) {
                 set(ref(db, 'pingResponse'), { time: data.pingRequest, status: "OK" });
             }
