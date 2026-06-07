@@ -59,6 +59,7 @@
         onValue(ref(db, 'pingResponse2'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
+                // ここでレイテンシを計算して表示
                 const latency = Date.now() - data.time;
                 logTerminal.innerHTML += `<span class="log-success">[OK] 通信成功: レイテンシ ${latency}ms</span><br>`;
                 logTerminal.scrollTop = logTerminal.scrollHeight;
