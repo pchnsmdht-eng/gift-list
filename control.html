@@ -7,30 +7,62 @@
         body { background: #1a1a1a; color: #eee; padding: 15px; font-family: monospace; }
         .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input[type="range"] { width: 100%; margin-bottom: 20px; }
+        input[type="range"] { width: 100%; margin-bottom: 10px; }
+        .value-display { font-size: 1.2rem; color: #0f0; margin-bottom: 20px; text-align: right; display: block; }
         .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
         .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
-        #log-terminal { background: #000; color: #0f0; padding: 10px; height: 100px; overflow-y: auto; font-size: 0.9rem; border: 1px solid #444; }
+        
+        /* 反映ボタンのデザイン */
+        .apply-btn {
+            width: 100%;
+            padding: 15px;
+            background: #007bff;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .apply-btn:active { background: #0056b3; transform: translateY(2px); }
+
+        /* ログ画面のデザイン */
+        #log-terminal { 
+            background: #000; 
+            color: #0f0; 
+            padding: 10px; 
+            height: 150px; 
+            overflow-y: auto; 
+            font-size: 0.85rem; 
+            border: 1px solid #444; 
+            line-height: 1.4;
+        }
+        .log-success { color: #00ff00; }
+        .log-wait { color: #aaaaaa; }
+        .log-info { color: #00bfff; }
     </style>
 </head>
 <body>
     <div class="panel">
         <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
-        <input type="range" id="speed" min="-10" max="10" value="2" oninput="updateSettings()">
-        <span id="speed-val">2</span>
+        <input type="range" id="speed" min="-10" max="10" value="2" oninput="updateDisplay()">
+        <span class="value-display" id="speed-val">現在の設定値: 2</span>
         
         <label>アイコンサイズ (0.5倍 ～ 2.0倍)</label>
-        <input type="range" id="size" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateSettings()">
-        <span id="size-val">1.0x</span>
+        <input type="range" id="size" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateDisplay()">
+        <span class="value-display" id="size-val">現在の設定値: 1.0x</span>
 
         <div class="checkbox-group">
-            <input type="checkbox" id="optimize" onchange="updateSettings()" checked>
+            <input type="checkbox" id="optimize" onchange="updateDisplay()" checked>
             <label for="optimize" style="margin:0;">ラグ軽減 (GPUレンダリング最適化)</label>
         </div>
+
+        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 通信テスト</button>
     </div>
 
     <div class="panel">
-        <label>通信状態ログ (Ping遅延)</label>
+        <label>ネットワーク通信ログ</label>
         <div id="log-terminal"></div>
     </div>
 
@@ -41,45 +73,61 @@
         const firebaseConfig = { /* ご自身のFirebase設定をペーストしてください */ };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
         const logTerminal = document.getElementById('log-terminal');
+        let requestTime = 0;
 
-        function addLog(msg) {
-            const time = new Date().toLocaleTimeString();
-            logTerminal.innerHTML += `[${time}] ${msg}<br>`;
+        function addLog(msg, type = "log-info") {
+            const time = new Date().toLocaleTimeString('ja-JP', { hour12: false, fractionalSecondDigits: 2 });
+            const logEntry = `<span class="${type}">[${time}] ${msg}</span><br>`;
+            logTerminal.innerHTML += logEntry;
             logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
-        window.updateSettings = () => {
+        // ドラッグした時は表示だけ更新し、送信はしない
+        window.updateDisplay = () => {
+            document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
+            document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
+        };
+
+        // 「設定を反映」ボタンを押したときの処理
+        window.applySettings = () => {
             const speed = parseFloat(document.getElementById('speed').value);
             const size = parseFloat(document.getElementById('size').value);
             const optimize = document.getElementById('optimize').checked;
+            requestTime = Date.now();
             
-            document.getElementById('speed-val').innerText = speed;
-            document.getElementById('size-val').innerText = size + "x";
+            document.getElementById('speed-val').innerText = "現在の設定値: " + speed;
+            document.getElementById('size-val').innerText = "現在の設定値: " + size + "x";
 
-            // Pingリクエストタイムスタンプを含めて送信
+            addLog("-------------------------", "log-wait");
+            addLog(`🔄 パラメータ送信: Speed[${speed}], Size[${size}], Opt[${optimize}]`, "log-wait");
+
+            // Firebaseへ送信（配信PC側へ命令）
             set(ref(db, 'settings'), {
                 speed: speed,
                 size: size,
                 optimize: optimize,
-                pingRequest: Date.now()
+                pingRequest: requestTime
             });
-            addLog(`Cmd Send: Speed:${speed}, Size:${size}, Opt:${optimize}`);
         };
 
-        // 配信PCからのPing応答を受信して遅延(ラグ)を計算
+        // 配信PCからの応答（Ping）を受信したときの処理
         onValue(ref(db, 'pingResponse'), (snapshot) => {
             const data = snapshot.val();
-            if (data && data.time) {
+            // 自分が送ったリクエストに対する応答か確認
+            if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
-                let status = latency < 100 ? "良好" : (latency < 300 ? "普通" : "遅延発生");
-                addLog(`Ping: ${latency}ms (${status})`);
+                let status = latency < 100 ? "Excellent" : (latency < 300 ? "Good" : "Warning");
+                
+                // 通信成功のログを残す
+                addLog(`✅ 通信テスト成功: 応答確認`, "log-success");
+                addLog(`📡 Ping遅延: ${latency}ms (Status: ${status})`, "log-success");
+                addLog(`🌐 逆引き同期完了: 配信画面に反映されました`, "log-success");
             }
         });
 
-        // 初回実行
-        updateSettings();
+        // 初回読み込み時の表示リセット
+        updateDisplay();
     </script>
 </body>
 </html>
