@@ -12,7 +12,6 @@
         .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
         .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
         
-        /* 反映ボタンのデザイン */
         .apply-btn {
             width: 100%;
             padding: 15px;
@@ -27,20 +26,20 @@
         }
         .apply-btn:active { background: #0056b3; transform: translateY(2px); }
 
-        /* ログ画面のデザイン */
         #log-terminal { 
             background: #000; 
             color: #0f0; 
             padding: 10px; 
-            height: 150px; 
+            height: 180px; 
             overflow-y: auto; 
             font-size: 0.85rem; 
             border: 1px solid #444; 
-            line-height: 1.4;
+            line-height: 1.5;
         }
         .log-success { color: #00ff00; }
         .log-wait { color: #aaaaaa; }
         .log-info { color: #00bfff; }
+        .log-highlight { color: #ffd700; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -58,11 +57,11 @@
             <label for="optimize" style="margin:0;">ラグ軽減 (GPUレンダリング最適化)</label>
         </div>
 
-        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 通信テスト</button>
+        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 受信確認テスト</button>
     </div>
 
     <div class="panel">
-        <label>ネットワーク通信ログ</label>
+        <label>ネットワーク通信ログ（受信テスト）</label>
         <div id="log-terminal"></div>
     </div>
 
@@ -70,7 +69,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
-        // あなた専用のFirebase設定
         const firebaseConfig = {
           apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
           authDomain: "gift-list-app-53ef2.firebaseapp.com",
@@ -93,13 +91,11 @@
             logTerminal.scrollTop = logTerminal.scrollHeight;
         }
 
-        // ドラッグした時は表示だけ更新し、送信はしない
         window.updateDisplay = () => {
             document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
             document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
         };
 
-        // 「設定を反映」ボタンを押したときの処理
         window.applySettings = () => {
             const speed = parseFloat(document.getElementById('speed').value);
             const size = parseFloat(document.getElementById('size').value);
@@ -110,9 +106,8 @@
             document.getElementById('size-val').innerText = "現在の設定値: " + size + "x";
 
             addLog("-------------------------", "log-wait");
-            addLog(`🔄 パラメータ送信: Speed[${speed}], Size[${size}], Opt[${optimize}]`, "log-wait");
+            addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], ラグ軽減[${optimize}]`, "log-wait");
 
-            // Firebaseへ送信（配信PC側へ命令）
             set(ref(db, 'settings'), {
                 speed: speed,
                 size: size,
@@ -121,22 +116,25 @@
             });
         };
 
-        // 配信PCからの応答（Ping）を受信したときの処理
+        // 配信画面からの応答を受信
         onValue(ref(db, 'pingResponse'), (snapshot) => {
             const data = snapshot.val();
-            // 自分が送ったリクエストに対する応答か確認
             if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
                 let status = latency < 100 ? "Excellent" : (latency < 300 ? "Good" : "Warning");
                 
-                // 通信成功のログを残す
-                addLog(`✅ 通信テスト成功: 応答確認`, "log-success");
-                addLog(`📡 Ping遅延: ${latency}ms (Status: ${status})`, "log-success");
+                addLog(`✅ 通信成功: 応答確認`, "log-success");
+                addLog(`📡 Ping遅延: ${latency}ms (${status})`, "log-success");
+                
+                // 向こうが実際に受け取ったパラメータをログに出力
+                if(data.echoSpeed !== undefined) {
+                    addLog(`📥 配信画面での受信データ: 速度[${data.echoSpeed}] サイズ[${data.echoSize}x]`, "log-highlight");
+                }
+                
                 addLog(`🌐 逆引き同期完了: 配信画面に反映されました`, "log-success");
             }
         });
 
-        // 初回読み込み時の表示リセット
         updateDisplay();
     </script>
 </body>
