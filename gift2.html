@@ -7,14 +7,10 @@
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
     
     .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
+    /* 余白を切り取るために高さを可変にする */
     .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; }
     iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; }
-    
-    /* 左右どちらにも動かせるように開始点と終了点を調整 */
-    @keyframes slide { 
-        0% { transform: translateX(-4000px); } 
-        100% { transform: translateX(0px); } 
-    }
+    @keyframes slide { 0% { transform: translateX(-4000px); } 100% { transform: translateX(0px); } }
 </style>
 </head>
 <body>
@@ -29,23 +25,27 @@
         const db = getDatabase(app);
         const container = document.getElementById('master-container');
         const track = document.getElementById('track');
+        const wrappers = document.querySelectorAll('.iframe-wrapper');
         
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
             
             // サイズ反映
-            if(data.size !== undefined) {
-                container.style.transform = `scale(${data.size})`;
+            if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
+            
+            // 余白切り取り (crop: 10~100)
+            if(data.crop !== undefined) {
+                const height = (data.crop / 100) * 698;
+                wrappers.forEach(w => w.style.height = height + 'px');
             }
             
-            // 速度と方向の反映
+            // 速度と方向の反映 (右=reverse, 左=normal)
             if(data.speed !== undefined) {
                 if (data.speed === 0) {
                     track.style.animation = 'none';
                 } else {
                     const duration = 30 / Math.abs(data.speed);
                     track.style.animation = `slide ${duration}s linear infinite`;
-                    // プラスなら右へ(reverse)、マイナスなら左へ(normal)
                     track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
                 }
             }
