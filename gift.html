@@ -1,133 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { background: #1a1a1a; color: #eee; padding: 15px; font-family: monospace; }
-        .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input[type="range"] { width: 100%; margin-bottom: 10px; }
-        .value-display { font-size: 1.2rem; color: #0f0; margin-bottom: 20px; text-align: right; display: block; }
-        .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
-        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
-        
-        /* 反映ボタンのデザイン */
-        .apply-btn {
-            width: 100%;
-            padding: 15px;
-            background: #007bff;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        .apply-btn:active { background: #0056b3; transform: translateY(2px); }
+<meta charset="utf-8">
+<style>
+    body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+    
+    #master-container {
+        width: 100%;
+        height: 100%;
+        transform-origin: top left;
+        will-change: transform;
+    }
 
-        /* ログ画面のデザイン */
-        #log-terminal { 
-            background: #000; 
-            color: #0f0; 
-            padding: 10px; 
-            height: 150px; 
-            overflow-y: auto; 
-            font-size: 0.85rem; 
-            border: 1px solid #444; 
-            line-height: 1.4;
-        }
-        .log-success { color: #00ff00; }
-        .log-wait { color: #aaaaaa; }
-        .log-info { color: #00bfff; }
-    </style>
+    .row-container {
+        display: flex;
+        width: 200vw;
+        height: 33.33vh;
+    }
+
+    iframe {
+        width: 100vw;
+        height: 100%;
+        border: none;
+        pointer-events: none;
+    }
+
+    .hardware-accel {
+        backface-visibility: hidden;
+        perspective: 1000px;
+        transform: translateZ(0);
+        will-change: transform;
+    }
+
+    @keyframes slideRight {
+        0% { transform: translate3d(-100vw, 0, 0); }
+        100% { transform: translate3d(0, 0, 0); }
+    }
+
+    @keyframes slideLeft {
+        0% { transform: translate3d(0, 0, 0); }
+        100% { transform: translate3d(-100vw, 0, 0); }
+    }
+</style>
 </head>
 <body>
-    <div class="panel">
-        <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
-        <input type="range" id="speed" min="-10" max="10" value="2" oninput="updateDisplay()">
-        <span class="value-display" id="speed-val">現在の設定値: 2</span>
-        
-        <label>アイコンサイズ (0.5倍 ～ 2.0倍)</label>
-        <input type="range" id="size" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateDisplay()">
-        <span class="value-display" id="size-val">現在の設定値: 1.0x</span>
-
-        <div class="checkbox-group">
-            <input type="checkbox" id="optimize" onchange="updateDisplay()" checked>
-            <label for="optimize" style="margin:0;">ラグ軽減 (GPUレンダリング最適化)</label>
+    <div id="master-container">
+        <div class="row-container" id="row1">
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
-
-        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 通信テスト</button>
-    </div>
-
-    <div class="panel">
-        <label>ネットワーク通信ログ</label>
-        <div id="log-terminal"></div>
+        <div class="row-container" id="row2">
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+        </div>
+        <div class="row-container" id="row3">
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
         const firebaseConfig = { /* ご自身のFirebase設定をペーストしてください */ };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const logTerminal = document.getElementById('log-terminal');
-        let requestTime = 0;
+        
+        const masterContainer = document.getElementById('master-container');
+        const rows = document.querySelectorAll('.row-container');
 
-        function addLog(msg, type = "log-info") {
-            const time = new Date().toLocaleTimeString('ja-JP', { hour12: false, fractionalSecondDigits: 2 });
-            const logEntry = `<span class="${type}">[${time}] ${msg}</span><br>`;
-            logTerminal.innerHTML += logEntry;
-            logTerminal.scrollTop = logTerminal.scrollHeight;
-        }
+        onValue(ref(db, 'settings'), (snapshot) => {
+            const data = snapshot.val() || {};
+            const speed = data.speed || 0;
+            const size = data.size || 1.0;
+            const optimize = data.optimize || false;
 
-        // ドラッグした時は表示だけ更新し、送信はしない
-        window.updateDisplay = () => {
-            document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
-            document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
-        };
+            masterContainer.style.transform = `scale(${size})`;
 
-        // 「設定を反映」ボタンを押したときの処理
-        window.applySettings = () => {
-            const speed = parseFloat(document.getElementById('speed').value);
-            const size = parseFloat(document.getElementById('size').value);
-            const optimize = document.getElementById('optimize').checked;
-            requestTime = Date.now();
-            
-            document.getElementById('speed-val').innerText = "現在の設定値: " + speed;
-            document.getElementById('size-val').innerText = "現在の設定値: " + size + "x";
+            rows.forEach(row => {
+                if(optimize) {
+                    row.classList.add('hardware-accel');
+                } else {
+                    row.classList.remove('hardware-accel');
+                }
 
-            addLog("-------------------------", "log-wait");
-            addLog(`🔄 パラメータ送信: Speed[${speed}], Size[${size}], Opt[${optimize}]`, "log-wait");
-
-            // Firebaseへ送信（配信PC側へ命令）
-            set(ref(db, 'settings'), {
-                speed: speed,
-                size: size,
-                optimize: optimize,
-                pingRequest: requestTime
+                if (speed === 0) {
+                    row.style.animation = 'none';
+                } else {
+                    const duration = 30 / Math.abs(speed);
+                    const direction = speed > 0 ? 'slideRight' : 'slideLeft';
+                    row.style.animation = `${direction} ${duration}s linear infinite`;
+                }
             });
-        };
 
-        // 配信PCからの応答（Ping）を受信したときの処理
-        onValue(ref(db, 'pingResponse'), (snapshot) => {
-            const data = snapshot.val();
-            // 自分が送ったリクエストに対する応答か確認
-            if (data && data.time === requestTime) {
-                const latency = Date.now() - data.time;
-                let status = latency < 100 ? "Excellent" : (latency < 300 ? "Good" : "Warning");
-                
-                // 通信成功のログを残す
-                addLog(`✅ 通信テスト成功: 応答確認`, "log-success");
-                addLog(`📡 Ping遅延: ${latency}ms (Status: ${status})`, "log-success");
-                addLog(`🌐 逆引き同期完了: 配信画面に反映されました`, "log-success");
+            // コントローラーからのPing要求に応答を返す（通信テスト用）
+            if (data.pingRequest) {
+                set(ref(db, 'pingResponse'), { time: data.pingRequest });
             }
         });
-
-        // 初回読み込み時の表示リセット
-        updateDisplay();
     </script>
 </body>
 </html>
