@@ -70,7 +70,17 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
-        const firebaseConfig = { /* ご自身のFirebase設定をペーストしてください */ };
+        // あなた専用のFirebase設定
+        const firebaseConfig = {
+          apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc",
+          authDomain: "gift-list-app-53ef2.firebaseapp.com",
+          projectId: "gift-list-app-53ef2",
+          storageBucket: "gift-list-app-53ef2.firebasestorage.app",
+          messagingSenderId: "161949465085",
+          appId: "1:161949465085:web:3574bdee443e4fcec70194",
+          measurementId: "G-B3PJELG3Q9"
+        };
+        
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const logTerminal = document.getElementById('log-terminal');
