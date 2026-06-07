@@ -1,37 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { background: #222; color: #fff; padding: 20px; font-family: sans-serif; }
-        .control-box { display: flex; flex-direction: column; gap: 20px; }
-        input { font-size: 1.5rem; padding: 10px; border-radius: 5px; }
-        button { padding: 15px; font-size: 1.2rem; background: #007bff; color: white; border: none; border-radius: 5px; }
+        body { background: #1a1a1a; color: #eee; padding: 15px; font-family: monospace; }
+        .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="range"] { width: 100%; margin-bottom: 20px; }
+        .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
+        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
+        #log-terminal { background: #000; color: #0f0; padding: 10px; height: 100px; overflow-y: auto; font-size: 0.9rem; border: 1px solid #444; }
     </style>
 </head>
 <body>
-    <h3>配信リモートコントローラー</h3>
-    <div class="control-box">
-        <label>ギフト個数 (50-150)</label>
-        <input type="number" id="count" value="50">
+    <div class="panel">
+        <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
+        <input type="range" id="speed" min="-10" max="10" value="2" oninput="updateSettings()">
+        <span id="speed-val">2</span>
         
-        <label>スピード (-5 ～ +5)</label>
-        <input type="range" id="speed" min="-5" max="5" value="1">
-        
-        <button onclick="send()">配信へ反映</button>
+        <label>アイコンサイズ (0.5倍 ～ 2.0倍)</label>
+        <input type="range" id="size" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateSettings()">
+        <span id="size-val">1.0x</span>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="optimize" onchange="updateSettings()" checked>
+            <label for="optimize" style="margin:0;">ラグ軽減 (GPUレンダリング最適化)</label>
+        </div>
+    </div>
+
+    <div class="panel">
+        <label>通信状態ログ (Ping遅延)</label>
+        <div id="log-terminal"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        const db = getDatabase(initializeApp({ /* Firebase設定 */ }));
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         
-        window.send = () => {
+        const firebaseConfig = { /* ご自身のFirebase設定をペーストしてください */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        const logTerminal = document.getElementById('log-terminal');
+
+        function addLog(msg) {
+            const time = new Date().toLocaleTimeString();
+            logTerminal.innerHTML += `[${time}] ${msg}<br>`;
+            logTerminal.scrollTop = logTerminal.scrollHeight;
+        }
+
+        window.updateSettings = () => {
+            const speed = parseFloat(document.getElementById('speed').value);
+            const size = parseFloat(document.getElementById('size').value);
+            const optimize = document.getElementById('optimize').checked;
+            
+            document.getElementById('speed-val').innerText = speed;
+            document.getElementById('size-val').innerText = size + "x";
+
+            // Pingリクエストタイムスタンプを含めて送信
             set(ref(db, 'settings'), {
-                count: parseInt(document.getElementById('count').value),
-                speed: parseInt(document.getElementById('speed').value)
+                speed: speed,
+                size: size,
+                optimize: optimize,
+                pingRequest: Date.now()
             });
+            addLog(`Cmd Send: Speed:${speed}, Size:${size}, Opt:${optimize}`);
         };
+
+        // 配信PCからのPing応答を受信して遅延(ラグ)を計算
+        onValue(ref(db, 'pingResponse'), (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.time) {
+                const latency = Date.now() - data.time;
+                let status = latency < 100 ? "良好" : (latency < 300 ? "普通" : "遅延発生");
+                addLog(`Ping: ${latency}ms (${status})`);
+            }
+        });
+
+        // 初回実行
+        updateSettings();
     </script>
 </body>
 </html>
