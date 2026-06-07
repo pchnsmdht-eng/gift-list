@@ -4,39 +4,37 @@
 <meta charset="utf-8">
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+    #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; }
     
-    #track {
-        display: flex;
-        width: 8000px;
-        /* アニメーションをここから直接実行 */
-        animation: slide 20s linear infinite;
-    }
-
-    /* H698の枠に合わせる調整 */
-    .iframe-wrapper {
-        width: 4000px;
-        height: 698px;
-        overflow: hidden;
-        position: relative;
-    }
-
-    iframe {
-        width: 4000px;
-        height: 1200px;
-        border: none;
-        pointer-events: none;
-    }
-
-    @keyframes slide {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-4000px); }
-    }
+    .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; }
+    .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; }
+    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; }
+    @keyframes slide { 0% { transform: translateX(0); } 100% { transform: translateX(-4000px); } }
 </style>
 </head>
 <body>
-    <div id="track">
+    <div id="master-container"><div class="marquee-track" id="track">
         <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
         <div class="iframe-wrapper"><iframe src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe></div>
-    </div>
+    </div></div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const app = initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" });
+        const db = getDatabase(app);
+        const container = document.getElementById('master-container');
+        const track = document.getElementById('track');
+        
+        onValue(ref(db, 'settings'), (snapshot) => {
+            const data = snapshot.val() || {};
+            if(data.scale) container.style.transform = `scale(${data.scale})`;
+            if(data.speed) track.style.animationDuration = (30 / Math.abs(data.speed)) + 's';
+            
+            // ログを返すための逆引き同期処理（これがログ復活の鍵です）
+            if (data.pingRequest) {
+                set(ref(db, 'pingResponse'), { time: data.pingRequest, status: "OK" });
+            }
+        });
+    </script>
 </body>
 </html>
