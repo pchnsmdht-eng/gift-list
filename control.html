@@ -52,6 +52,10 @@
         <input type="range" id="size" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateDisplay()">
         <span class="value-display" id="size-val">現在の設定値: 1.0x</span>
 
+        <label style="color: #ffaa00;">表示範囲（下の無駄な余白を切り取る）</label>
+        <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
+        <span class="value-display" id="crop-val" style="color: #ffaa00;">現在の設定値: 100%</span>
+
         <div class="checkbox-group">
             <input type="checkbox" id="optimize" onchange="updateDisplay()" checked>
             <label for="optimize" style="margin:0;">ラグ軽減 (GPUレンダリング最適化)</label>
@@ -94,29 +98,32 @@
         window.updateDisplay = () => {
             document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
             document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
+            document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
         };
 
         window.applySettings = () => {
             const speed = parseFloat(document.getElementById('speed').value);
             const size = parseFloat(document.getElementById('size').value);
             const optimize = document.getElementById('optimize').checked;
+            const crop = parseInt(document.getElementById('crop').value);
             requestTime = Date.now();
             
             document.getElementById('speed-val').innerText = "現在の設定値: " + speed;
             document.getElementById('size-val').innerText = "現在の設定値: " + size + "x";
+            document.getElementById('crop-val').innerText = "現在の設定値: " + crop + "%";
 
             addLog("-------------------------", "log-wait");
-            addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], ラグ軽減[${optimize}]`, "log-wait");
+            addLog(`🔄 送信: 速度[${speed}], サイズ[${size}], 切取[${crop}%]`, "log-wait");
 
             set(ref(db, 'settings'), {
                 speed: speed,
                 size: size,
                 optimize: optimize,
+                crop: crop,
                 pingRequest: requestTime
             });
         };
 
-        // 配信画面からの応答を受信
         onValue(ref(db, 'pingResponse'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
@@ -126,9 +133,8 @@
                 addLog(`✅ 通信成功: 応答確認`, "log-success");
                 addLog(`📡 Ping遅延: ${latency}ms (${status})`, "log-success");
                 
-                // 向こうが実際に受け取ったパラメータをログに出力
                 if(data.echoSpeed !== undefined) {
-                    addLog(`📥 配信画面での受信データ: 速度[${data.echoSpeed}] サイズ[${data.echoSize}x]`, "log-highlight");
+                    addLog(`📥 受信データ: 速度[${data.echoSpeed}] 切取[${data.echoCrop}%]`, "log-highlight");
                 }
                 
                 addLog(`🌐 逆引き同期完了: 配信画面に反映されました`, "log-success");
