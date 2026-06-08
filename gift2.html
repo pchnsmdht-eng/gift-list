@@ -8,7 +8,8 @@
     
     .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
     .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; }
-    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; }
+    /* ★負荷軽減：iframe自体に描画ヒントを追加 */
+    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; backface-visibility: hidden; }
     @keyframes slide { 0% { transform: translateX(-4000px); } 100% { transform: translateX(0px); } }
 </style>
 </head>
@@ -20,8 +21,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        const app = initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" });
-        const db = getDatabase(app);
+        const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
         const container = document.getElementById('master-container');
         const track = document.getElementById('track');
         const wrappers = document.querySelectorAll('.iframe-wrapper');
@@ -29,7 +29,6 @@
 
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
-            
             if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
             if(data.crop !== undefined) wrappers.forEach(w => w.style.height = ((data.crop/100)*698) + 'px');
             if(data.optimize !== undefined) {
@@ -41,15 +40,17 @@
                 track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
             }
             
-            // Controllerから送られてきた refreshMs (ミリ秒) で再読み込み
+            // ★リロード負荷対策：表示が途切れる原因は「リロード中の空白」かもしれません
+            // iframeのsrcを再設定する際、少しだけ時間をずらすか、そもそもリロード回数を減らすことを推奨します
             if(data.refreshMs) {
                 if(reloadTimer) clearTimeout(reloadTimer);
                 reloadTimer = setTimeout(() => {
                     document.getElementById('f1').src = document.getElementById('f1').src;
-                    document.getElementById('f2').src = document.getElementById('f2').src;
+                    setTimeout(() => {
+                        document.getElementById('f2').src = document.getElementById('f2').src;
+                    }, 2000); // 2秒ずらして読み込むことで、同時に画面が真っ白になるのを防ぐ
                 }, data.refreshMs);
             }
-            
             if (data.pingRequest) set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
         });
     </script>
