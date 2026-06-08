@@ -46,7 +46,7 @@
     </div>
 
     <div class="panel">
-        <label>ネットワーク通信ログ</label>
+        <label>通信ステータス (過疎テスト / 逆引きPing / レイテンシ)</label>
         <div id="log-terminal"></div>
     </div>
 
@@ -76,13 +76,13 @@
             const size = parseFloat(document.getElementById('size').value);
             const optimize = document.getElementById('optimize').checked;
             const crop = parseInt(document.getElementById('crop').value);
-            // 秒をミリ秒に変換
             const refreshSec = parseInt(document.getElementById('refreshSec').value);
             const refreshMs = refreshSec * 1000;
             
             requestTime = Date.now();
             
-            addLog(`🔄 送信: 速度[${speed}], 更新[${refreshSec}秒]`, "log-wait");
+            // 過疎テスト（送信・疎通テスト）ログ
+            addLog(`🔄 【過疎テスト実行中】設定送信（速度:${speed}, 更新:${refreshSec}秒）Ping待機...`, "log-wait");
 
             set(ref(db, 'settings2'), {
                 speed: speed,
@@ -98,7 +98,8 @@
             const data = snapshot.val();
             if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
-                addLog(`✅ 通信成功: 応答確認 (${latency}ms)`, "log-success");
+                // 逆引きPing ＆ レイテンシテスト結果ログ
+                addLog(`✅ 【逆引きPing受信】レイテンシテスト完了: 応答速度 ${latency}ms`, "log-success");
             }
         });
         updateDisplay();
