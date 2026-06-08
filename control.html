@@ -33,9 +33,9 @@
         <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
         <span class="value-display" id="crop-val" style="color: #ffaa00;">セット予定値: 100%</span>
 
-        <label style="color: #ff00ff;">自動更新間隔 (分)</label>
-        <input type="range" id="refreshMin" min="1" max="60" value="5" oninput="updateDisplay()">
-        <span class="value-display" id="refresh-val" style="color: #ff00ff;">セット予定値: 5分</span>
+        <label style="color: #ff00ff;">自動更新間隔 (秒)</label>
+        <input type="range" id="refreshSec" min="10" max="300" step="10" value="60" oninput="updateDisplay()">
+        <span class="value-display" id="refresh-val" style="color: #ff00ff;">セット予定値: 60秒</span>
 
         <div class="checkbox-group">
             <input type="checkbox" id="optimize" checked>
@@ -46,7 +46,7 @@
     </div>
 
     <div class="panel">
-        <label>ネットワーク通信ログ</label>
+        <label>通信ステータス (過疎テスト / 逆引きPing / レイテンシ)</label>
         <div id="log-terminal"></div>
     </div>
 
@@ -68,7 +68,7 @@
             document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
             document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
             document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
-            document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshMin').value + "分";
+            document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshSec').value + "秒";
         };
 
         window.applySettings = () => {
@@ -76,29 +76,32 @@
             const size = parseFloat(document.getElementById('size').value);
             const optimize = document.getElementById('optimize').checked;
             const crop = parseInt(document.getElementById('crop').value);
-            const refreshMin = parseInt(document.getElementById('refreshMin').value);
-            // 分をミリ秒に変換
-            const refreshMs = refreshMin * 60 * 1000;
+            const refreshSec = parseInt(document.getElementById('refreshSec').value);
+            const refreshMs = refreshSec * 1000;
             
             requestTime = Date.now();
             
-            addLog(`🔄 送信: 速度[${speed}], 更新[${refreshMin}分/${refreshMs}ms]`, "log-wait");
+            // 過疎テスト（送信・疎通テスト）ログ
+            addLog(`🔄 【過疎テスト実行中】設定送信（速度:${speed}, 更新:${refreshSec}秒）Ping待機...`, "log-wait");
 
+            // settingsを使用
             set(ref(db, 'settings'), {
                 speed: speed,
                 size: size,
                 optimize: optimize,
                 crop: crop,
-                refreshMs: refreshMs, // ミリ秒で送信
+                refreshMs: refreshMs,
                 pingRequest: requestTime
             });
         };
 
+        // pingResponseを使用
         onValue(ref(db, 'pingResponse'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
-                addLog(`✅ 通信成功: 応答確認 (${latency}ms)`, "log-success");
+                // 逆引きPing ＆ レイテンシテスト結果ログ
+                addLog(`✅ 【逆引きPing受信】レイテンシテスト完了: 応答速度 ${latency}ms`, "log-success");
             }
         });
         updateDisplay();
