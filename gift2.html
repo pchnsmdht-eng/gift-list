@@ -5,13 +5,9 @@
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
-    
     .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
-    
-    /* メモリ領域を独立させる強力な最適化 */
     .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; contain: strict; }
     
-    /* 2枚のiframeを重ねる設定 */
     iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.5s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
     
     .hidden-cache { opacity: 0; z-index: 1; }
@@ -56,33 +52,33 @@
                 track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
             }
             
-            // 【裏画面キャッシュ・スワップ処理】
+            // 【完全読み込み同期版】
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
-                // 指定された間隔（例: 10秒）ごとにループ処理
                 reloadTimer = setInterval(() => {
-                    // 各ラッパーから現在の「表」と「裏」を取得
                     const hidden1 = document.querySelector('#wrap1 .hidden-cache');
                     const visible1 = document.querySelector('#wrap1 .visible-live');
                     const hidden2 = document.querySelector('#wrap2 .hidden-cache');
                     const visible2 = document.querySelector('#wrap2 .visible-live');
 
-                    // 1. 裏画面（見えない方）だけをリロードして最新データを取得
-                    hidden1.src = hidden1.src;
-                    hidden2.src = hidden2.src;
-
-                    // 2. 3秒待機（裏画面でレンダリングが完了するまでの猶予）
-                    setTimeout(() => {
-                        // 3. 表と裏の役割を一瞬で入れ替える（フェードイン・アウト）
+                    // 100%読み込みが完了した瞬間に発動するイベント
+                    hidden1.onload = () => {
                         hidden1.className = 'visible-live';
                         visible1.className = 'hidden-cache';
-                        
+                        hidden1.onload = null; // 1回で解除
+                    };
+                    hidden2.onload = () => {
                         hidden2.className = 'visible-live';
                         visible2.className = 'hidden-cache';
-                    }, 3000); 
+                        hidden2.onload = null; // 1回で解除
+                    };
+
+                    // 読み込み開始（回線が遅ければここでonloadが発動するまで表のまま待機します）
+                    hidden1.src = hidden1.src;
+                    hidden2.src = hidden2.src;
                     
-                }, data.refreshMs); // Controllerで設定したミリ秒間隔
+                }, data.refreshMs);
             }
             
             if (data.pingRequest) set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
