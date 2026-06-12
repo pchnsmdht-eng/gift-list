@@ -3,20 +3,29 @@
 <head>
 <meta charset="utf-8">
 <style>
+    /* CSS変数を使用して、横幅とアニメーションの距離を動的に制御します */
+    :root {
+        --wrap-width: 4000px;
+    }
+
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
     
-    /* 横幅はJavaScript側から動的に変更（3列=12000px, 4列=16000px） */
-    .marquee-track { display: flex; width: 12000px; animation: slide 20s linear infinite; will-change: transform; }
+    .marquee-track { display: flex; animation: slide 20s linear infinite; will-change: transform; }
     
-    .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
+    /* 縦の高さを1200pxベースに拡張し、何段になっても対応できるようにしました */
+    .iframe-wrapper { width: var(--wrap-width); height: 1200px; overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
     
-    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
+    iframe { width: var(--wrap-width); height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
     
     .hidden-cache { opacity: 0; z-index: 1; }
     .visible-live { opacity: 1; z-index: 2; }
     
-    @keyframes slide { 0% { transform: translateX(-4000px); } 100% { transform: translateX(0px); } }
+    /* 設定された横幅1枚分だけマイナス方向に移動することで、完璧にループします */
+    @keyframes slide { 
+        0% { transform: translateX(calc(var(--wrap-width) * -1)); } 
+        100% { transform: translateX(0px); } 
+    }
 </style>
 </head>
 <body>
@@ -54,17 +63,20 @@
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
             
-            // 1. 列数パターンの動的組み換え処理
-            const activeCols = data.columns || 3; // 指定がない場合は標準の3列
-            track.style.width = (activeCols * 4000) + 'px';
-            if (activeCols === 4) {
-                document.getElementById('wrap4').style.display = 'block';
-            } else {
-                document.getElementById('wrap4').style.display = 'none';
-            }
+            // ★折り返し幅（横幅）の動的反映
+            const wrapWidth = data.wrapWidth || 4000;
+            document.documentElement.style.setProperty('--wrap-width', `${wrapWidth}px`);
 
+            // 列数パターンの制御
+            const activeCols = data.columns || 3;
+            track.style.width = (activeCols * wrapWidth) + 'px';
+            document.getElementById('wrap4').style.display = (activeCols === 4) ? 'block' : 'none';
+
+            // サイズと余白切り取り
             if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
-            if(data.crop !== undefined) wrappers.forEach(w => w.style.height = ((data.crop/100)*698) + 'px');
+            if(data.crop !== undefined) wrappers.forEach(w => w.style.height = ((data.crop/100)*1200) + 'px'); // ベース高さを1200pxに変更
+
+            // GPU最適化と速度
             if(data.optimize !== undefined) {
                 container.style.willChange = data.optimize ? 'transform' : 'auto';
                 track.style.willChange = data.optimize ? 'transform' : 'auto';
@@ -74,23 +86,17 @@
                 track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
             }
             
-            // 2. 動的列数対応の完全描画バッファリングスワップ
+            // 裏画面キャッシュ＆スワップロジック
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
                 reloadTimer = setInterval(() => {
-                    const hidden1 = document.querySelector('#wrap1 .hidden-cache');
-                    const visible1 = document.querySelector('#wrap1 .visible-live');
-                    const hidden2 = document.querySelector('#wrap2 .hidden-cache');
-                    const visible2 = document.querySelector('#wrap2 .visible-live');
-                    const hidden3 = document.querySelector('#wrap3 .hidden-cache');
-                    const visible3 = document.querySelector('#wrap3 .visible-live');
-                    const hidden4 = document.querySelector('#wrap4 .hidden-cache');
-                    const visible4 = document.querySelector('#wrap4 .visible-live');
+                    const hidden1 = document.querySelector('#wrap1 .hidden-cache'); const visible1 = document.querySelector('#wrap1 .visible-live');
+                    const hidden2 = document.querySelector('#wrap2 .hidden-cache'); const visible2 = document.querySelector('#wrap2 .visible-live');
+                    const hidden3 = document.querySelector('#wrap3 .hidden-cache'); const visible3 = document.querySelector('#wrap3 .visible-live');
+                    const hidden4 = document.querySelector('#wrap4 .hidden-cache'); const visible4 = document.querySelector('#wrap4 .visible-live');
 
                     let loadedCount = 0;
-                    
-                    // 現在有効な列数分の読み込みが完了したら発動
                     const trySwap = () => {
                         loadedCount++;
                         if (loadedCount === activeCols) {
@@ -98,17 +104,13 @@
                                 hidden1.className = 'visible-live'; visible1.className = 'hidden-cache';
                                 hidden2.className = 'visible-live'; visible2.className = 'hidden-cache';
                                 hidden3.className = 'visible-live'; visible3.className = 'hidden-cache';
-                                if (activeCols === 4) {
-                                    hidden4.className = 'visible-live'; visible4.className = 'hidden-cache';
-                                }
+                                if (activeCols === 4) { hidden4.className = 'visible-live'; visible4.className = 'hidden-cache'; }
                                 hidden1.onload = null; hidden2.onload = null; hidden3.onload = null; hidden4.onload = null;
-                            }, 4000); // 4秒バッファ待機
+                            }, 4000); // 4秒の画像描画待機
                         }
                     };
 
-                    hidden1.onload = trySwap;
-                    hidden2.onload = trySwap;
-                    hidden3.onload = trySwap;
+                    hidden1.onload = trySwap; hidden2.onload = trySwap; hidden3.onload = trySwap;
                     if (activeCols === 4) hidden4.onload = trySwap;
 
                     const timestamp = Date.now();
