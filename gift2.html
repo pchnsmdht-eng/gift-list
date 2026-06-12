@@ -5,10 +5,13 @@
 <style>
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
-    .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
-    .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; contain: strict; }
     
-    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.5s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
+    .marquee-track { display: flex; width: 8000px; animation: slide 20s linear infinite; will-change: transform; }
+    
+    .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
+    
+    /* transitionを0.8秒にして、切り替えをより滑らか（クロスフェード）にします */
+    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
     
     .hidden-cache { opacity: 0; z-index: 1; }
     .visible-live { opacity: 1; z-index: 2; }
@@ -38,6 +41,8 @@
         const wrappers = document.querySelectorAll('.iframe-wrapper');
         let reloadTimer;
 
+        const baseUrl = "https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9";
+
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
             
@@ -52,7 +57,7 @@
                 track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
             }
             
-            // 【完全読み込み同期版】
+            // 【完全描画バッファリング・スワップシステム】
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
@@ -62,21 +67,38 @@
                     const hidden2 = document.querySelector('#wrap2 .hidden-cache');
                     const visible2 = document.querySelector('#wrap2 .visible-live');
 
-                    // 100%読み込みが完了した瞬間に発動するイベント
-                    hidden1.onload = () => {
-                        hidden1.className = 'visible-live';
-                        visible1.className = 'hidden-cache';
-                        hidden1.onload = null; // 1回で解除
-                    };
-                    hidden2.onload = () => {
-                        hidden2.className = 'visible-live';
-                        visible2.className = 'hidden-cache';
-                        hidden2.onload = null; // 1回で解除
+                    if (!hidden1 || !hidden2 || !visible1 || !visible2) return;
+
+                    let loadedCount = 0;
+                    
+                    // 裏画面のHTMLの読み込みが完了した時の処理
+                    const onHtmlReady = () => {
+                        loadedCount++;
+                        // 両方の裏画面の読み込みが始まったら
+                        if (loadedCount === 2) {
+                            // ★ここが肝：すぐに画面を入れ替えず、裏側で画像が100%綺麗に描画されるまで「4秒間」完全に待機（バッファリング）させます
+                            setTimeout(() => {
+                                // 4秒経ち、裏画面が綺麗に完成したのを見計らって一瞬でクロスフェード（スワップ）
+                                hidden1.className = 'visible-live';
+                                visible1.className = 'hidden-cache';
+                                hidden2.className = 'visible-live';
+                                visible2.className = 'hidden-cache';
+                                
+                                // イベントをクリア
+                                hidden1.onload = null;
+                                hidden2.onload = null;
+                            }, 4000); // 4000ms = 4秒の描画バッファ時間を確保
+                        }
                     };
 
-                    // 読み込み開始（回線が遅ければここでonloadが発動するまで表のまま待機します）
-                    hidden1.src = hidden1.src;
-                    hidden2.src = hidden2.src;
+                    hidden1.onload = onHtmlReady;
+                    hidden2.onload = onHtmlReady;
+
+                    // キャッシュを破棄しつつ、裏画面の読み込みを開始
+                    // この読み込み中も、表側の画面（visible-live）は何事もなかったかのように綺麗に表示され続けます
+                    const timestamp = Date.now();
+                    hidden1.src = `${baseUrl}?t=${timestamp}`;
+                    hidden2.src = `${baseUrl}?t=${timestamp}`;
                     
                 }, data.refreshMs);
             }
