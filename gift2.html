@@ -1,55 +1,162 @@
-// 2. 動的列数対応の完全描画バッファリングスワップ（渋滞回避・時間差読み込み版）
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    :root {
+        --wrap-width: 4000px;
+    }
+
+    body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+    #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
+    
+    .marquee-track { display: flex; animation: slide 20s linear infinite; will-change: transform; }
+    .iframe-wrapper { width: var(--wrap-width); height: 1200px; overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
+    
+    iframe { width: var(--wrap-width); height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
+    
+    .hidden-cache { opacity: 0; z-index: 1; }
+    .visible-live { opacity: 1; z-index: 2; }
+    
+    @keyframes slide { 
+        0% { transform: translateX(calc(var(--wrap-width) * -1)); } 
+        100% { transform: translateX(0px); } 
+    }
+
+    /* ★追加：ローディングゲージのスタイル */
+    #loading-gauge-container {
+        position: absolute; top: 0; left: 0; width: 100vw; height: 6px;
+        background: rgba(0, 0, 0, 0.6); z-index: 9999; opacity: 0; transition: opacity 0.3s;
+    }
+    #loading-gauge {
+        width: 0%; height: 100%; background: #00ffaa;
+        box-shadow: 0 0 12px #00ffaa; transition: width 0.3s ease-out;
+    }
+</style>
+</head>
+<body>
+    <div id="loading-gauge-container">
+        <div id="loading-gauge"></div>
+    </div>
+
+    <div id="master-container"><div class="marquee-track" id="track">
+        <div class="iframe-wrapper" id="wrap1">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+        </div>
+        <div class="iframe-wrapper" id="wrap2">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+        </div>
+        <div class="iframe-wrapper" id="wrap3">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+        </div>
+        <div class="iframe-wrapper" id="wrap4" style="display: none;">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+        </div>
+    </div></div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const app = initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" });
+        const db = getDatabase(app);
+        
+        const container = document.getElementById('master-container');
+        const track = document.getElementById('track');
+        const wrappers = document.querySelectorAll('.iframe-wrapper');
+        const gaugeContainer = document.getElementById('loading-gauge-container');
+        const gauge = document.getElementById('loading-gauge');
+        let reloadTimer;
+
+        const baseUrl = "https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9";
+
+        onValue(ref(db, 'settings2'), (snapshot) => {
+            const data = snapshot.val() || {};
+            
+            const wrapWidth = data.wrapWidth || 4000;
+            document.documentElement.style.setProperty('--wrap-width', `${wrapWidth}px`);
+
+            const activeCols = data.columns || 3;
+            track.style.width = (activeCols * wrapWidth) + 'px';
+            document.getElementById('wrap4').style.display = (activeCols === 4) ? 'block' : 'none';
+
+            if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
+            if(data.crop !== undefined) wrappers.forEach(w => w.style.height = ((data.crop/100)*1200) + 'px');
+
+            if(data.optimize !== undefined) {
+                container.style.willChange = data.optimize ? 'transform' : 'auto';
+                track.style.willChange = data.optimize ? 'transform' : 'auto';
+            }
+            if(data.speed !== undefined) {
+                track.style.animation = data.speed === 0 ? 'none' : `slide ${30/Math.abs(data.speed)}s linear infinite`;
+                track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
+            }
+            
+            // 【ゲージ付き完全保護バッファリング】
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
                 reloadTimer = setInterval(() => {
-                    const hidden1 = document.querySelector('#wrap1 .hidden-cache');
-                    const visible1 = document.querySelector('#wrap1 .visible-live');
-                    const hidden2 = document.querySelector('#wrap2 .hidden-cache');
-                    const visible2 = document.querySelector('#wrap2 .visible-live');
-                    const hidden3 = document.querySelector('#wrap3 .hidden-cache');
-                    const visible3 = document.querySelector('#wrap3 .visible-live');
-                    const hidden4 = document.querySelector('#wrap4 .hidden-cache');
-                    const visible4 = document.querySelector('#wrap4 .visible-live');
+                    const hidden1 = document.querySelector('#wrap1 .hidden-cache'); const visible1 = document.querySelector('#wrap1 .visible-live');
+                    const hidden2 = document.querySelector('#wrap2 .hidden-cache'); const visible2 = document.querySelector('#wrap2 .visible-live');
+                    const hidden3 = document.querySelector('#wrap3 .hidden-cache'); const visible3 = document.querySelector('#wrap3 .visible-live');
+                    const hidden4 = document.querySelector('#wrap4 .hidden-cache'); const visible4 = document.querySelector('#wrap4 .visible-live');
+
+                    // ゲージ表示開始（初期化）
+                    gaugeContainer.style.opacity = '1';
+                    gauge.style.transition = 'width 0.3s ease-out';
+                    gauge.style.width = '5%'; 
 
                     let loadedCount = 0;
                     
                     const trySwap = () => {
                         loadedCount++;
+                        
+                        // 1. 骨組みの読み込み進捗を計算（最大50%までゲージが進む）
+                        const progress = 5 + (loadedCount / activeCols) * 45;
+                        gauge.style.width = progress + '%';
+
                         if (loadedCount === activeCols) {
+                            // 2. すべての骨組みが揃ったら、画像描画のための4秒バッファ待機を開始
+                            // ここからゲージが50% → 100%に向けて4秒かけてジワジワ進む
+                            gauge.style.transition = 'width 4s linear';
+                            gauge.style.width = '100%';
+
                             setTimeout(() => {
+                                // 3. 4秒経過（ゲージ100%）。完璧に準備が整ったので一瞬で上書き！
                                 hidden1.className = 'visible-live'; visible1.className = 'hidden-cache';
                                 hidden2.className = 'visible-live'; visible2.className = 'hidden-cache';
                                 hidden3.className = 'visible-live'; visible3.className = 'hidden-cache';
                                 if (activeCols === 4) { hidden4.className = 'visible-live'; visible4.className = 'hidden-cache'; }
+                                
                                 hidden1.onload = null; hidden2.onload = null; hidden3.onload = null; hidden4.onload = null;
+
+                                // ゲージを隠してリセット
+                                gaugeContainer.style.opacity = '0';
+                                setTimeout(() => { gauge.style.width = '0%'; }, 300);
                             }, 4000); 
                         }
                     };
 
-                    hidden1.onload = trySwap;
-                    hidden2.onload = trySwap;
-                    hidden3.onload = trySwap;
+                    hidden1.onload = trySwap; hidden2.onload = trySwap; hidden3.onload = trySwap;
                     if (activeCols === 4) hidden4.onload = trySwap;
 
                     const timestamp = Date.now();
                     
-                    // ★重要：同時に通信させず、1.5秒ずつズラして順番にダウンロードさせる（回線のパンク防止）
+                    // 時間差を設けて通信の渋滞を回避しながら裏画面にリクエストを送る
                     hidden1.src = `${baseUrl}?t=${timestamp}`;
-                    
-                    setTimeout(() => {
-                        hidden2.src = `${baseUrl}?t=${timestamp}`;
-                    }, 1500);
-                    
-                    setTimeout(() => {
-                        hidden3.src = `${baseUrl}?t=${timestamp}`;
-                    }, 3000);
-                    
-                    if (activeCols === 4) {
-                        setTimeout(() => {
-                            hidden4.src = `${baseUrl}?t=${timestamp}`;
-                        }, 4500);
-                    }
+                    setTimeout(() => { hidden2.src = `${baseUrl}?t=${timestamp}`; }, 1500);
+                    setTimeout(() => { hidden3.src = `${baseUrl}?t=${timestamp}`; }, 3000);
+                    if (activeCols === 4) setTimeout(() => { hidden4.src = `${baseUrl}?t=${timestamp}`; }, 4500);
                     
                 }, data.refreshMs);
             }
+            
+            if (data.pingRequest) set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
+        });
+    </script>
+</body>
+</html>
