@@ -24,20 +24,24 @@
     <div class="panel">
         <label style="color: #00ffaa;">ループ列数パターン選択</label>
         <select id="columns" onchange="updateDisplay()">
-            <option value="3" selected>3列パターン（標準）</option>
-            <option value="4">4列パターン（広範囲拡張）</option>
+            <option value="3" selected>3列ループ（標準）</option>
+            <option value="4">4列ループ（広範囲）</option>
         </select>
         <span class="value-display" id="columns-val" style="color: #00ffaa;">セット予定: 3列ループ</span>
+
+        <label style="color: #ff3366;">ギフト折り返し幅 (横幅 500px ～ 4000px)</label>
+        <input type="range" id="wrapWidth" min="500" max="4000" step="10" value="4000" oninput="updateDisplay()">
+        <span class="value-display" id="wrap-val" style="color: #ff3366;">セット予定値: 4000px</span>
 
         <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
         <input type="range" id="speed" min="-10" max="10" step="0.1" value="1" oninput="updateDisplay()">
         <span class="value-display" id="speed-val">セット予定値: 1</span>
         
-        <label style="color: #00bfff;">アイコンサイズ (縮小 0.1倍 ～ 拡大 1.5倍)</label>
+        <label style="color: #00bfff;">アイコン全体サイズ (縮小 0.1倍 ～ 拡大 1.5倍)</label>
         <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="updateDisplay()">
         <span class="value-display" id="size-val" style="color: #00bfff;">セット予定値: 0.3x</span>
 
-        <label style="color: #ffaa00;">表示範囲 (切り取り 10% ～ 100%)</label>
+        <label style="color: #ffaa00;">縦の表示範囲（余白切り取り 10% ～ 100%）</label>
         <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
         <span class="value-display" id="crop-val" style="color: #ffaa00;">セット予定値: 100%</span>
 
@@ -54,7 +58,7 @@
     </div>
 
     <div class="panel">
-        <label>通信ステータス (過疎テスト / 逆引きPing / レイテンシ)</label>
+        <label>通信ステータス (過疎テスト / 逆引きPing)</label>
         <div id="log-terminal"></div>
     </div>
 
@@ -74,6 +78,7 @@
 
         window.updateDisplay = () => {
             document.getElementById('columns-val').innerText = "セット予定: " + document.getElementById('columns').value + "列ループ";
+            document.getElementById('wrap-val').innerText = "セット予定値: " + document.getElementById('wrapWidth').value + "px";
             document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
             document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
             document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
@@ -82,6 +87,7 @@
 
         window.applySettings = () => {
             const columns = parseInt(document.getElementById('columns').value);
+            const wrapWidth = parseInt(document.getElementById('wrapWidth').value);
             const speed = parseFloat(document.getElementById('speed').value);
             const size = parseFloat(document.getElementById('size').value);
             const optimize = document.getElementById('optimize').checked;
@@ -91,11 +97,11 @@
             
             requestTime = Date.now();
             
-            // 過疎テストログ（設定送信が上手くいったことを明記）
-            addLog(`🔄 【過疎テスト実行中】設定送信成功（パターン:${columns}列, 速度:${speed}, 更新:${refreshSec}秒）Ping待機...`, "log-wait");
+            addLog(`🔄 送信完了（幅:${wrapWidth}px, ${columns}列, 速度:${speed}, 更新:${refreshSec}秒）Ping待機...`, "log-wait");
 
             set(ref(db, 'settings2'), {
                 columns: columns,
+                wrapWidth: wrapWidth,
                 speed: speed,
                 size: size,
                 optimize: optimize,
@@ -109,7 +115,7 @@
             const data = snapshot.val();
             if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
-                addLog(`✅ 【逆引きPing受信】レイテンシテスト完了: 応答速度 ${latency}ms`, "log-success");
+                addLog(`✅ 【逆引きPing】レイテンシ: ${latency}ms`, "log-success");
             }
         });
         updateDisplay();
