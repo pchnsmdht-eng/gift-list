@@ -23,14 +23,14 @@
         100% { transform: translateX(0px); } 
     }
 
-    /* ★追加：ローディングゲージのスタイル */
+    /* ★修正：一番下（bottom: 0）に配置し、太さを10pxにしてOBSで切られにくくしました */
     #loading-gauge-container {
-        position: absolute; top: 0; left: 0; width: 100vw; height: 6px;
-        background: rgba(0, 0, 0, 0.6); z-index: 9999; opacity: 0; transition: opacity 0.3s;
+        position: absolute; bottom: 0; left: 0; width: 100vw; height: 10px;
+        background: rgba(0, 0, 0, 0.8); z-index: 99999; opacity: 0; transition: opacity 0.3s;
     }
     #loading-gauge {
         width: 0%; height: 100%; background: #00ffaa;
-        box-shadow: 0 0 12px #00ffaa; transition: width 0.3s ease-out;
+        box-shadow: 0 0 15px #00ffaa, 0 0 5px #00ffaa; transition: width 0.3s ease-out;
     }
 </style>
 </head>
@@ -95,17 +95,19 @@
                 track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
             }
             
-            // 【ゲージ付き完全保護バッファリング】
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
-                reloadTimer = setInterval(() => {
+                // ★修正：更新処理を関数として独立させました
+                const triggerUpdate = () => {
                     const hidden1 = document.querySelector('#wrap1 .hidden-cache'); const visible1 = document.querySelector('#wrap1 .visible-live');
                     const hidden2 = document.querySelector('#wrap2 .hidden-cache'); const visible2 = document.querySelector('#wrap2 .visible-live');
                     const hidden3 = document.querySelector('#wrap3 .hidden-cache'); const visible3 = document.querySelector('#wrap3 .visible-live');
                     const hidden4 = document.querySelector('#wrap4 .hidden-cache'); const visible4 = document.querySelector('#wrap4 .visible-live');
 
-                    // ゲージ表示開始（初期化）
+                    if (!hidden1) return;
+
+                    // ゲージ表示開始
                     gaugeContainer.style.opacity = '1';
                     gauge.style.transition = 'width 0.3s ease-out';
                     gauge.style.width = '5%'; 
@@ -115,18 +117,14 @@
                     const trySwap = () => {
                         loadedCount++;
                         
-                        // 1. 骨組みの読み込み進捗を計算（最大50%までゲージが進む）
                         const progress = 5 + (loadedCount / activeCols) * 45;
                         gauge.style.width = progress + '%';
 
                         if (loadedCount === activeCols) {
-                            // 2. すべての骨組みが揃ったら、画像描画のための4秒バッファ待機を開始
-                            // ここからゲージが50% → 100%に向けて4秒かけてジワジワ進む
                             gauge.style.transition = 'width 4s linear';
                             gauge.style.width = '100%';
 
                             setTimeout(() => {
-                                // 3. 4秒経過（ゲージ100%）。完璧に準備が整ったので一瞬で上書き！
                                 hidden1.className = 'visible-live'; visible1.className = 'hidden-cache';
                                 hidden2.className = 'visible-live'; visible2.className = 'hidden-cache';
                                 hidden3.className = 'visible-live'; visible3.className = 'hidden-cache';
@@ -134,7 +132,6 @@
                                 
                                 hidden1.onload = null; hidden2.onload = null; hidden3.onload = null; hidden4.onload = null;
 
-                                // ゲージを隠してリセット
                                 gaugeContainer.style.opacity = '0';
                                 setTimeout(() => { gauge.style.width = '0%'; }, 300);
                             }, 4000); 
@@ -146,13 +143,17 @@
 
                     const timestamp = Date.now();
                     
-                    // 時間差を設けて通信の渋滞を回避しながら裏画面にリクエストを送る
                     hidden1.src = `${baseUrl}?t=${timestamp}`;
                     setTimeout(() => { hidden2.src = `${baseUrl}?t=${timestamp}`; }, 1500);
                     setTimeout(() => { hidden3.src = `${baseUrl}?t=${timestamp}`; }, 3000);
                     if (activeCols === 4) setTimeout(() => { hidden4.src = `${baseUrl}?t=${timestamp}`; }, 4500);
-                    
-                }, data.refreshMs);
+                };
+
+                // ★修正：「設定を反映」ボタンが押された瞬間に1回目を即時実行する
+                triggerUpdate();
+                
+                // その後、設定した秒数ごとに定期実行する
+                reloadTimer = setInterval(triggerUpdate, data.refreshMs);
             }
             
             if (data.pingRequest) set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
