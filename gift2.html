@@ -1,118 +1,127 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { background: #1a1a1a; color: #eee; padding: 15px; font-family: monospace; }
-        .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input[type="range"], select { width: 100%; margin-bottom: 10px; background: #333; color: #fff; border: 1px solid #555; padding: 5px; box-sizing: border-box; }
-        select { font-size: 1.1rem; padding: 10px; border-radius: 5px; }
-        .value-display { font-size: 1.2rem; color: #0f0; margin-bottom: 20px; text-align: right; display: block; }
-        .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
-        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
-        
-        .apply-btn { width: 100%; padding: 15px; background: #007bff; color: white; font-size: 1.2rem; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
-        .apply-btn:active { background: #0056b3; transform: translateY(2px); }
-
-        #log-terminal { background: #000; color: #0f0; padding: 10px; height: 180px; overflow-y: auto; font-size: 0.85rem; border: 1px solid #444; line-height: 1.5; }
-        .log-success { color: #00ff00; } .log-wait { color: #aaaaaa; } .log-info { color: #00bfff; }
-    </style>
+<meta charset="utf-8">
+<style>
+    body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
+    #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
+    
+    /* 横幅はJavaScript側から動的に変更（3列=12000px, 4列=16000px） */
+    .marquee-track { display: flex; width: 12000px; animation: slide 20s linear infinite; will-change: transform; }
+    
+    .iframe-wrapper { width: 4000px; height: 698px; overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
+    
+    iframe { width: 4000px; height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
+    
+    .hidden-cache { opacity: 0; z-index: 1; }
+    .visible-live { opacity: 1; z-index: 2; }
+    
+    @keyframes slide { 0% { transform: translateX(-4000px); } 100% { transform: translateX(0px); } }
+</style>
 </head>
 <body>
-    <div class="panel">
-        <label style="color: #00ffaa;">ループ列数パターン選択</label>
-        <select id="columns" onchange="updateDisplay()">
-            <option value="3" selected>3列パターン（標準）</option>
-            <option value="4">4列パターン（広範囲拡張）</option>
-        </select>
-        <span class="value-display" id="columns-val" style="color: #00ffaa;">セット予定: 3列ループ</span>
-
-        <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
-        <input type="range" id="speed" min="-10" max="10" step="0.1" value="1" oninput="updateDisplay()">
-        <span class="value-display" id="speed-val">セット予定値: 1</span>
-        
-        <label style="color: #00bfff;">アイコンサイズ (縮小 0.1倍 ～ 拡大 1.5倍)</label>
-        <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="updateDisplay()">
-        <span class="value-display" id="size-val" style="color: #00bfff;">セット予定値: 0.3x</span>
-
-        <label style="color: #ffaa00;">表示範囲 (切り取り 10% ～ 100%)</label>
-        <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
-        <span class="value-display" id="crop-val" style="color: #ffaa00;">セット予定値: 100%</span>
-
-        <label style="color: #ff00ff;">自動更新間隔 (秒)</label>
-        <input type="range" id="refreshSec" min="10" max="300" step="10" value="60" oninput="updateDisplay()">
-        <span class="value-display" id="refresh-val" style="color: #ff00ff;">セット予定値: 60秒</span>
-
-        <div class="checkbox-group">
-            <input type="checkbox" id="optimize" checked>
-            <label for="optimize" style="margin:0;">ラグ軽減 (GPUレンダリング最適化)</label>
+    <div id="master-container"><div class="marquee-track" id="track">
+        <div class="iframe-wrapper" id="wrap1">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
         </div>
-
-        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 受信確認テスト</button>
-    </div>
-
-    <div class="panel">
-        <label>通信ステータス (過疎テスト / 逆引きPing / レイテンシ)</label>
-        <div id="log-terminal"></div>
-    </div>
-
+        <div class="iframe-wrapper" id="wrap2">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+        </div>
+        <div class="iframe-wrapper" id="wrap3">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+        </div>
+        <div class="iframe-wrapper" id="wrap4" style="display: none;">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+        </div>
+    </div></div>
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        
-        const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
-        const logTerminal = document.getElementById('log-terminal');
-        let requestTime = 0;
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const app = initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" });
+        const db = getDatabase(app);
+        const container = document.getElementById('master-container');
+        const track = document.getElementById('track');
+        const wrappers = document.querySelectorAll('.iframe-wrapper');
+        let reloadTimer;
 
-        function addLog(msg, type = "log-info") {
-            const time = new Date().toLocaleTimeString('ja-JP', { hour12: false, minute:'2-digit', second:'2-digit' });
-            logTerminal.innerHTML += `<span class="${type}">[${time}] ${msg}</span><br>`;
-            logTerminal.scrollTop = logTerminal.scrollHeight;
-        }
+        const baseUrl = "https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9";
 
-        window.updateDisplay = () => {
-            document.getElementById('columns-val').innerText = "セット予定: " + document.getElementById('columns').value + "列ループ";
-            document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
-            document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
-            document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
-            document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshSec').value + "秒";
-        };
-
-        window.applySettings = () => {
-            const columns = parseInt(document.getElementById('columns').value);
-            const speed = parseFloat(document.getElementById('speed').value);
-            const size = parseFloat(document.getElementById('size').value);
-            const optimize = document.getElementById('optimize').checked;
-            const crop = parseInt(document.getElementById('crop').value);
-            const refreshSec = parseInt(document.getElementById('refreshSec').value);
-            const refreshMs = refreshSec * 1000;
+        onValue(ref(db, 'settings2'), (snapshot) => {
+            const data = snapshot.val() || {};
             
-            requestTime = Date.now();
-            
-            // 過疎テストログ（設定送信が上手くいったことを明記）
-            addLog(`🔄 【過疎テスト実行中】設定送信成功（パターン:${columns}列, 速度:${speed}, 更新:${refreshSec}秒）Ping待機...`, "log-wait");
-
-            set(ref(db, 'settings2'), {
-                columns: columns,
-                speed: speed,
-                size: size,
-                optimize: optimize,
-                crop: crop,
-                refreshMs: refreshMs,
-                pingRequest: requestTime
-            });
-        };
-
-        onValue(ref(db, 'pingResponse2'), (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.time === requestTime) {
-                const latency = Date.now() - data.time;
-                addLog(`✅ 【逆引きPing受信】レイテンシテスト完了: 応答速度 ${latency}ms`, "log-success");
+            // 1. 列数パターンの動的組み換え処理
+            const activeCols = data.columns || 3; // 指定がない場合は標準の3列
+            track.style.width = (activeCols * 4000) + 'px';
+            if (activeCols === 4) {
+                document.getElementById('wrap4').style.display = 'block';
+            } else {
+                document.getElementById('wrap4').style.display = 'none';
             }
+
+            if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
+            if(data.crop !== undefined) wrappers.forEach(w => w.style.height = ((data.crop/100)*698) + 'px');
+            if(data.optimize !== undefined) {
+                container.style.willChange = data.optimize ? 'transform' : 'auto';
+                track.style.willChange = data.optimize ? 'transform' : 'auto';
+            }
+            if(data.speed !== undefined) {
+                track.style.animation = data.speed === 0 ? 'none' : `slide ${30/Math.abs(data.speed)}s linear infinite`;
+                track.style.animationDirection = data.speed > 0 ? 'reverse' : 'normal';
+            }
+            
+            // 2. 動的列数対応の完全描画バッファリングスワップ
+            if(data.refreshMs) {
+                if(reloadTimer) clearInterval(reloadTimer);
+                
+                reloadTimer = setInterval(() => {
+                    const hidden1 = document.querySelector('#wrap1 .hidden-cache');
+                    const visible1 = document.querySelector('#wrap1 .visible-live');
+                    const hidden2 = document.querySelector('#wrap2 .hidden-cache');
+                    const visible2 = document.querySelector('#wrap2 .visible-live');
+                    const hidden3 = document.querySelector('#wrap3 .hidden-cache');
+                    const visible3 = document.querySelector('#wrap3 .visible-live');
+                    const hidden4 = document.querySelector('#wrap4 .hidden-cache');
+                    const visible4 = document.querySelector('#wrap4 .visible-live');
+
+                    let loadedCount = 0;
+                    
+                    // 現在有効な列数分の読み込みが完了したら発動
+                    const trySwap = () => {
+                        loadedCount++;
+                        if (loadedCount === activeCols) {
+                            setTimeout(() => {
+                                hidden1.className = 'visible-live'; visible1.className = 'hidden-cache';
+                                hidden2.className = 'visible-live'; visible2.className = 'hidden-cache';
+                                hidden3.className = 'visible-live'; visible3.className = 'hidden-cache';
+                                if (activeCols === 4) {
+                                    hidden4.className = 'visible-live'; visible4.className = 'hidden-cache';
+                                }
+                                hidden1.onload = null; hidden2.onload = null; hidden3.onload = null; hidden4.onload = null;
+                            }, 4000); // 4秒バッファ待機
+                        }
+                    };
+
+                    hidden1.onload = trySwap;
+                    hidden2.onload = trySwap;
+                    hidden3.onload = trySwap;
+                    if (activeCols === 4) hidden4.onload = trySwap;
+
+                    const timestamp = Date.now();
+                    hidden1.src = `${baseUrl}?t=${timestamp}`;
+                    hidden2.src = `${baseUrl}?t=${timestamp}`;
+                    hidden3.src = `${baseUrl}?t=${timestamp}`;
+                    if (activeCols === 4) hidden4.src = `${baseUrl}?t=${timestamp}`;
+                    
+                }, data.refreshMs);
+            }
+            
+            if (data.pingRequest) set(ref(db, 'pingResponse2'), { time: data.pingRequest, status: "OK" });
         });
-        updateDisplay();
     </script>
 </body>
 </html>
