@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { background: #1a1a1a; color: #eee; padding: 15px; font-family: monospace; }
+        .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .desc { font-size: 0.85rem; color: #ccc; margin-bottom: 8px; }
+        input[type="range"] { width: 100%; margin-bottom: 5px; }
+        .value-display { font-size: 1.2rem; color: #0f0; margin-bottom: 20px; text-align: right; display: block; }
+        .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
+        .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
+        .apply-btn { width: 100%; padding: 15px; background: #ff4757; color: white; font-size: 1.2rem; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+        .apply-btn:active { background: #ff6b81; transform: translateY(2px); }
+        #log-terminal { background: #000; color: #0f0; padding: 10px; height: 180px; overflow-y: auto; font-size: 0.85rem; border: 1px solid #444; line-height: 1.5; }
+        .log-success { color: #00ff00; } .log-wait { color: #aaaaaa; } .log-info { color: #00bfff; }
+        .cloud-box { background: #333; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ff4757; }
+        .title { color: #ff4757; border-bottom: 2px solid #ff4757; padding-bottom: 5px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h3 class="title">⏱️ フリップ(めくり)時計システム コントローラー</h3>
+        
+        <label style="color: #ffffff;">① ブラウザ仮想ズーム (アイコンの大きさ: 0.2x ~ 3.0x)</label>
+        <div class="desc">※ギフトアイコン自体の大きさをズームします。</div>
+        <input type="range" id="vZoom" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateDisplay()">
+        <span class="value-display" id="zoom-val">セット予定値: 1.0x</span>
+
+        <label style="color: #ffff00;">② 表示枠の横幅 (切り取り: 100px ~ 1000px)</label>
+        <div class="desc">※アイコン1個分がピッタリ収まるように横幅を狭めて切り取ります。</div>
+        <input type="range" id="winWidth" min="100" max="1000" step="10" value="300" oninput="updateDisplay()">
+        <span class="value-display" id="width-val">セット予定値: 300px</span>
+
+        <label style="color: #ffaa00;">③ 表示枠の縦幅 (切り取り: 100px ~ 1000px)</label>
+        <div class="desc">※アイコン1個分がピッタリ収まるように縦幅を狭めて切り取ります。</div>
+        <input type="range" id="winHeight" min="100" max="1000" step="10" value="300" oninput="updateDisplay()">
+        <span class="value-display" id="height-val">セット予定値: 300px</span>
+
+        <label style="color: #00bfff;">④ 配信画面での全体サイズ (0.1x ~ 2.0x)</label>
+        <div class="desc">※切り取った時計枠全体をOBS上で好きなサイズに縮小・拡大します。</div>
+        <input type="range" id="displayScale" min="0.1" max="2.0" step="0.05" value="1.0" oninput="updateDisplay()">
+        <span class="value-display" id="scale-val">セット予定値: 1.0x</span>
+
+        <label style="color: #ff00ff;">⑤ パタパタ自動更新間隔 (秒)</label>
+        <div class="desc">※この秒数ごとに、時計がめくれて最新のデータに切り替わります。</div>
+        <input type="range" id="refreshSec" min="10" max="300" step="10" value="30" oninput="updateDisplay()">
+        <span class="value-display" id="refresh-val">セット予定値: 30秒</span>
+
+        <div class="checkbox-group cloud-box">
+            <input type="checkbox" id="cloudSync" checked>
+            <label for="cloudSync" style="margin:0; color: #ff4757; font-weight: bold;">☁️ めくり設定をクラウドに記憶して復元する</label>
+        </div>
+
+        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 記憶を更新</button>
+    </div>
+    
+    <div class="panel">
+        <label>通信ステータス (クラウド同期 / 逆引きPing)</label>
+        <div id="log-terminal"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
+        const logTerminal = document.getElementById('log-terminal');
+        let requestTime = 0;
+
+        function addLog(msg, type = "log-info") {
+            const time = new Date().toLocaleTimeString('ja-JP', { hour12: false, minute:'2-digit', second:'2-digit' });
+            logTerminal.innerHTML += `<span class="${type}">[${time}] ${msg}</span><br>`;
+            logTerminal.scrollTop = logTerminal.scrollHeight;
+        }
+
+        window.updateDisplay = () => {
+            document.getElementById('zoom-val').innerText = "セット予定値: " + document.getElementById('vZoom').value + "x";
+            document.getElementById('width-val').innerText = "セット予定値: " + document.getElementById('winWidth').value + "px";
+            document.getElementById('height-val').innerText = "セット予定値: " + document.getElementById('winHeight').value + "px";
+            document.getElementById('scale-val').innerText = "セット予定値: " + document.getElementById('displayScale').value + "x";
+            document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshSec').value + "秒";
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedCheck = localStorage.getItem('cloudSync_control3');
+            if (savedCheck !== null) document.getElementById('cloudSync').checked = (savedCheck === 'true');
+
+            if (document.getElementById('cloudSync').checked) {
+                addLog(`☁️ めくりシステムの設定を読み込んでいます...`, "log-wait");
+                get(ref(db, 'settings3')).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        if(data.vZoom !== undefined) document.getElementById('vZoom').value = data.vZoom;
+                        if(data.winWidth !== undefined) document.getElementById('winWidth').value = data.winWidth;
+                        if(data.winHeight !== undefined) document.getElementById('winHeight').value = data.winHeight;
+                        if(data.displayScale !== undefined) document.getElementById('displayScale').value = data.displayScale;
+                        if(data.refreshMs !== undefined) document.getElementById('refreshSec').value = data.refreshMs / 1000;
+                        updateDisplay();
+                        addLog(`✅ 【復元完了】前回のめくり設定をスライダーにセットしました。`, "log-success");
+                    } else { updateDisplay(); }
+                }).catch(() => { updateDisplay(); addLog(`❌ クラウドの読み込みに失敗しました。`, "log-wait"); });
+            } else { updateDisplay(); }
+        });
+
+        window.applySettings = () => {
+            requestTime = Date.now();
+            const isSync = document.getElementById('cloudSync').checked;
+            localStorage.setItem('cloudSync_control3', isSync);
+
+            addLog(`🔄 【送信完了】めくり設定を反映しています。Ping待機...`, "log-wait");
+            // ★settings3 という独立した場所に保存します
+            set(ref(db, 'settings3'), {
+                vZoom: parseFloat(document.getElementById('vZoom').value),
+                winWidth: parseInt(document.getElementById('winWidth').value),
+                winHeight: parseInt(document.getElementById('winHeight').value),
+                displayScale: parseFloat(document.getElementById('displayScale').value),
+                refreshMs: parseInt(document.getElementById('refreshSec').value) * 1000,
+                pingRequest: requestTime
+            });
+            if(isSync) addLog(`☁️ 【記憶更新】めくり設定をクラウドに記憶しました。`, "log-success");
+        };
+
+        onValue(ref(db, 'pingResponse3'), (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.time === requestTime) {
+                addLog(`✅ 【逆引きPing】受信成功: 応答速度 ${Date.now() - data.time}ms`, "log-success");
+            }
+        });
+    </script>
+</body>
+</html>
