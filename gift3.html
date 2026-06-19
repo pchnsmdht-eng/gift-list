@@ -3,69 +3,77 @@
 <head>
 <meta charset="utf-8">
 <style>
-    :root { --win-width: 300px; --win-height: 300px; --v-zoom: 1.0; --display-scale: 1.0; }
+    :root { --win-width: 400px; --win-height: 400px; --v-zoom: 1.0; --display-scale: 1.0; }
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     
-    /* めくり時計の本体コンテナ */
-    #flip-board {
-        position: absolute; top: 50px; left: 50px;
-        width: var(--win-width); height: var(--win-height);
-        perspective: 1200px; /* 3Dの奥行き */
+    /* 配信画面全体のサイズ調整と配置 */
+    #master-container {
+        position: absolute; top: 20px; left: 20px;
         transform: scale(var(--display-scale));
         transform-origin: top left;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* 全体に軽く影をつけて時計っぽく */
     }
 
-    /* 上下半分に切るためのパネル */
-    .half-panel {
-        position: absolute; width: 100%; height: 50%;
-        overflow: hidden; backface-visibility: hidden;
-        background: transparent;
+    /* 設定した幅で切り抜くための窓枠 */
+    .crop-window {
+        width: var(--win-width); height: var(--win-height);
+        overflow: hidden; position: relative;
+        border-radius: 8px; /* 角を少し丸くしてお洒落に */
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3); /* 浮き出るような影 */
+        background: rgba(0,0,0,0.1); /* 切り替わり時に背景がチラつかないよう微かな黒 */
     }
-    
-    /* 上半分の回転軸は「下」 */
-    .half-top { top: 0; transform-origin: bottom; }
-    /* 下半分の回転軸は「上」 */
-    .half-bottom { top: 50%; transform-origin: top; }
 
-    /* 4つの層（Zインデックスで管理） */
-    #t-back { z-index: 1; } /* 奥の上半分（新しい画像） */
-    #b-back { z-index: 1; } /* 奥の下半分（古い画像） */
-    #t-flap { z-index: 2; } /* 手前の上半分（倒れる・古い画像） */
-    #b-flap { z-index: 2; transform: rotateX(90deg); } /* 手前の下半分（倒れてくる・新しい画像。最初は見えない） */
+    /* フェードイン＆バウンドのアニメーション設定 */
+    /* opacityでフワッと現れ、scaleとtranslateYで下からポンッと跳ねるように出ます */
+    @keyframes bounceFadeIn {
+        0%   { opacity: 0; transform: scale(0.85) translateY(20px); }
+        60%  { opacity: 1; transform: scale(1.03) translateY(-5px); }
+        80%  { transform: scale(0.98) translateY(2px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
 
-    /* パネルの中のiframe配置 */
-    .half-panel iframe {
-        position: absolute; width: var(--win-width); height: var(--win-height);
+    /* iframeを囲むレイヤー */
+    .gift-layer {
+        position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+        opacity: 0; pointer-events: none;
+    }
+
+    /* 新しいデータが来た時に付与されるクラス */
+    .visible-bounce {
+        opacity: 1; z-index: 2;
+        /* バウンドの滑らかさを強調するベジェ曲線 */
+        animation: bounceFadeIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+
+    /* 古いデータは裏でそのまま消える */
+    .hidden-fade {
+        opacity: 0; z-index: 1;
+        transition: opacity 0.4s ease-out;
+    }
+
+    /* iframe自体の設定 */
+    iframe {
+        position: absolute; top: 0; left: 0;
+        width: 2000px; height: 2000px;
         border: none; pointer-events: none; zoom: var(--v-zoom);
         transform-origin: top left;
     }
-    .half-top iframe { top: 0; }
-    /* 下半分は、中身を上に半分ずらして下部分だけを見せる */
-    .half-bottom iframe { top: calc(var(--win-height) / -2); }
-
-    /* 待機中のキャッシュ用コンテナ（画面外） */
-    #hidden-cache { position: absolute; top: -9999px; opacity: 0; pointer-events: none; }
 
     /* ロードゲージ */
-    #loading-panel { position: fixed; top: 20px; left: 20px; width: 350px; height: 40px; background: rgba(0, 0, 0, 0.8); border: 2px solid #ff4757; border-radius: 8px; z-index: 99999; display: none; overflow: hidden; box-shadow: 0 0 15px rgba(255, 71, 87, 0.5); }
-    #loading-bg { position: absolute; top: 0; left: 0; width: 0%; height: 100%; background: linear-gradient(90deg, #ff6b81, #ff4757); transition: width 0.3s ease-out; z-index: 1; }
+    #loading-panel { position: fixed; top: 20px; left: 20px; width: 350px; height: 40px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ffaa; border-radius: 8px; z-index: 99999; display: none; overflow: hidden; box-shadow: 0 0 15px rgba(0, 255, 170, 0.5); }
+    #loading-bg { position: absolute; top: 0; left: 0; width: 0%; height: 100%; background: linear-gradient(90deg, #007744, #00ffaa); transition: width 0.3s ease-out; z-index: 1; }
     #loading-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: #ffffff; font-family: sans-serif; font-size: 16px; font-weight: bold; line-height: 40px; text-align: center; text-shadow: 1px 1px 3px #000; z-index: 2; }
 </style>
 </head>
 <body>
     <div id="loading-panel"><div id="loading-bg"></div><div id="loading-text">🔄 データ受信中...</div></div>
     
-    <!-- ここがパタパタめくれる時計本体 -->
-    <div id="flip-board">
-        <div id="t-back" class="half-panel half-top"></div>
-        <div id="b-back" class="half-panel half-bottom"></div>
-        <div id="t-flap" class="half-panel half-top"></div>
-        <div id="b-flap" class="half-panel half-bottom"></div>
+    <div id="master-container">
+        <div class="crop-window">
+            <div id="layer1" class="gift-layer visible-bounce"><iframe src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe></div>
+            <div id="layer2" class="gift-layer hidden-fade"><iframe src=""></iframe></div>
+        </div>
     </div>
-
-    <!-- 裏でロードするための隠し部屋 -->
-    <div id="hidden-cache"></div>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -76,116 +84,65 @@
         const loadingPanel = document.getElementById('loading-panel');
         const loadingBg = document.getElementById('loading-bg');
         const loadingText = document.getElementById('loading-text');
-        const hiddenCache = document.getElementById('hidden-cache');
+        
+        const layer1 = document.getElementById('layer1');
+        const layer2 = document.getElementById('layer2');
+        let currentLayer = 1; // 今見えているレイヤー
         
         let reloadTimer;
-        let isFirstLoad = true;
-        const animDuration = 400; // めくれる速さ（片面0.4秒）
-
-        // ※配信リンクはこちらに入力してください
         const baseUrl = "https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9";
 
         onValue(ref(db, 'settings3'), (snapshot) => {
             const data = snapshot.val() || {};
             
-            // CSS変数の更新
             document.documentElement.style.setProperty('--v-zoom', data.vZoom || 1.0);
-            document.documentElement.style.setProperty('--win-width', `${data.winWidth || 300}px`);
-            document.documentElement.style.setProperty('--win-height', `${data.winHeight || 300}px`);
+            document.documentElement.style.setProperty('--win-width', `${data.winWidth || 400}px`);
+            document.documentElement.style.setProperty('--win-height', `${data.winHeight || 400}px`);
             document.documentElement.style.setProperty('--display-scale', data.displayScale || 1.0);
 
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
                 const triggerUpdate = () => {
-                    const iframes = [];
-                    let loadedCount = 0;
-
                     loadingPanel.style.display = 'block';
                     loadingBg.style.transition = 'width 0.3s ease-out';
-                    loadingBg.style.width = '5%'; 
-                    loadingText.innerText = '🔄 データ受信中... 5%';
-                    
-                    const trySwap = () => {
-                        loadedCount++;
-                        const progress = 5 + (loadedCount / 4) * 45; // 4枚ロードで最大50%
-                        loadingBg.style.width = progress + '%';
-                        loadingText.innerText = `🔄 データ受信中... ${Math.floor(progress)}%`;
+                    loadingBg.style.width = '30%'; 
+                    loadingText.innerText = '🔄 データ受信中... 30%';
 
-                        if (loadedCount === 4) {
-                            loadingBg.style.transition = 'width 4s linear';
-                            loadingBg.style.width = '100%';
-                            loadingText.innerText = '✨ 描画構築中... まもなくめくります';
-
-                            setTimeout(() => { executeFlip(iframes); }, 4000); // 4秒バッファ待機
-                        }
-                    };
+                    // 裏に隠れている方のレイヤーを取得
+                    const nextLayer = currentLayer === 1 ? layer2 : layer1;
+                    const activeLayer = currentLayer === 1 ? layer1 : layer2;
+                    const nextIframe = nextLayer.querySelector('iframe');
 
                     const timestamp = Date.now();
-                    // めくりアニメーションのために、全く同じ画像を4枚生成して裏でロードします
-                    for(let i=0; i<4; i++){
-                        const iframe = document.createElement('iframe');
-                        iframe.onload = trySwap;
-                        setTimeout(() => { iframe.src = `${baseUrl}?t=${timestamp}`; }, i * 500);
-                        iframes.push(iframe);
-                        hiddenCache.appendChild(iframe);
-                    }
+                    
+                    // 新しいデータを裏でロード
+                    nextIframe.onload = () => {
+                        loadingBg.style.width = '100%';
+                        loadingText.innerText = '✨ ポンッ！と切り替えます';
+
+                        setTimeout(() => {
+                            // 古い方をフェードアウト
+                            activeLayer.className = 'gift-layer hidden-fade';
+                            
+                            // アニメーションを再起動するために一度クラスをリセット
+                            nextLayer.className = 'gift-layer';
+                            void nextLayer.offsetWidth; // ブラウザに強制認識させるおまじない
+                            
+                            // 新しい方をフェードイン＆バウンド
+                            nextLayer.className = 'gift-layer visible-bounce';
+                            
+                            currentLayer = currentLayer === 1 ? 2 : 1;
+                            
+                            loadingPanel.style.display = 'none';
+                            loadingBg.style.width = '0%';
+                        }, 500); 
+                    };
+                    
+                    nextIframe.src = `${baseUrl}?t=${timestamp}`;
                 };
 
-                // パタパタアニメーションのコア処理
-                const executeFlip = (iframes) => {
-                    const tBack = document.getElementById('t-back');
-                    const bBack = document.getElementById('b-back');
-                    const tFlap = document.getElementById('t-flap');
-                    const bFlap = document.getElementById('b-flap');
-
-                    // 初回ロード時はめくらずに即座に表示
-                    if (isFirstLoad) {
-                        tBack.innerHTML = ''; tBack.appendChild(iframes[0]);
-                        bFlap.innerHTML = ''; bFlap.appendChild(iframes[1]);
-                        tFlap.innerHTML = ''; tFlap.appendChild(iframes[2]);
-                        bBack.innerHTML = ''; bBack.appendChild(iframes[3]);
-                        
-                        loadingPanel.style.display = 'none';
-                        loadingBg.style.width = '0%';
-                        isFirstLoad = false;
-                        return;
-                    }
-
-                    // 1. アニメーション準備：奥のパネルと下フラップに新しい画像をセット
-                    tBack.innerHTML = ''; tBack.appendChild(iframes[0]);
-                    bFlap.innerHTML = ''; bFlap.appendChild(iframes[1]);
-                    bFlap.style.transition = 'none';
-                    bFlap.style.transform = 'rotateX(90deg)'; // 見えないように立てておく
-                    
-                    // ブラウザにDOMの変更を認識させるためのフレームスキップ
-                    requestAnimationFrame(() => { requestAnimationFrame(() => {
-                        // 2. 上半分が手前に倒れて見えなくなる
-                        tFlap.style.transition = `transform ${animDuration}ms ease-in`;
-                        tFlap.style.transform = 'rotateX(-90deg)';
-                        
-                        setTimeout(() => {
-                            // 3. 上が倒れ終わったら、立てていた下半分を手前に倒してくる
-                            bFlap.style.transition = `transform ${animDuration}ms ease-out`;
-                            bFlap.style.transform = 'rotateX(0deg)';
-                            
-                            setTimeout(() => {
-                                // 4. 全て完了したら状態をリセットし、次の更新に備える
-                                tFlap.style.transition = 'none';
-                                tFlap.style.transform = 'rotateX(0deg)';
-                                tFlap.innerHTML = ''; tFlap.appendChild(iframes[2]);
-                                
-                                bBack.innerHTML = ''; bBack.appendChild(iframes[3]);
-                                
-                                loadingPanel.style.display = 'none';
-                                loadingBg.style.width = '0%';
-                                hiddenCache.innerHTML = ''; // 使わ終わったキャッシュをお掃除
-                            }, animDuration);
-                        }, animDuration);
-                    });});
-                }
-
-                triggerUpdate();
+                // 初回はすぐに起動し、その後は設定された秒数でループ
                 reloadTimer = setInterval(triggerUpdate, data.refreshMs);
             }
             
