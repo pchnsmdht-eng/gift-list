@@ -28,12 +28,13 @@
         <input type="range" id="vZoom" min="0.5" max="3.0" step="0.1" value="1.0" oninput="updateDisplay()">
         <span class="value-display" id="zoom-val">セット予定値: 1.0x</span>
 
-        <label style="color: #ffff00;">② 枠の横幅 (切り取り: 100px ~ 1500px)</label>
+        <label style="color: #ffff00;">② 枠の横幅 (折り返し位置: 100px ~ 1500px)</label>
+        <div class="desc">※ここを狭くすれば、ギフトが下に押し出されて複数行の「ページ」が作られます。</div>
         <input type="range" id="winWidth" min="100" max="1500" step="10" value="400" oninput="updateDisplay()">
         <span class="value-display" id="width-val">セット予定値: 400px</span>
 
-        <label style="color: #ffaa00;">③ 枠の縦幅 (切り取り: 100px ~ 1500px)</label>
-        <div class="desc">※ここを狭くして「1ページ分の高さ」を決めます。</div>
+        <label style="color: #ffaa00;">③ 枠の縦幅 (1ページ分の高さ: 100px ~ 1500px)</label>
+        <div class="desc">※ここを狭くして「1ページ分の高さ」を決めます。はみ出た部分は見えなくなります。</div>
         <input type="range" id="winHeight" min="100" max="1500" step="10" value="300" oninput="updateDisplay()">
         <span class="value-display" id="height-val">セット予定値: 300px</span>
 
@@ -42,12 +43,12 @@
         <span class="value-display" id="scale-val">セット予定値: 1.0x</span>
 
         <label style="color: #ff3366;">⑤ 何ページ分を下へ読み進めるか (1 ~ 20ページ)</label>
-        <div class="desc">※枠から見切れた下のギフトを、バウンドするたびに1ページずつ下へスクロールして映し出します。</div>
+        <div class="desc">※枠から見切れた下のギフトを、時間ごとに1ページずつ下へスクロールして映し出します。</div>
         <input type="range" id="maxPages" min="1" max="20" step="1" value="5" oninput="updateDisplay()">
         <span class="value-display" id="pages-val" style="color: #ff3366;">セット予定値: 5ページ</span>
 
-        <label style="color: #ff00ff;">⑥ ページがめくれる間隔 (秒)</label>
-        <div class="desc">※この秒数ごとに、次のページがポンッ！と現れます。</div>
+        <label style="color: #ff00ff;">⑥ 次のページが現れる間隔 (秒)</label>
+        <div class="desc">※この秒数ごとに、見えなかった下のページがポンッ！と現れます。</div>
         <input type="range" id="refreshSec" min="5" max="300" step="5" value="15" oninput="updateDisplay()">
         <span class="value-display" id="refresh-val">セット予定値: 15秒</span>
 
