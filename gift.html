@@ -3,17 +3,14 @@
 <head>
 <meta charset="utf-8">
 <style>
-    :root {
-        --win-width: 1200px;
-        --win-height: 600px;
-    }
-
+    :root { --win-width: 1200px; --win-height: 600px; }
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
     
     .marquee-track { display: flex; animation: slide 20s linear infinite; will-change: transform; }
-    .iframe-wrapper { width: var(--win-width); height: var(--win-height); overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
     
+    /* 横幅を変えることで、内部のギフトが自動的に折り返して段になります */
+    .iframe-wrapper { width: var(--win-width); height: var(--win-height); overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
     iframe { 
         width: var(--win-width); height: var(--win-height); border: none; pointer-events: none; 
         position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; 
@@ -23,10 +20,7 @@
     .hidden-cache { opacity: 0; z-index: 1; }
     .visible-live { opacity: 1; z-index: 2; }
     
-    @keyframes slide { 
-        0% { transform: translateX(calc(var(--win-width) * -1)); } 
-        100% { transform: translateX(0px); } 
-    }
+    @keyframes slide { 0% { transform: translateX(calc(var(--win-width) * -1)); } 100% { transform: translateX(0px); } }
 
     #loading-panel {
         position: fixed; top: 20px; left: 20px; width: 350px; height: 40px;
@@ -35,8 +29,7 @@
     }
     #loading-bg {
         position: absolute; top: 0; left: 0; width: 0%; height: 100%;
-        background: linear-gradient(90deg, #007744, #00ffaa);
-        transition: width 0.3s ease-out; z-index: 1;
+        background: linear-gradient(90deg, #007744, #00ffaa); transition: width 0.3s ease-out; z-index: 1;
     }
     #loading-text {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -46,27 +39,20 @@
 </style>
 </head>
 <body>
-    <div id="loading-panel">
-        <div id="loading-bg"></div>
-        <div id="loading-text">🔄 準備中...</div>
-    </div>
+    <div id="loading-panel"><div id="loading-bg"></div><div id="loading-text">🔄 準備中...</div></div>
 
     <div id="master-container"><div class="marquee-track" id="track">
         <div class="iframe-wrapper" id="wrap1">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
         <div class="iframe-wrapper" id="wrap2">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
         <div class="iframe-wrapper" id="wrap3">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
-        <div class="iframe-wrapper" id="wrap4" style="display: none;">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+        <div class="iframe-wrapper" id="wrap4">
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
     </div></div>
     
@@ -78,8 +64,6 @@
         
         const container = document.getElementById('master-container');
         const track = document.getElementById('track');
-        const wrappers = document.querySelectorAll('.iframe-wrapper');
-        
         const loadingPanel = document.getElementById('loading-panel');
         const loadingBg = document.getElementById('loading-bg');
         const loadingText = document.getElementById('loading-text');
@@ -95,9 +79,8 @@
             document.documentElement.style.setProperty('--win-width', `${winWidth}px`);
             document.documentElement.style.setProperty('--win-height', `${winHeight}px`);
 
-            const activeCols = data.columns || 3;
-            track.style.width = (activeCols * winWidth) + 'px';
-            document.getElementById('wrap4').style.display = (activeCols === 4) ? 'block' : 'none';
+            // 永遠無限スクロールのために幅を自動確保
+            track.style.width = (4 * winWidth) + 'px';
 
             if(data.displayScale !== undefined) container.style.transform = `scale(${data.displayScale})`;
 
@@ -127,6 +110,7 @@
                     loadingText.innerText = '🔄 データ受信中... 5%';
 
                     let loadedCount = 0;
+                    const activeCols = 4; // 自動で4枚
                     
                     const trySwap = () => {
                         loadedCount++;
@@ -143,7 +127,7 @@
                                 hidden1.className = 'visible-live'; visible1.className = 'hidden-cache';
                                 hidden2.className = 'visible-live'; visible2.className = 'hidden-cache';
                                 hidden3.className = 'visible-live'; visible3.className = 'hidden-cache';
-                                if (activeCols === 4) { hidden4.className = 'visible-live'; visible4.className = 'hidden-cache'; }
+                                hidden4.className = 'visible-live'; visible4.className = 'hidden-cache';
                                 
                                 hidden1.onload = null; hidden2.onload = null; hidden3.onload = null; hidden4.onload = null;
 
@@ -153,15 +137,14 @@
                         }
                     };
 
-                    hidden1.onload = trySwap; hidden2.onload = trySwap; hidden3.onload = trySwap;
-                    if (activeCols === 4) hidden4.onload = trySwap;
+                    hidden1.onload = trySwap; hidden2.onload = trySwap; hidden3.onload = trySwap; hidden4.onload = trySwap;
 
                     const timestamp = Date.now();
                     
                     hidden1.src = `${baseUrl}?t=${timestamp}`;
                     setTimeout(() => { hidden2.src = `${baseUrl}?t=${timestamp}`; }, 1500);
                     setTimeout(() => { hidden3.src = `${baseUrl}?t=${timestamp}`; }, 3000);
-                    if (activeCols === 4) setTimeout(() => { hidden4.src = `${baseUrl}?t=${timestamp}`; }, 4500);
+                    setTimeout(() => { hidden4.src = `${baseUrl}?t=${timestamp}`; }, 4500);
                 };
 
                 triggerUpdate();
