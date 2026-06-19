@@ -4,57 +4,69 @@
 <meta charset="utf-8">
 <style>
     :root {
-        --wrap-width: 4000px;
+        --win-width: 1200px;
+        --win-height: 600px;
     }
 
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
     
     .marquee-track { display: flex; animation: slide 20s linear infinite; will-change: transform; }
-    .iframe-wrapper { width: var(--wrap-width); height: 1200px; overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
+    .iframe-wrapper { width: var(--win-width); height: var(--win-height); overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
     
-    iframe { width: var(--wrap-width); height: 1200px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; backface-visibility: hidden; transform: translateZ(0); }
+    iframe { 
+        width: var(--win-width); height: var(--win-height); border: none; pointer-events: none; 
+        position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; 
+        backface-visibility: hidden; transform: translateZ(0);
+    }
     
     .hidden-cache { opacity: 0; z-index: 1; }
     .visible-live { opacity: 1; z-index: 2; }
     
     @keyframes slide { 
-        0% { transform: translateX(calc(var(--wrap-width) * -1)); } 
+        0% { transform: translateX(calc(var(--win-width) * -1)); } 
         100% { transform: translateX(0px); } 
     }
 
-    /* ★修正：一番下（bottom: 0）に配置し、太さを10pxにしてOBSで切られにくくしました */
-    #loading-gauge-container {
-        position: absolute; bottom: 0; left: 0; width: 100vw; height: 10px;
-        background: rgba(0, 0, 0, 0.8); z-index: 99999; opacity: 0; transition: opacity 0.3s;
+    #loading-panel {
+        position: fixed; top: 20px; left: 20px; width: 350px; height: 40px;
+        background: rgba(0, 0, 0, 0.8); border: 2px solid #00ffaa; border-radius: 8px;
+        z-index: 99999; display: none; overflow: hidden; box-shadow: 0 0 15px rgba(0, 255, 170, 0.5);
     }
-    #loading-gauge {
-        width: 0%; height: 100%; background: #00ffaa;
-        box-shadow: 0 0 15px #00ffaa, 0 0 5px #00ffaa; transition: width 0.3s ease-out;
+    #loading-bg {
+        position: absolute; top: 0; left: 0; width: 0%; height: 100%;
+        background: linear-gradient(90deg, #007744, #00ffaa);
+        transition: width 0.3s ease-out; z-index: 1;
+    }
+    #loading-text {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        color: #ffffff; font-family: sans-serif; font-size: 16px; font-weight: bold;
+        line-height: 40px; text-align: center; text-shadow: 1px 1px 3px #000; z-index: 2;
     }
 </style>
 </head>
 <body>
-    <div id="loading-gauge-container">
-        <div id="loading-gauge"></div>
+    <div id="loading-panel">
+        <div id="loading-bg"></div>
+        <div id="loading-text">🔄 準備中...</div>
     </div>
 
     <div id="master-container"><div class="marquee-track" id="track">
         <div class="iframe-wrapper" id="wrap1">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
         <div class="iframe-wrapper" id="wrap2">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
         <div class="iframe-wrapper" id="wrap3">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
         <div class="iframe-wrapper" id="wrap4" style="display: none;">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
-            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe>
+            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
+            <iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
         </div>
     </div></div>
     
@@ -67,24 +79,27 @@
         const container = document.getElementById('master-container');
         const track = document.getElementById('track');
         const wrappers = document.querySelectorAll('.iframe-wrapper');
-        const gaugeContainer = document.getElementById('loading-gauge-container');
-        const gauge = document.getElementById('loading-gauge');
+        
+        const loadingPanel = document.getElementById('loading-panel');
+        const loadingBg = document.getElementById('loading-bg');
+        const loadingText = document.getElementById('loading-text');
         let reloadTimer;
 
-        const baseUrl = "https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9";
+        const baseUrl = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
 
         onValue(ref(db, 'settings2'), (snapshot) => {
             const data = snapshot.val() || {};
             
-            const wrapWidth = data.wrapWidth || 4000;
-            document.documentElement.style.setProperty('--wrap-width', `${wrapWidth}px`);
+            const winWidth = data.windowWidth || 1200;
+            const winHeight = data.windowHeight || 600;
+            document.documentElement.style.setProperty('--win-width', `${winWidth}px`);
+            document.documentElement.style.setProperty('--win-height', `${winHeight}px`);
 
             const activeCols = data.columns || 3;
-            track.style.width = (activeCols * wrapWidth) + 'px';
+            track.style.width = (activeCols * winWidth) + 'px';
             document.getElementById('wrap4').style.display = (activeCols === 4) ? 'block' : 'none';
 
-            if(data.size !== undefined) container.style.transform = `scale(${data.size})`;
-            if(data.crop !== undefined) wrappers.forEach(w => w.style.height = ((data.crop/100)*1200) + 'px');
+            if(data.displayScale !== undefined) container.style.transform = `scale(${data.displayScale})`;
 
             if(data.optimize !== undefined) {
                 container.style.willChange = data.optimize ? 'transform' : 'auto';
@@ -98,7 +113,6 @@
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
-                // ★修正：更新処理を関数として独立させました
                 const triggerUpdate = () => {
                     const hidden1 = document.querySelector('#wrap1 .hidden-cache'); const visible1 = document.querySelector('#wrap1 .visible-live');
                     const hidden2 = document.querySelector('#wrap2 .hidden-cache'); const visible2 = document.querySelector('#wrap2 .visible-live');
@@ -107,22 +121,23 @@
 
                     if (!hidden1) return;
 
-                    // ゲージ表示開始
-                    gaugeContainer.style.opacity = '1';
-                    gauge.style.transition = 'width 0.3s ease-out';
-                    gauge.style.width = '5%'; 
+                    loadingPanel.style.display = 'block';
+                    loadingBg.style.transition = 'width 0.3s ease-out';
+                    loadingBg.style.width = '5%'; 
+                    loadingText.innerText = '🔄 データ受信中... 5%';
 
                     let loadedCount = 0;
                     
                     const trySwap = () => {
                         loadedCount++;
-                        
                         const progress = 5 + (loadedCount / activeCols) * 45;
-                        gauge.style.width = progress + '%';
+                        loadingBg.style.width = progress + '%';
+                        loadingText.innerText = `🔄 データ受信中... ${Math.floor(progress)}%`;
 
                         if (loadedCount === activeCols) {
-                            gauge.style.transition = 'width 4s linear';
-                            gauge.style.width = '100%';
+                            loadingBg.style.transition = 'width 4s linear';
+                            loadingBg.style.width = '100%';
+                            loadingText.innerText = '✨ 描画構築中... まもなく更新';
 
                             setTimeout(() => {
                                 hidden1.className = 'visible-live'; visible1.className = 'hidden-cache';
@@ -132,8 +147,8 @@
                                 
                                 hidden1.onload = null; hidden2.onload = null; hidden3.onload = null; hidden4.onload = null;
 
-                                gaugeContainer.style.opacity = '0';
-                                setTimeout(() => { gauge.style.width = '0%'; }, 300);
+                                loadingPanel.style.display = 'none';
+                                loadingBg.style.width = '0%';
                             }, 4000); 
                         }
                     };
@@ -149,10 +164,7 @@
                     if (activeCols === 4) setTimeout(() => { hidden4.src = `${baseUrl}?t=${timestamp}`; }, 4500);
                 };
 
-                // ★修正：「設定を反映」ボタンが押された瞬間に1回目を即時実行する
                 triggerUpdate();
-                
-                // その後、設定した秒数ごとに定期実行する
                 reloadTimer = setInterval(triggerUpdate, data.refreshMs);
             }
             
