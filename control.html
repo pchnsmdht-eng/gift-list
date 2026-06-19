@@ -16,6 +16,9 @@
         .apply-btn:active { background: #0056b3; transform: translateY(2px); }
         #log-terminal { background: #000; color: #0f0; padding: 10px; height: 180px; overflow-y: auto; font-size: 0.85rem; border: 1px solid #444; line-height: 1.5; }
         .log-success { color: #00ff00; } .log-wait { color: #aaaaaa; } .log-info { color: #00bfff; }
+        
+        /* ★記憶チェックボックスを目立たせるデザイン */
+        .cloud-box { background: #333; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #00ffaa; }
     </style>
 </head>
 <body>
@@ -57,16 +60,23 @@
             <label for="optimize" style="margin:0;">ラグ軽減 (GPUレンダリング最適化)</label>
         </div>
 
-        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 受信確認テスト</button>
+        <div class="checkbox-group cloud-box">
+            <input type="checkbox" id="cloudSync" checked>
+            <label for="cloudSync" style="margin:0; color: #00ffaa; font-weight: bold;">☁️ 数値をクラウドに記憶し、全てのブラウザで復元する</label>
+        </div>
+
+        <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 記憶を更新</button>
     </div>
+    
     <div class="panel">
-        <label>通信ステータス (過疎テスト / 逆引きPing)</label>
+        <label>通信ステータス (クラウド同期状況 / 逆引きPing)</label>
         <div id="log-terminal"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // ★クラウドから読み込むための get を追加
+        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
         const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
         const logTerminal = document.getElementById('log-terminal');
         let requestTime = 0;
@@ -87,8 +97,46 @@
             document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshSec').value + "秒";
         };
 
+        // ★新規追加：ブラウザ起動時にクラウドから設定を読み込み・スライダーを自動操作する機能
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedCheck = localStorage.getItem('cloudSync_control1');
+            if (savedCheck !== null) {
+                document.getElementById('cloudSync').checked = (savedCheck === 'true');
+            }
+
+            if (document.getElementById('cloudSync').checked) {
+                addLog(`☁️ クラウドから前回の設定を読み込んでいます...`, "log-wait");
+                get(ref(db, 'settings')).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        if(data.vZoom !== undefined) document.getElementById('vZoom').value = data.vZoom;
+                        if(data.iframeWidth !== undefined) document.getElementById('iframeWidth').value = data.iframeWidth;
+                        if(data.cropWidth !== undefined) document.getElementById('cropWidth').value = data.cropWidth;
+                        if(data.cropHeight !== undefined) document.getElementById('cropHeight').value = data.cropHeight;
+                        if(data.displayScale !== undefined) document.getElementById('displayScale').value = data.displayScale;
+                        if(data.speed !== undefined) document.getElementById('speed').value = data.speed;
+                        if(data.refreshMs !== undefined) document.getElementById('refreshSec').value = data.refreshMs / 1000;
+                        if(data.optimize !== undefined) document.getElementById('optimize').checked = data.optimize;
+                        
+                        updateDisplay();
+                        addLog(`✅ 【復元完了】他のブラウザで記憶された数値をスライダーにセットしました。`, "log-success");
+                    } else {
+                        updateDisplay();
+                    }
+                }).catch(() => {
+                    updateDisplay();
+                    addLog(`❌ クラウドの読み込みに失敗しました。`, "log-wait");
+                });
+            } else {
+                updateDisplay();
+            }
+        });
+
         window.applySettings = () => {
             requestTime = Date.now();
+            const isSync = document.getElementById('cloudSync').checked;
+            localStorage.setItem('cloudSync_control1', isSync);
+
             addLog(`🔄 【送信完了】設定を反映しています。Ping待機...`, "log-wait");
             set(ref(db, 'settings'), {
                 vZoom: parseFloat(document.getElementById('vZoom').value),
@@ -101,6 +149,10 @@
                 refreshMs: parseInt(document.getElementById('refreshSec').value) * 1000,
                 pingRequest: requestTime
             });
+            
+            if(isSync) {
+                addLog(`☁️ 【記憶更新】現在の数値をクラウドに記憶しました。次回開いた際に復元されます。`, "log-success");
+            }
         };
 
         onValue(ref(db, 'pingResponse'), (snapshot) => {
@@ -109,7 +161,6 @@
                 addLog(`✅ 【逆引きPing】受信成功: 応答速度 ${Date.now() - data.time}ms`, "log-success");
             }
         });
-        updateDisplay();
     </script>
 </body>
 </html>
