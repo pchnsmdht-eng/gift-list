@@ -22,31 +22,34 @@
 </head>
 <body>
     <div class="panel">
-        <h2 class="title">✨ バウンド＆フェードイン 設定</h2>
+        <h2 class="title">✨ バウンド＆ページめくり 設定</h2>
         
         <label style="color: #ffffff;">① ズーム (アイコンの大きさ: 0.5x ~ 3.0x)</label>
         <input type="range" id="vZoom" min="0.5" max="3.0" step="0.1" value="1.0" oninput="updateDisplay()">
         <span class="value-display" id="zoom-val">セット予定値: 1.0x</span>
 
-        <label style="color: #ffff00;">② 表示する枠の横幅 (切り取り: 100px ~ 1500px)</label>
-        <div class="desc">※ここを広くすれば、横に複数のギフトが並んで見えます。</div>
+        <label style="color: #ffff00;">② 枠の横幅 (切り取り: 100px ~ 1500px)</label>
         <input type="range" id="winWidth" min="100" max="1500" step="10" value="400" oninput="updateDisplay()">
         <span class="value-display" id="width-val">セット予定値: 400px</span>
 
-        <label style="color: #ffaa00;">③ 表示する枠の縦幅 (切り取り: 100px ~ 1500px)</label>
-        <div class="desc">※ここを広くすれば、下にある過去のギフトも一緒に見えます。</div>
-        <input type="range" id="winHeight" min="100" max="1500" step="10" value="400" oninput="updateDisplay()">
-        <span class="value-display" id="height-val">セット予定値: 400px</span>
+        <label style="color: #ffaa00;">③ 枠の縦幅 (切り取り: 100px ~ 1500px)</label>
+        <div class="desc">※ここを狭くして「1ページ分の高さ」を決めます。</div>
+        <input type="range" id="winHeight" min="100" max="1500" step="10" value="300" oninput="updateDisplay()">
+        <span class="value-display" id="height-val">セット予定値: 300px</span>
 
         <label style="color: #00bfff;">④ 配信画面での全体サイズ (0.1x ~ 2.0x)</label>
-        <div class="desc">※出来上がった枠全体をOBS上で拡大縮小します。</div>
         <input type="range" id="displayScale" min="0.1" max="2.0" step="0.05" value="1.0" oninput="updateDisplay()">
         <span class="value-display" id="scale-val">セット予定値: 1.0x</span>
 
-        <label style="color: #ff00ff;">⑤ 自動更新間隔 (秒)</label>
-        <div class="desc">※この秒数ごとに最新データを受信し、ポンッ！と弾んで切り替わります。</div>
-        <input type="range" id="refreshSec" min="10" max="300" step="10" value="30" oninput="updateDisplay()">
-        <span class="value-display" id="refresh-val">セット予定値: 30秒</span>
+        <label style="color: #ff3366;">⑤ 何ページ分を下へ読み進めるか (1 ~ 20ページ)</label>
+        <div class="desc">※枠から見切れた下のギフトを、バウンドするたびに1ページずつ下へスクロールして映し出します。</div>
+        <input type="range" id="maxPages" min="1" max="20" step="1" value="5" oninput="updateDisplay()">
+        <span class="value-display" id="pages-val" style="color: #ff3366;">セット予定値: 5ページ</span>
+
+        <label style="color: #ff00ff;">⑥ ページがめくれる間隔 (秒)</label>
+        <div class="desc">※この秒数ごとに、次のページがポンッ！と現れます。</div>
+        <input type="range" id="refreshSec" min="5" max="300" step="5" value="15" oninput="updateDisplay()">
+        <span class="value-display" id="refresh-val">セット予定値: 15秒</span>
 
         <div class="checkbox-group cloud-box">
             <input type="checkbox" id="cloudSync" checked>
@@ -79,6 +82,7 @@
             document.getElementById('width-val').innerText = "セット予定値: " + document.getElementById('winWidth').value + "px";
             document.getElementById('height-val').innerText = "セット予定値: " + document.getElementById('winHeight').value + "px";
             document.getElementById('scale-val').innerText = "セット予定値: " + document.getElementById('displayScale').value + "x";
+            document.getElementById('pages-val').innerText = "セット予定値: " + document.getElementById('maxPages').value + "ページ";
             document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshSec').value + "秒";
         };
 
@@ -95,6 +99,7 @@
                         if(data.winWidth !== undefined) document.getElementById('winWidth').value = data.winWidth;
                         if(data.winHeight !== undefined) document.getElementById('winHeight').value = data.winHeight;
                         if(data.displayScale !== undefined) document.getElementById('displayScale').value = data.displayScale;
+                        if(data.maxPages !== undefined) document.getElementById('maxPages').value = data.maxPages;
                         if(data.refreshMs !== undefined) document.getElementById('refreshSec').value = data.refreshMs / 1000;
                         updateDisplay();
                         addLog(`✅ 【復元完了】前回の設定をセットしました。`, "log-success");
@@ -114,6 +119,7 @@
                 winWidth: parseInt(document.getElementById('winWidth').value),
                 winHeight: parseInt(document.getElementById('winHeight').value),
                 displayScale: parseFloat(document.getElementById('displayScale').value),
+                maxPages: parseInt(document.getElementById('maxPages').value),
                 refreshMs: parseInt(document.getElementById('refreshSec').value) * 1000,
                 pingRequest: requestTime
             });
