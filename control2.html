@@ -20,28 +20,37 @@
 </head>
 <body>
     <div class="panel">
-        <label style="color: #ffff00;">① 折り返し(段数)コントロール：横幅 (400px ～ 4000px)</label>
-        <div class="desc">※数値を小さく狭めるほど、アイコンが下に押し出されて3段、4段、5段…と増えます。</div>
-        <input type="range" id="windowWidth" min="400" max="4000" step="10" value="1200" oninput="updateDisplay()">
-        <span class="value-display" id="width-val" style="color: #ffff00;">セット予定値: 1200px</span>
+        <label style="color: #ffffff;">① ブラウザ仮想ズーム (アイコンの大きさ: 0.2x ~ 3.0x)</label>
+        <div class="desc">※ブラウザの縮尺と同じです。アイコン自体の大きさが変わります。</div>
+        <input type="range" id="vZoom" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateDisplay()">
+        <span class="value-display" id="zoom-val">セット予定値: 1.0x</span>
 
-        <label style="color: #ffaa00;">② 枠の縦幅 (200px ～ 1200px)</label>
-        <div class="desc">※①で段数が増えて下が切れてしまう場合は、この数値を大きくして枠を広げてください。</div>
-        <input type="range" id="windowHeight" min="200" max="1200" step="10" value="600" oninput="updateDisplay()">
-        <span class="value-display" id="height-val" style="color: #ffaa00;">セット予定値: 600px</span>
+        <label style="color: #ffff00;">② 内部の横幅 (段数・折り返しの調整: 400px ~ 4000px)</label>
+        <div class="desc">※ここを狭めるとアイコンが押し出され、3段、4段と折り返して増えます。</div>
+        <input type="range" id="iframeWidth" min="400" max="4000" step="10" value="1200" oninput="updateDisplay()">
+        <span class="value-display" id="iwidth-val">セット予定値: 1200px</span>
 
-        <label style="color: #00bfff;">③ 配信画面での全体サイズ (0.1倍 ～ 2.0倍)</label>
-        <div class="desc">※綺麗に折り返した塊全体を、OBS上の好きなサイズに拡大縮小します。</div>
+        <label style="color: #ff3366;">③ 切り取り横幅 (ループの隙間カット: 100px ~ 4000px)</label>
+        <div class="desc">※②で段数を作ったあとに右側に余る「黒い余白」をカットし、次のブロックをぴったり繋げます。</div>
+        <input type="range" id="cropWidth" min="100" max="4000" step="10" value="800" oninput="updateDisplay()">
+        <span class="value-display" id="cwidth-val">セット予定値: 800px</span>
+
+        <label style="color: #ffaa00;">④ 切り取り縦幅 (下部の余白カット: 100px ~ 2000px)</label>
+        <input type="range" id="cropHeight" min="100" max="2000" step="10" value="600" oninput="updateDisplay()">
+        <span class="value-display" id="cheight-val">セット予定値: 600px</span>
+
+        <label style="color: #00bfff;">⑤ 全体の配置サイズ (配信画面での縮小: 0.1x ~ 2.0x)</label>
+        <div class="desc">※完成した塊をOBS上で縮小します。(永遠にループするよう裏で8個並べます)</div>
         <input type="range" id="displayScale" min="0.1" max="2.0" step="0.05" value="0.5" oninput="updateDisplay()">
-        <span class="value-display" id="scale-val" style="color: #00bfff;">セット予定値: 0.5x</span>
+        <span class="value-display" id="scale-val">セット予定値: 0.5x</span>
 
-        <label>④ スクロール速度・方向 (-10 左 ～ +10 右)</label>
+        <label>⑥ スクロール速度・方向 (-10 左 ~ +10 右)</label>
         <input type="range" id="speed" min="-10" max="10" step="0.1" value="1" oninput="updateDisplay()">
         <span class="value-display" id="speed-val">セット予定値: 1</span>
 
-        <label style="color: #ff00ff;">⑤ 自動更新間隔 (秒)</label>
+        <label style="color: #ff00ff;">⑦ 自動更新間隔 (秒)</label>
         <input type="range" id="refreshSec" min="10" max="300" step="10" value="60" oninput="updateDisplay()">
-        <span class="value-display" id="refresh-val" style="color: #ff00ff;">セット予定値: 60秒</span>
+        <span class="value-display" id="refresh-val">セット予定値: 60秒</span>
 
         <div class="checkbox-group">
             <input type="checkbox" id="optimize" checked>
@@ -50,7 +59,6 @@
 
         <button class="apply-btn" onclick="applySettings()">設定を反映 ＆ 受信確認テスト</button>
     </div>
-
     <div class="panel">
         <label>通信ステータス (過疎テスト / 逆引きPing)</label>
         <div id="log-terminal"></div>
@@ -59,7 +67,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        
         const db = getDatabase(initializeApp({ apiKey: "AIzaSyBAhuhH2cbYFFHzlU2qU3J6ZZx5MUZG6rc", authDomain: "gift-list-app-53ef2.firebaseapp.com", projectId: "gift-list-app-53ef2", storageBucket: "gift-list-app-53ef2.firebasestorage.app", messagingSenderId: "161949465085", appId: "1:161949465085:web:3574bdee443e4fcec70194", measurementId: "G-B3PJELG3Q9" }));
         const logTerminal = document.getElementById('log-terminal');
         let requestTime = 0;
@@ -71,33 +78,27 @@
         }
 
         window.updateDisplay = () => {
-            document.getElementById('width-val').innerText = "セット予定値: " + document.getElementById('windowWidth').value + "px";
-            document.getElementById('height-val').innerText = "セット予定値: " + document.getElementById('windowHeight').value + "px";
+            document.getElementById('zoom-val').innerText = "セット予定値: " + document.getElementById('vZoom').value + "x";
+            document.getElementById('iwidth-val').innerText = "セット予定値: " + document.getElementById('iframeWidth').value + "px";
+            document.getElementById('cwidth-val').innerText = "セット予定値: " + document.getElementById('cropWidth').value + "px";
+            document.getElementById('cheight-val').innerText = "セット予定値: " + document.getElementById('cropHeight').value + "px";
             document.getElementById('scale-val').innerText = "セット予定値: " + document.getElementById('displayScale').value + "x";
             document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
             document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshSec').value + "秒";
         };
 
         window.applySettings = () => {
-            const windowWidth = parseInt(document.getElementById('windowWidth').value);
-            const windowHeight = parseInt(document.getElementById('windowHeight').value);
-            const displayScale = parseFloat(document.getElementById('displayScale').value);
-            const speed = parseFloat(document.getElementById('speed').value);
-            const optimize = document.getElementById('optimize').checked;
-            const refreshSec = parseInt(document.getElementById('refreshSec').value);
-            const refreshMs = refreshSec * 1000;
-            
             requestTime = Date.now();
-            
-            addLog(`🔄 【過疎テスト】設定の送信に成功。（横幅:${windowWidth}px, 縦幅:${windowHeight}px, 速度:${speed}）Ping待機...`, "log-wait");
-
+            addLog(`🔄 【送信完了】設定を反映しています。Ping待機...`, "log-wait");
             set(ref(db, 'settings2'), {
-                windowWidth: windowWidth,
-                windowHeight: windowHeight,
-                displayScale: displayScale,
-                speed: speed,
-                optimize: optimize,
-                refreshMs: refreshMs,
+                vZoom: parseFloat(document.getElementById('vZoom').value),
+                iframeWidth: parseInt(document.getElementById('iframeWidth').value),
+                cropWidth: parseInt(document.getElementById('cropWidth').value),
+                cropHeight: parseInt(document.getElementById('cropHeight').value),
+                displayScale: parseFloat(document.getElementById('displayScale').value),
+                speed: parseFloat(document.getElementById('speed').value),
+                optimize: document.getElementById('optimize').checked,
+                refreshMs: parseInt(document.getElementById('refreshSec').value) * 1000,
                 pingRequest: requestTime
             });
         };
@@ -105,8 +106,7 @@
         onValue(ref(db, 'pingResponse2'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
-                const latency = Date.now() - data.time;
-                addLog(`✅ 【逆引きPing】受信成功: 応答速度 ${latency}ms`, "log-success");
+                addLog(`✅ 【逆引きPing】受信成功: 応答速度 ${Date.now() - data.time}ms`, "log-success");
             }
         });
         updateDisplay();
