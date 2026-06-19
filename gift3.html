@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <style>
-    :root { --win-width: 400px; --win-height: 300px; --v-zoom: 1.0; --display-scale: 1.0; }
+    :root { 
+        --win-width: 400px; 
+        --win-height: 300px; 
+        --iframe-css-width: 400px; 
+        --v-zoom: 1.0; 
+        --display-scale: 1.0; 
+    }
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     
     #master-container {
@@ -12,44 +18,27 @@
         transform-origin: top left;
     }
 
-    /* 設定した幅で切り抜く窓枠（カメラのレンズ） */
+    /* 窓枠：この枠からはみ出た部分（次のページ）は隠されます */
     .crop-window {
         width: var(--win-width); height: var(--win-height);
         overflow: hidden; position: relative;
         border-radius: 8px;
         box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        background: rgba(0,0,0,0.1);
     }
 
-    /* フェードイン＆バウンドアニメーション */
-    @keyframes bounceFadeIn {
-        0%   { opacity: 0; transform: scale(0.85) translateY(20px); }
-        60%  { opacity: 1; transform: scale(1.03) translateY(-5px); }
-        80%  { transform: scale(0.98) translateY(2px); }
-        100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    .gift-layer {
+    /* カメラレイヤー：これごと上下に移動させてページをめくります */
+    .camera-layer {
         position: absolute; top: 0; left: 0;
-        width: 100%; height: 100%;
-        opacity: 0; pointer-events: none;
+        width: 100%; opacity: 0; /* 最初は見えない状態 */
     }
 
-    .visible-bounce {
-        opacity: 1; z-index: 2;
-        animation: bounceFadeIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-    }
-
-    .hidden-fade {
-        opacity: 0; z-index: 1;
-        transition: opacity 0.4s ease-out;
-    }
-
-    /* ★ iframeの高さを超巨大に保ち、下の方までデータを表示させます */
+    /* ★ ズームしても絶対に枠に合わせて「折り返し」を発生させるための魔法の横幅設定 */
     iframe {
         position: absolute; top: 0; left: 0;
-        width: 2000px; height: 8000px;
-        border: none; pointer-events: none; zoom: var(--v-zoom);
+        width: var(--iframe-css-width); 
+        height: 8000px; /* はみ出たギフトを下へ下へストックしておくための巨大な縦幅 */
+        border: none; pointer-events: none; 
+        zoom: var(--v-zoom);
         transform-origin: top left;
     }
 
@@ -64,8 +53,8 @@
     
     <div id="master-container">
         <div class="crop-window">
-            <div id="layer1" class="gift-layer visible-bounce"><iframe src="https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9"></iframe></div>
-            <div id="layer2" class="gift-layer hidden-fade"><iframe src=""></iframe></div>
+            <div id="camera-layer1" class="camera-layer"><iframe src=""></iframe></div>
+            <div id="camera-layer2" class="camera-layer"><iframe src=""></iframe></div>
         </div>
     </div>
     
@@ -79,48 +68,78 @@
         const loadingBg = document.getElementById('loading-bg');
         const loadingText = document.getElementById('loading-text');
         
-        const layer1 = document.getElementById('layer1');
-        const layer2 = document.getElementById('layer2');
-        let currentLayer = 1; 
-        
+        let currentLayerIdx = 1; 
         let reloadTimer;
-        let pageIndex = 0; // 現在何ページ目を表示しているか
+        let pageIndex = 0; 
+        let isFirstLoad = true;
+        
         const baseUrl = "https://app.streamtoearn.io/overlay/69a6f7873d008188b04a16b9";
 
         onValue(ref(db, 'settings3'), (snapshot) => {
             const data = snapshot.val() || {};
-            const winHeight = data.winHeight || 300;
-            const maxPages = data.maxPages || 5; // 下へ進む最大ページ数
             
-            document.documentElement.style.setProperty('--v-zoom', data.vZoom || 1.0);
-            document.documentElement.style.setProperty('--win-width', `${data.winWidth || 400}px`);
+            const winWidth = data.winWidth || 400;
+            const winHeight = data.winHeight || 300;
+            const vZoom = data.vZoom || 1.0;
+            const maxPages = data.maxPages || 5; 
+            
+            // ズームの影響を打ち消して、窓枠ピッタリで「折り返し」させる計算式
+            const iframeCSSWidth = winWidth / vZoom;
+            
+            document.documentElement.style.setProperty('--v-zoom', vZoom);
+            document.documentElement.style.setProperty('--win-width', `${winWidth}px`);
             document.documentElement.style.setProperty('--win-height', `${winHeight}px`);
+            document.documentElement.style.setProperty('--iframe-css-width', `${iframeCSSWidth}px`);
             document.documentElement.style.setProperty('--display-scale', data.displayScale || 1.0);
+
+            // 初回ロード時の処理（画面が真っ暗になるのを防ぐ）
+            if (isFirstLoad) {
+                isFirstLoad = false;
+                const activeLayer = document.getElementById('camera-layer1');
+                const iframe = activeLayer.querySelector('iframe');
+                
+                loadingPanel.style.display = 'block';
+                loadingBg.style.width = '30%';
+                
+                iframe.onload = () => {
+                    loadingBg.style.width = '100%';
+                    setTimeout(() => {
+                        loadingPanel.style.display = 'none';
+                        // 初回バウンド表示
+                        activeLayer.style.transition = 'opacity 0.6s ease-out, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        activeLayer.style.opacity = '1';
+                        activeLayer.style.transform = 'translateY(0px) scale(1)';
+                    }, 300);
+                };
+                iframe.src = `${baseUrl}?t=${Date.now()}`;
+            }
 
             if(data.refreshMs) {
                 if(reloadTimer) clearInterval(reloadTimer);
                 
                 const triggerUpdate = () => {
                     pageIndex++;
-                    
-                    // 最後のページまでめくったら、最初（0）に戻して新しいデータを通信する
                     if (pageIndex >= maxPages) {
-                        pageIndex = 0;
+                        pageIndex = 0; // 指定ページ数まで進んだら最初に戻る
                     }
 
-                    const activeLayer = currentLayer === 1 ? layer1 : layer2;
-                    const nextLayer = currentLayer === 1 ? layer2 : layer1;
-                    const activeIframe = activeLayer.querySelector('iframe');
-                    const nextIframe = nextLayer.querySelector('iframe');
+                    const activeLayer = document.getElementById(`camera-layer${currentLayerIdx}`);
+                    const oldY = (pageIndex === 0 ? maxPages - 1 : pageIndex - 1) * winHeight;
 
-                    // 1. まず現在のページをフワッと消す
-                    activeLayer.className = 'gift-layer hidden-fade';
+                    // 1. まず現在のページをフワッと消して、少し小さくする
+                    activeLayer.style.transition = 'opacity 0.4s ease-out, transform 0.4s ease-out';
+                    activeLayer.style.opacity = '0';
+                    activeLayer.style.transform = `translateY(-${oldY}px) scale(0.9)`;
 
-                    // 完全に消えるまで0.4秒待ってから次を表示する
+                    // 完全に消えるまで0.4秒待つ
                     setTimeout(() => {
                         
                         if (pageIndex === 0) {
-                            // 【最初のページに戻る時】裏で最新データを取得する
+                            // 【最初のページに戻る時】裏側のカメラに最新データを読み込ませる
+                            const nextLayerIdx = currentLayerIdx === 1 ? 2 : 1;
+                            const nextLayer = document.getElementById(`camera-layer${nextLayerIdx}`);
+                            const nextIframe = nextLayer.querySelector('iframe');
+
                             loadingPanel.style.display = 'block';
                             loadingBg.style.transition = 'width 0.3s ease-out';
                             loadingBg.style.width = '30%'; 
@@ -131,14 +150,17 @@
                                 loadingText.innerText = '✨ ページを更新します';
 
                                 setTimeout(() => {
-                                    // カメラを一番上（0px）に戻す
-                                    nextIframe.style.top = '0px';
-                                    
-                                    nextLayer.className = 'gift-layer';
-                                    void nextLayer.offsetWidth; // おまじない
-                                    nextLayer.className = 'gift-layer visible-bounce'; // バウンドして表示
-                                    
-                                    currentLayer = currentLayer === 1 ? 2 : 1;
+                                    // 見えない状態で一番上（0px）にカメラをセット
+                                    nextLayer.style.transition = 'none';
+                                    nextLayer.style.transform = `translateY(0px) scale(0.85)`;
+                                    void nextLayer.offsetWidth; // 瞬時に適用させる魔法
+
+                                    // ポンッ！とバウンドしながら表示
+                                    nextLayer.style.transition = 'opacity 0.6s ease-out, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                                    nextLayer.style.opacity = '1';
+                                    nextLayer.style.transform = `translateY(0px) scale(1)`;
+
+                                    currentLayerIdx = nextLayerIdx;
                                     loadingPanel.style.display = 'none';
                                     loadingBg.style.width = '0%';
                                 }, 300); 
@@ -146,20 +168,24 @@
                             nextIframe.src = `${baseUrl}?t=${Date.now()}`;
                             
                         } else {
-                            // 【次のページに進む時】見えなくなっている下の部分までカメラをずらす
-                            
-                            // ★ここが核心：現在のページ数 × 枠の縦幅分だけ、iframeを上にずらして下のギフトを表示させる！
-                            activeIframe.style.top = `-${pageIndex * winHeight}px`;
-                            
-                            activeLayer.className = 'gift-layer';
-                            void activeLayer.offsetWidth; // おまじない
-                            activeLayer.className = 'gift-layer visible-bounce'; // バウンドして表示
+                            // 【次のページに進む時】
+                            const newY = pageIndex * winHeight;
+
+                            // 見えない状態でカメラを「次のページの高さ」へ一気に下げる
+                            activeLayer.style.transition = 'none';
+                            activeLayer.style.transform = `translateY(-${newY}px) scale(0.85)`;
+                            void activeLayer.offsetWidth; // 瞬時に適用させる魔法
+
+                            // 次のページがポンッ！とバウンドしながら表示される
+                            activeLayer.style.transition = 'opacity 0.6s ease-out, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                            activeLayer.style.opacity = '1';
+                            activeLayer.style.transform = `translateY(-${newY}px) scale(1)`;
                         }
 
-                    }, 400);
+                    }, 400); // 消えるまでの待機時間
                 };
 
-                // 初回読み込み後は設定秒数ごとにバウンド＆めくりを実行
+                // 設定秒数ごとにめくりアニメーションを実行
                 reloadTimer = setInterval(triggerUpdate, data.refreshMs);
             }
             
