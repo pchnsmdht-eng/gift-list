@@ -7,7 +7,8 @@
         body { background: #1a1a1a; color: #eee; padding: 15px; font-family: monospace; }
         .panel { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input[type="range"] { width: 100%; margin-bottom: 10px; }
+        input[type="range"], select { width: 100%; margin-bottom: 10px; background: #333; color: #fff; border: 1px solid #555; padding: 5px; box-sizing: border-box; }
+        select { font-size: 1.1rem; padding: 10px; border-radius: 5px; }
         .value-display { font-size: 1.2rem; color: #0f0; margin-bottom: 20px; text-align: right; display: block; }
         .checkbox-group { display: flex; align-items: center; margin-bottom: 20px; }
         .checkbox-group input { margin-right: 10px; width: 20px; height: 20px; }
@@ -21,17 +22,28 @@
 </head>
 <body>
     <div class="panel">
+        <label style="color: #00ffaa;">ループ列数パターン選択</label>
+        <select id="columns" onchange="updateDisplay()">
+            <option value="3" selected>3列ループ（標準）</option>
+            <option value="4">4列ループ（広範囲）</option>
+        </select>
+        <span class="value-display" id="columns-val" style="color: #00ffaa;">セット予定: 3列ループ</span>
+
+        <label style="color: #ffff00;">① 仮想画面の横幅 (折り返し位置の調整: 400px ～ 3000px)</label>
+        <input type="range" id="windowWidth" min="400" max="3000" step="10" value="1200" oninput="updateDisplay()">
+        <span class="value-display" id="width-val" style="color: #ffff00;">セット予定値: 1200px</span>
+
+        <label style="color: #ffaa00;">② 仮想画面の縦幅 (高さの調整: 200px ～ 1200px)</label>
+        <input type="range" id="windowHeight" min="200" max="1200" step="10" value="600" oninput="updateDisplay()">
+        <span class="value-display" id="height-val" style="color: #ffaa00;">セット予定値: 600px</span>
+
+        <label style="color: #00bfff;">③ 配信画面での大きさ (全体のスケール: 0.1倍 ～ 2.0倍)</label>
+        <input type="range" id="displayScale" min="0.1" max="2.0" step="0.05" value="0.5" oninput="updateDisplay()">
+        <span class="value-display" id="scale-val" style="color: #00bfff;">セット予定値: 0.5x</span>
+
         <label>スクロール速度・方向 (-10 左 ～ +10 右)</label>
         <input type="range" id="speed" min="-10" max="10" step="0.1" value="1" oninput="updateDisplay()">
         <span class="value-display" id="speed-val">セット予定値: 1</span>
-        
-        <label style="color: #00bfff;">アイコンサイズ (縮小 0.1倍 ～ 拡大 1.5倍)</label>
-        <input type="range" id="size" min="0.1" max="1.5" step="0.05" value="0.3" oninput="updateDisplay()">
-        <span class="value-display" id="size-val" style="color: #00bfff;">セット予定値: 0.3x</span>
-
-        <label style="color: #ffaa00;">表示範囲 (切り取り 10% ～ 100%)</label>
-        <input type="range" id="crop" min="10" max="100" value="100" oninput="updateDisplay()">
-        <span class="value-display" id="crop-val" style="color: #ffaa00;">セット予定値: 100%</span>
 
         <label style="color: #ff00ff;">自動更新間隔 (秒)</label>
         <input type="range" id="refreshSec" min="10" max="300" step="10" value="60" oninput="updateDisplay()">
@@ -46,7 +58,7 @@
     </div>
 
     <div class="panel">
-        <label>通信ステータス (過疎テスト / 逆引きPing / レイテンシ)</label>
+        <label>通信ステータス (過疎テスト / 逆引きPing)</label>
         <div id="log-terminal"></div>
     </div>
 
@@ -65,43 +77,44 @@
         }
 
         window.updateDisplay = () => {
-            document.getElementById('speed-val').innerText = "セット予定値: " + document.getElementById('speed').value;
-            document.getElementById('size-val').innerText = "セット予定値: " + document.getElementById('size').value + "x";
-            document.getElementById('crop-val').innerText = "セット予定値: " + document.getElementById('crop').value + "%";
+            document.getElementById('columns-val').innerText = "セット予定: " + document.getElementById('columns').value + "列ループ";
+            document.getElementById('width-val').innerText = "セット予定値: " + document.getElementById('windowWidth').value + "px";
+            document.getElementById('height-val').innerText = "セット予定値: " + document.getElementById('windowHeight').value + "px";
+            document.getElementById('scale-val').innerText = "セット予定値: " + document.getElementById('displayScale').value + "x";
             document.getElementById('refresh-val').innerText = "セット予定値: " + document.getElementById('refreshSec').value + "秒";
         };
 
         window.applySettings = () => {
+            const columns = parseInt(document.getElementById('columns').value);
+            const windowWidth = parseInt(document.getElementById('windowWidth').value);
+            const windowHeight = parseInt(document.getElementById('windowHeight').value);
+            const displayScale = parseFloat(document.getElementById('displayScale').value);
             const speed = parseFloat(document.getElementById('speed').value);
-            const size = parseFloat(document.getElementById('size').value);
             const optimize = document.getElementById('optimize').checked;
-            const crop = parseInt(document.getElementById('crop').value);
             const refreshSec = parseInt(document.getElementById('refreshSec').value);
             const refreshMs = refreshSec * 1000;
             
             requestTime = Date.now();
             
-            // 過疎テスト（送信・疎通テスト）ログ
-            addLog(`🔄 【過疎テスト実行中】設定送信（速度:${speed}, 更新:${refreshSec}秒）Ping待機...`, "log-wait");
+            addLog(`🔄 【過疎テスト】設定の送信に成功しました。（画面:${windowWidth}x${windowHeight}, ${columns}列）Ping待機...`, "log-wait");
 
-            // settingsを使用
             set(ref(db, 'settings'), {
+                columns: columns,
+                windowWidth: windowWidth,
+                windowHeight: windowHeight,
+                displayScale: displayScale,
                 speed: speed,
-                size: size,
                 optimize: optimize,
-                crop: crop,
                 refreshMs: refreshMs,
                 pingRequest: requestTime
             });
         };
 
-        // pingResponseを使用
         onValue(ref(db, 'pingResponse'), (snapshot) => {
             const data = snapshot.val();
             if (data && data.time === requestTime) {
                 const latency = Date.now() - data.time;
-                // 逆引きPing ＆ レイテンシテスト結果ログ
-                addLog(`✅ 【逆引きPing受信】レイテンシテスト完了: 応答速度 ${latency}ms`, "log-success");
+                addLog(`✅ 【逆引きPing】受信成功: 応答速度 ${latency}ms`, "log-success");
             }
         });
         updateDisplay();
