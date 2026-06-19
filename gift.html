@@ -3,57 +3,32 @@
 <head>
 <meta charset="utf-8">
 <style>
-    :root { --win-width: 1200px; --win-height: 600px; }
+    :root { --iframe-width: 1200px; --crop-width: 800px; --crop-height: 600px; --v-zoom: 1.0; }
     body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; }
     #master-container { width: 100%; height: 100%; transform-origin: top left; transition: transform 0.2s; will-change: transform; }
-    
     .marquee-track { display: flex; animation: slide 20s linear infinite; will-change: transform; }
     
-    /* 横幅を変えることで、内部のギフトが自動的に折り返して段になります */
-    .iframe-wrapper { width: var(--win-width); height: var(--win-height); overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
-    iframe { 
-        width: var(--win-width); height: var(--win-height); border: none; pointer-events: none; 
-        position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; 
-        backface-visibility: hidden; transform: translateZ(0);
-    }
-    
-    .hidden-cache { opacity: 0; z-index: 1; }
-    .visible-live { opacity: 1; z-index: 2; }
-    
-    @keyframes slide { 0% { transform: translateX(calc(var(--win-width) * -1)); } 100% { transform: translateX(0px); } }
+    .iframe-wrapper { width: var(--crop-width); height: var(--crop-height); overflow: hidden; position: relative; contain: strict; flex-shrink: 0; }
+    iframe { width: var(--iframe-width); height: 2000px; border: none; pointer-events: none; position: absolute; top: 0; left: 0; transition: opacity 0.8s ease-in-out; backface-visibility: hidden; transform: translateZ(0); zoom: var(--v-zoom); }
+    .hidden-cache { opacity: 0; z-index: 1; } .visible-live { opacity: 1; z-index: 2; }
+    @keyframes slide { 0% { transform: translateX(calc(var(--crop-width) * -1)); } 100% { transform: translateX(0px); } }
 
-    #loading-panel {
-        position: fixed; top: 20px; left: 20px; width: 350px; height: 40px;
-        background: rgba(0, 0, 0, 0.8); border: 2px solid #00ffaa; border-radius: 8px;
-        z-index: 99999; display: none; overflow: hidden; box-shadow: 0 0 15px rgba(0, 255, 170, 0.5);
-    }
-    #loading-bg {
-        position: absolute; top: 0; left: 0; width: 0%; height: 100%;
-        background: linear-gradient(90deg, #007744, #00ffaa); transition: width 0.3s ease-out; z-index: 1;
-    }
-    #loading-text {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        color: #ffffff; font-family: sans-serif; font-size: 16px; font-weight: bold;
-        line-height: 40px; text-align: center; text-shadow: 1px 1px 3px #000; z-index: 2;
-    }
+    #loading-panel { position: fixed; top: 20px; left: 20px; width: 350px; height: 40px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ffaa; border-radius: 8px; z-index: 99999; display: none; overflow: hidden; box-shadow: 0 0 15px rgba(0, 255, 170, 0.5); }
+    #loading-bg { position: absolute; top: 0; left: 0; width: 0%; height: 100%; background: linear-gradient(90deg, #007744, #00ffaa); transition: width 0.3s ease-out; z-index: 1; }
+    #loading-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; color: #ffffff; font-family: sans-serif; font-size: 16px; font-weight: bold; line-height: 40px; text-align: center; text-shadow: 1px 1px 3px #000; z-index: 2; }
 </style>
 </head>
 <body>
     <div id="loading-panel"><div id="loading-bg"></div><div id="loading-text">🔄 準備中...</div></div>
-
     <div id="master-container"><div class="marquee-track" id="track">
-        <div class="iframe-wrapper" id="wrap1">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-        </div>
-        <div class="iframe-wrapper" id="wrap2">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-        </div>
-        <div class="iframe-wrapper" id="wrap3">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-        </div>
-        <div class="iframe-wrapper" id="wrap4">
-            <iframe class="visible-live" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe><iframe class="hidden-cache" src="https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa"></iframe>
-        </div>
+        <div class="iframe-wrapper" id="wrap1"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
+        <div class="iframe-wrapper" id="wrap2"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
+        <div class="iframe-wrapper" id="wrap3"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
+        <div class="iframe-wrapper" id="wrap4"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
+        <div class="iframe-wrapper" id="wrap5"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
+        <div class="iframe-wrapper" id="wrap6"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
+        <div class="iframe-wrapper" id="wrap7"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
+        <div class="iframe-wrapper" id="wrap8"><iframe class="visible-live"></iframe><iframe class="hidden-cache"></iframe></div>
     </div></div>
     
     <script type="module">
@@ -68,20 +43,18 @@
         const loadingBg = document.getElementById('loading-bg');
         const loadingText = document.getElementById('loading-text');
         let reloadTimer;
-
         const baseUrl = "https://app.streamtoearn.io/overlay/69d7b4d8e377b523a9c6a3aa";
+        const totalBlocks = 8; // 無限ループを支える8ブロック
 
         onValue(ref(db, 'settings'), (snapshot) => {
             const data = snapshot.val() || {};
             
-            const winWidth = data.windowWidth || 1200;
-            const winHeight = data.windowHeight || 600;
-            document.documentElement.style.setProperty('--win-width', `${winWidth}px`);
-            document.documentElement.style.setProperty('--win-height', `${winHeight}px`);
+            document.documentElement.style.setProperty('--v-zoom', data.vZoom || 1.0);
+            document.documentElement.style.setProperty('--iframe-width', `${data.iframeWidth || 1200}px`);
+            document.documentElement.style.setProperty('--crop-width', `${data.cropWidth || 800}px`);
+            document.documentElement.style.setProperty('--crop-height', `${data.cropHeight || 600}px`);
 
-            // 永遠無限スクロールのために幅を自動確保
-            track.style.width = (4 * winWidth) + 'px';
-
+            track.style.width = ((data.cropWidth || 800) * totalBlocks) + 'px';
             if(data.displayScale !== undefined) container.style.transform = `scale(${data.displayScale})`;
 
             if(data.optimize !== undefined) {
@@ -97,12 +70,13 @@
                 if(reloadTimer) clearInterval(reloadTimer);
                 
                 const triggerUpdate = () => {
-                    const hidden1 = document.querySelector('#wrap1 .hidden-cache'); const visible1 = document.querySelector('#wrap1 .visible-live');
-                    const hidden2 = document.querySelector('#wrap2 .hidden-cache'); const visible2 = document.querySelector('#wrap2 .visible-live');
-                    const hidden3 = document.querySelector('#wrap3 .hidden-cache'); const visible3 = document.querySelector('#wrap3 .visible-live');
-                    const hidden4 = document.querySelector('#wrap4 .hidden-cache'); const visible4 = document.querySelector('#wrap4 .visible-live');
-
-                    if (!hidden1) return;
+                    const hiddens = [], visibles = [];
+                    for(let i=1; i<=totalBlocks; i++) {
+                        const h = document.querySelector(`#wrap${i} .hidden-cache`);
+                        const v = document.querySelector(`#wrap${i} .visible-live`);
+                        if(h && v) { hiddens.push(h); visibles.push(v); }
+                    }
+                    if(hiddens.length === 0) return;
 
                     loadingPanel.style.display = 'block';
                     loadingBg.style.transition = 'width 0.3s ease-out';
@@ -110,41 +84,36 @@
                     loadingText.innerText = '🔄 データ受信中... 5%';
 
                     let loadedCount = 0;
-                    const activeCols = 4; // 自動で4枚
                     
                     const trySwap = () => {
                         loadedCount++;
-                        const progress = 5 + (loadedCount / activeCols) * 45;
+                        const progress = 5 + (loadedCount / totalBlocks) * 45;
                         loadingBg.style.width = progress + '%';
                         loadingText.innerText = `🔄 データ受信中... ${Math.floor(progress)}%`;
 
-                        if (loadedCount === activeCols) {
+                        if (loadedCount === totalBlocks) {
                             loadingBg.style.transition = 'width 4s linear';
                             loadingBg.style.width = '100%';
                             loadingText.innerText = '✨ 描画構築中... まもなく更新';
 
                             setTimeout(() => {
-                                hidden1.className = 'visible-live'; visible1.className = 'hidden-cache';
-                                hidden2.className = 'visible-live'; visible2.className = 'hidden-cache';
-                                hidden3.className = 'visible-live'; visible3.className = 'hidden-cache';
-                                hidden4.className = 'visible-live'; visible4.className = 'hidden-cache';
-                                
-                                hidden1.onload = null; hidden2.onload = null; hidden3.onload = null; hidden4.onload = null;
-
+                                for(let i=0; i<totalBlocks; i++) {
+                                    hiddens[i].className = 'visible-live';
+                                    visibles[i].className = 'hidden-cache';
+                                    hiddens[i].onload = null;
+                                }
                                 loadingPanel.style.display = 'none';
                                 loadingBg.style.width = '0%';
                             }, 4000); 
                         }
                     };
 
-                    hidden1.onload = trySwap; hidden2.onload = trySwap; hidden3.onload = trySwap; hidden4.onload = trySwap;
-
                     const timestamp = Date.now();
-                    
-                    hidden1.src = `${baseUrl}?t=${timestamp}`;
-                    setTimeout(() => { hidden2.src = `${baseUrl}?t=${timestamp}`; }, 1500);
-                    setTimeout(() => { hidden3.src = `${baseUrl}?t=${timestamp}`; }, 3000);
-                    setTimeout(() => { hidden4.src = `${baseUrl}?t=${timestamp}`; }, 4500);
+                    for(let i=0; i<totalBlocks; i++) {
+                        hiddens[i].onload = trySwap;
+                        // 通信のパンクを防ぐため、0.5秒ずつズラして順番にダウンロードさせます
+                        setTimeout(() => { hiddens[i].src = `${baseUrl}?t=${timestamp}`; }, i * 500);
+                    }
                 };
 
                 triggerUpdate();
