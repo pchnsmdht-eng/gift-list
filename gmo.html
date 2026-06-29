@@ -1,19 +1,23 @@
-<!DOCTYPE html>
-<html>
-<body>
-    <h3>高速利確バランサー</h3>
-    <input type="range" id="balancer" min="0" max="100" value="50" onchange="update()">
-    <span id="val">50</span>
-    <script>
-        async function update() {
-            let val = document.getElementById('balancer').value;
-            document.getElementById('val').innerText = val;
-            await fetch('http://220.158.26.183:8000/update_config', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ "利確スピードバランサー": val })
-            });
-        }
-    </script>
-</body>
-</html>
+<div id="dashboard" class="card">
+    <h3>システムダッシュボード (定点更新)</h3>
+    <div id="status_icon">接続状況: 🟢 ONLINE</div>
+    <div id="market_info">レート: <span id="rate">--</span> / 弾数: <span id="bullets">--</span></div>
+    <div id="asset_info">維持率: <span id="margin">--</span>%</div>
+    
+    <label>ロスカットリミット維持率 (%)</label>
+    <input type="range" id="limit_slider" min="125" max="150" value="150" oninput="updateLimit(this.value)">
+    <span id="limit_val">150</span>%
+</div>
+
+<script>
+    // 500msごとに定点更新
+    async function refreshDashboard() {
+        const res = await fetch('/get_dashboard_data');
+        const data = await res.json();
+        document.getElementById('rate').innerText = `${data.rate_bid} / ${data.rate_ask}`;
+        document.getElementById('bullets').innerText = data.bullets;
+        document.getElementById('margin').innerText = data.margin;
+        document.getElementById('status_icon').innerText = data.online ? "🟢 ONLINE" : "🔴 OFFLINE";
+    }
+    setInterval(refreshDashboard, 500);
+</script>
