@@ -1,25 +1,54 @@
-<script>
-    const API_URL = "http://220.158.26.183:8000/get_dashboard_data";
-    
-    async function updateUI() {
-        try {
-            // キャッシュを防ぐためにタイムスタンプを付与
-            const response = await fetch(API_URL + "?t=" + Date.now());
-            if (!response.ok) throw new Error("HTTP error " + response.status);
-            const d = await response.json();
-            
-            document.getElementById('bid').innerText = d.market.bid;
-            document.getElementById('ask').innerText = d.market.ask;
-            document.getElementById('trend').innerText = d.market.trend;
-            document.getElementById('margin').innerText = d.risk.margin_rate;
-            document.getElementById('bullets').innerText = d.risk.available_bullets;
-            document.getElementById('judgment').innerText = d.ai_status.decision;
-            document.getElementById('reason').innerText = d.ai_status.reason;
-        } catch(e) {
-            console.error("更新エラー:", e);
-            document.getElementById('status').innerText = "接続エラー";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>GMO Command Center</title>
+    <style>
+        body { background: #000; color: #fff; font-family: monospace; padding: 10px; }
+        .card { border: 1px solid #444; padding: 10px; margin-bottom: 10px; }
+        .val { color: #0f0; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>システムダッシュボード</h3>
+        <div>接続: <span id="status" class="val">--</span></div>
+        <div>レート: <span id="rate" class="val">--</span></div>
+        <div>維持率: <span id="margin" class="val">--</span>%</div>
+        <div>残弾数: <span id="bullets" class="val">--</span></div>
+    </div>
+    <div class="card">
+        <h3>AI戦況判断</h3>
+        <div>判定: <span id="judgment" class="val">--</span></div>
+        <div>理由: <span id="reason" class="val">--</span></div>
+    </div>
+
+    <script>
+        const API_URL = "http://220.158.26.183:8000/get_dashboard_data";
+        
+        async function refresh() {
+            try {
+                console.log("Fetching data...");
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error("HTTP error " + res.status);
+                
+                // response.json() を使用してUTF-8として解析
+                const d = await res.json();
+                console.log("Received data:", d);
+                
+                document.getElementById('status').innerText = d.status;
+                document.getElementById('rate').innerText = `${d.market.bid} / ${d.market.ask}`;
+                document.getElementById('margin').innerText = d.risk.margin_rate;
+                document.getElementById('bullets').innerText = d.risk.available_bullets;
+                document.getElementById('judgment').innerText = d.ai_status.decision;
+                document.getElementById('reason').innerText = d.ai_status.reason;
+            } catch(e) {
+                console.error("更新エラー:", e);
+                document.getElementById('status').innerText = "エラー: " + e.message;
+            }
         }
-    }
-    setInterval(updateUI, 1000);
-    updateUI();
-</script>
+        setInterval(refresh, 2000);
+        refresh();
+    </script>
+</body>
+</html>
