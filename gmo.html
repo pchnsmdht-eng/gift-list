@@ -1,13 +1,26 @@
-<div class="card">
-    <h3>戦況制御スイッチ</h3>
-    <button onclick="setMode('SPEED')" style="background:#f00; color:#fff;">SPEEDモード</button>
-    <button onclick="setMode('ARTISAN')" style="background:#0f0; color:#000;">匠モード</button>
-</div>
-<div class="card">
-    <button onclick="execute()" style="width:100%; height:50px; font-size:20px; background:#ff0;">【音速注文発動】</button>
-</div>
+<!DOCTYPE html>
+<html>
+<body style="background:#000; color:#fff; font-family:monospace;">
+    <div style="padding:20px; border:2px solid #f00;">
+        <button onclick="stopSystem()" style="width:100%; height:80px; font-size:24px; background:#d00; color:#fff; font-weight:bold;">🚨 全システム緊急停止</button>
+    </div>
+    <div style="margin-top:20px;">
+        <h3>システムログ（最新30行）</h3>
+        <pre id="log_area" style="color:#0f0; background:#111; padding:10px; height:400px; overflow-y:scroll;"></pre>
+    </div>
 
-<script>
-    async function setMode(m) { await fetch(`/set_mode/${m}`, {method: 'POST'}); alert('モード:' + m); }
-    async function execute() { if(confirm('注文を撃ちますか？')) await fetch('/execute_order', {method: 'POST'}); }
-</script>
+    <script>
+        async function stopSystem() {
+            if(!confirm("本当に全システムを停止しますか？")) return;
+            const res = await fetch("/emergency_stop", {method: "POST"});
+            alert((await res.json()).message);
+        }
+        async function loadLogs() {
+            const res = await fetch("/get_logs");
+            const d = await res.json();
+            document.getElementById("log_area").innerText = d.logs.join("");
+        }
+        setInterval(loadLogs, 1000); // 1秒ごとにログ更新
+    </script>
+</body>
+</html>
