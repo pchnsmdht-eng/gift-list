@@ -1,23 +1,54 @@
-<div id="dashboard" class="card">
-    <h3>システムダッシュボード (定点更新)</h3>
-    <div id="status_icon">接続状況: 🟢 ONLINE</div>
-    <div id="market_info">レート: <span id="rate">--</span> / 弾数: <span id="bullets">--</span></div>
-    <div id="asset_info">維持率: <span id="margin">--</span>%</div>
-    
-    <label>ロスカットリミット維持率 (%)</label>
-    <input type="range" id="limit_slider" min="125" max="150" value="150" oninput="updateLimit(this.value)">
-    <span id="limit_val">150</span>%
-</div>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>GMO Trading Command Center</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card { border: 1px solid #333; padding: 10px; background: #111; }
+        .val { color: #fff; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>戦況司令室</h1>
+    <div class="grid">
+        <div class="card">
+            <h3>相場情勢</h3>
+            <div>BID/ASK: <span id="bid" class="val">--</span> / <span id="ask" class="val">--</span></div>
+            <div>トレンド: <span id="trend" class="val">--</span></div>
+        </div>
+        <div class="card">
+            <h3>資金管理</h3>
+            <div>維持率: <span id="margin" class="val">--</span>%</div>
+            <div>残弾数: <span id="bullets" class="val">--</span></div>
+        </div>
+        <div class="card" style="grid-column: span 2;">
+            <h3>AI判断板</h3>
+            <div>判定: <span id="ai_dec" class="val">--</span></div>
+            <div>理由: <span id="ai_reason" class="val">--</span></div>
+            <div>RSI: <span id="rsi" class="val">--</span> | MACD: <span id="macd" class="val">--</span></div>
+        </div>
+    </div>
 
-<script>
-    // 500msごとに定点更新
-    async function refreshDashboard() {
-        const res = await fetch('/get_dashboard_data');
-        const data = await res.json();
-        document.getElementById('rate').innerText = `${data.rate_bid} / ${data.rate_ask}`;
-        document.getElementById('bullets').innerText = data.bullets;
-        document.getElementById('margin').innerText = data.margin;
-        document.getElementById('status_icon').innerText = data.online ? "🟢 ONLINE" : "🔴 OFFLINE";
-    }
-    setInterval(refreshDashboard, 500);
-</script>
+    <script>
+        const API = "http://220.158.26.183:8000/get_dashboard_data";
+        async function updateUI() {
+            try {
+                const res = await fetch(API);
+                const d = await res.json();
+                document.getElementById('bid').innerText = d.market.bid;
+                document.getElementById('ask').innerText = d.market.ask;
+                document.getElementById('trend').innerText = d.market.trend;
+                document.getElementById('margin').innerText = d.risk.margin_rate;
+                document.getElementById('bullets').innerText = d.risk.available_bullets;
+                document.getElementById('ai_dec').innerText = d.ai_status.decision;
+                document.getElementById('ai_reason').innerText = d.ai_status.reason;
+                document.getElementById('rsi').innerText = d.indicators.rsi;
+                document.getElementById('macd').innerText = d.indicators.macd;
+            } catch(e) { console.error("データ取得失敗", e); }
+        }
+        setInterval(updateUI, 1000);
+    </script>
+</body>
+</html>
