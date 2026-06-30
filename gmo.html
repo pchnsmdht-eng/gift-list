@@ -2,53 +2,42 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>GMO Trading Command Center</title>
+    <title>GMO Control Center</title>
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .card { border: 1px solid #333; padding: 10px; background: #111; }
-        .val { color: #fff; font-weight: bold; }
+        body { background: #000; color: #fff; font-family: monospace; padding: 10px; }
+        .card { border: 1px solid #444; padding: 10px; margin-bottom: 10px; }
+        .val { color: #0f0; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>戦況司令室</h1>
-    <div class="grid">
-        <div class="card">
-            <h3>相場情勢</h3>
-            <div>BID/ASK: <span id="bid" class="val">--</span> / <span id="ask" class="val">--</span></div>
-            <div>トレンド: <span id="trend" class="val">--</span></div>
-        </div>
-        <div class="card">
-            <h3>資金管理</h3>
-            <div>維持率: <span id="margin" class="val">--</span>%</div>
-            <div>残弾数: <span id="bullets" class="val">--</span></div>
-        </div>
-        <div class="card" style="grid-column: span 2;">
-            <h3>AI判断板</h3>
-            <div>判定: <span id="ai_dec" class="val">--</span></div>
-            <div>理由: <span id="ai_reason" class="val">--</span></div>
-            <div>RSI: <span id="rsi" class="val">--</span> | MACD: <span id="macd" class="val">--</span></div>
-        </div>
+    <div class="card">
+        <h3>システムダッシュボード</h3>
+        <div>接続状況: <span id="status" class="val">--</span></div>
+        <div>レート: <span id="rate" class="val">--</span></div>
+        <div>維持率: <span id="margin" class="val">--</span>%</div>
+        <div>残弾数: <span id="bullets" class="val">--</span></div>
+    </div>
+    <div class="card">
+        <h3>AI戦況判断</h3>
+        <div>判定: <span id="judgment" class="val">--</span></div>
+        <div>理由: <span id="reason" class="val">--</span></div>
     </div>
 
     <script>
-        const API = "http://220.158.26.183:8000/get_dashboard_data";
-        async function updateUI() {
+        const API_URL = "http://220.158.26.183:8000/get_dashboard_data";
+        async function refresh() {
             try {
-                const res = await fetch(API);
+                const res = await fetch(API_URL);
                 const d = await res.json();
-                document.getElementById('bid').innerText = d.market.bid;
-                document.getElementById('ask').innerText = d.market.ask;
-                document.getElementById('trend').innerText = d.market.trend;
+                document.getElementById('status').innerText = d.status;
+                document.getElementById('rate').innerText = `${d.market.bid} / ${d.market.ask}`;
                 document.getElementById('margin').innerText = d.risk.margin_rate;
                 document.getElementById('bullets').innerText = d.risk.available_bullets;
-                document.getElementById('ai_dec').innerText = d.ai_status.decision;
-                document.getElementById('ai_reason').innerText = d.ai_status.reason;
-                document.getElementById('rsi').innerText = d.indicators.rsi;
-                document.getElementById('macd').innerText = d.indicators.macd;
-            } catch(e) { console.error("データ取得失敗", e); }
+                document.getElementById('judgment').innerText = d.ai_status.decision;
+                document.getElementById('reason').innerText = d.ai_status.reason;
+            } catch(e) { console.error(e); }
         }
-        setInterval(updateUI, 1000);
+        setInterval(refresh, 1000);
     </script>
 </body>
 </html>
