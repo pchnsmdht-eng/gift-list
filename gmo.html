@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>GMO Control Center</title>
+    <title>GMO Trading Command Center</title>
     <style>
         body { background: #000; color: #fff; font-family: monospace; padding: 10px; }
         .card { border: 1px solid #444; padding: 10px; margin-bottom: 10px; }
@@ -11,33 +11,45 @@
 </head>
 <body>
     <div class="card">
-        <h3>システムダッシュボード</h3>
-        <div>接続状況: <span id="status" class="val">--</span></div>
-        <div>レート: <span id="rate" class="val">--</span></div>
+        <h3>戦況司令室</h3>
+        <div>BID/ASK: <span id="bid" class="val">--</span> / <span id="ask" class="val">--</span></div>
+        <div>トレンド: <span id="trend" class="val">--</span></div>
+    </div>
+    <div class="card">
+        <h3>資金管理</h3>
         <div>維持率: <span id="margin" class="val">--</span>%</div>
         <div>残弾数: <span id="bullets" class="val">--</span></div>
     </div>
     <div class="card">
-        <h3>AI戦況判断</h3>
+        <h3>AI判断板</h3>
         <div>判定: <span id="judgment" class="val">--</span></div>
         <div>理由: <span id="reason" class="val">--</span></div>
     </div>
 
     <script>
         const API_URL = "http://220.158.26.183:8000/get_dashboard_data";
-        async function refresh() {
+        
+        async function updateUI() {
             try {
-                const res = await fetch(API_URL);
-                const d = await res.json();
-                document.getElementById('status').innerText = d.status;
-                document.getElementById('rate').innerText = `${d.market.bid} / ${d.market.ask}`;
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Network response was not ok");
+                const d = await response.json();
+                
+                // データ流し込み
+                document.getElementById('bid').innerText = d.market.bid;
+                document.getElementById('ask').innerText = d.market.ask;
+                document.getElementById('trend').innerText = d.market.trend;
                 document.getElementById('margin').innerText = d.risk.margin_rate;
                 document.getElementById('bullets').innerText = d.risk.available_bullets;
                 document.getElementById('judgment').innerText = d.ai_status.decision;
                 document.getElementById('reason').innerText = d.ai_status.reason;
-            } catch(e) { console.error(e); }
+            } catch(e) {
+                console.error("更新エラー:", e);
+            }
         }
-        setInterval(refresh, 1000);
+        // 1秒ごとに更新
+        setInterval(updateUI, 1000);
+        updateUI(); // 初回実行
     </script>
 </body>
 </html>
